@@ -612,6 +612,19 @@ body { overflow-x: hidden; }
         </div>
     </div>
 
+    <!-- 生存大逃殺(Battle Royal)：每年開春例行活動賽，8人混戰輪次淘汰 -->
+    <div id="battle-royal-overlay" class="overlay">
+        <div class="modal-box" style="max-width:700px; width:100%; background:radial-gradient(ellipse at top, rgba(139,20,30,0.3), rgba(10,6,5,0.97)); border-color:var(--neon-pink);">
+            <h2 style="text-align:center; color:var(--neon-pink); font-size:3rem; letter-spacing:3px; text-shadow:0 0 20px rgba(196,30,58,0.6);">💥 生存大逃殺 💥</h2>
+            <p style="text-align:center; color:var(--muted); font-size:1.3rem; margin-bottom:20px;">開春例行活動賽・8人混戰，最後留在場上的人獲勝！</p>
+            <div id="battle-royal-content" style="max-height:55vh; overflow-y:auto; margin-bottom:20px;"></div>
+            <div style="display:flex; gap:20px;">
+                <button class="btn btn-sec" style="flex:1; font-size:1.6rem; padding:18px;" onclick="window.closeModal('battle-royal-overlay')">返回</button>
+                <button class="btn" style="flex:2; font-size:2rem; padding:18px; letter-spacing:4px; background:linear-gradient(135deg, var(--neon-pink), var(--crimson-dark));" id="btn-advance-battle-royal">☠️ 進行下一波淘汰</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ATB 實況戰鬥視窗 -->
     <div id="match-overlay" class="overlay">
         <div class="modal-box">
@@ -779,6 +792,12 @@ body { overflow-x: hidden; }
                 <div id="season-goals-content"></div>
             </div>
 
+            <div id="battle-royal-entry-card" class="card" style="max-width:900px; margin-bottom:20px; border-color:var(--neon-pink); display:none;">
+                <h3 style="font-size:2.2rem; color:var(--neon-pink); margin-bottom:10px;">💥 生存大逃殺</h3>
+                <p style="font-size:1.3rem; color:var(--muted); margin-bottom:12px;">開春例行活動賽正在進行中，前往查看戰況！</p>
+                <button class="btn" style="width:100%; font-size:1.6rem; padding:14px; background:linear-gradient(135deg, var(--neon-pink), var(--crimson-dark));" onclick="window.renderBattleRoyal(); document.getElementById('battle-royal-overlay').style.display='flex';">☠️ 進入生存大逃殺</button>
+            </div>
+
             <div class="card" style="max-width:900px; margin-bottom:20px; border-color:var(--neon-pink);">
                 <h3 style="font-size:2.2rem; color:var(--neon-pink); margin-bottom:10px;">🥊 選手個人賽事紀錄</h3>
                 <div id="personal-match-records-content" style="max-height:40vh; overflow-y:auto;"></div>
@@ -887,8 +906,8 @@ body { overflow-x: hidden; }
                 </label>
             </div>
             <div style="display:flex; gap:30px; flex-wrap:wrap;">
-                <div style="flex:1; min-width:320px;"><h3 style="color:var(--neon-blue); border-bottom:3px solid var(--border); padding-bottom:15px; font-size:2.6rem;">🔵 東聯盟 (East)</h3><div id="fac-list-east" class="grid" style="grid-template-columns:1fr; margin-top:20px;"></div></div>
-                <div style="flex:1; min-width:320px;"><h3 style="color:var(--neon-pink); border-bottom:3px solid var(--border); padding-bottom:15px; font-size:2.6rem;">🔴 西聯盟 (West)</h3><div id="fac-list-west" class="grid" style="grid-template-columns:1fr; margin-top:20px;"></div></div>
+                <div style="flex:1; min-width:320px;"><h3 style="color:var(--neon-blue); border-bottom:3px solid var(--border); padding-bottom:15px; font-size:2.6rem;">🔵 東聯盟 (East) <span id="fac-count-east" style="font-size:1.5rem; color:var(--muted); font-weight:normal;"></span></h3><div id="fac-list-east" class="grid" style="grid-template-columns:1fr; margin-top:20px;"></div></div>
+                <div style="flex:1; min-width:320px;"><h3 style="color:var(--neon-pink); border-bottom:3px solid var(--border); padding-bottom:15px; font-size:2.6rem;">🔴 西聯盟 (West) <span id="fac-count-west" style="font-size:1.5rem; color:var(--muted); font-weight:normal;"></span></h3><div id="fac-list-west" class="grid" style="grid-template-columns:1fr; margin-top:20px;"></div></div>
             </div>
         </section>
 
@@ -1896,6 +1915,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if(window.generateSeasonSchedule) window.generateSeasonSchedule(); // 開局第一季也要有賽程表(第4、8週的比賽對手)
         if(window.generateSeasonGoals) window.generateSeasonGoals(); // 開局第一季也要有賽季目標
+        if(window.startBattleRoyal) window.startBattleRoyal(); // 開局第一年也要有生存大逃殺活動
         switchTab('dashboard');
         if(window.updateBookingSelects) window.updateBookingSelects();
     });
@@ -1962,6 +1982,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if(window.GS.schedule === undefined) { window.GS.schedule = []; if(window.generateSeasonSchedule) window.generateSeasonSchedule(); }
             if(window.GS.grandFinale === undefined) window.GS.grandFinale = null;
             if(window.GS.coachRefreshCounter === undefined) window.GS.coachRefreshCounter = 4;
+            if(window.GS.battleRoyal === undefined) window.GS.battleRoyal = null;
             (window.GS.factions||[]).forEach(f => { if(f.emblem === undefined) f.emblem = window.pickUniqueEmblem(); }); // 舊存檔團隊補上徽章
             if(window.GS._equipmentTempFixWeeks === undefined) window.GS._equipmentTempFixWeeks = 0;
             if(window.GS.coaches === undefined) window.GS.coaches = [];
@@ -2042,6 +2063,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(GS.schedule === undefined) { GS.schedule = []; if(window.generateSeasonSchedule) window.generateSeasonSchedule(); }
         if(GS.grandFinale === undefined) GS.grandFinale = null;
         if(GS.coachRefreshCounter === undefined) GS.coachRefreshCounter = 4;
+        if(GS.battleRoyal === undefined) GS.battleRoyal = null;
         if(GS._equipmentTempFixWeeks === undefined) GS._equipmentTempFixWeeks = 0;
         (GS.factions||[]).forEach(f => { if(f.emblem === undefined) f.emblem = window.pickUniqueEmblem(); }); // 舊存檔團隊補上徽章
         if(GS.coaches === undefined) GS.coaches = [];
@@ -2111,6 +2133,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(window.renderTrophyWall) window.renderTrophyWall();
         if(window.renderSeasonSchedule) window.renderSeasonSchedule();
         if(window.renderSeasonGoals) window.renderSeasonGoals();
+        let brEntryCard = document.getElementById('battle-royal-entry-card');
+        if(brEntryCard) brEntryCard.style.display = (GS.battleRoyal && GS.battleRoyal.active) ? 'block' : 'none';
         if(window.renderPersonalMatchRecords) window.renderPersonalMatchRecords();
 
         let cN = id => { let c = GS.coaches.find(x=>x.id===id); return c ? c.name : "無教練"; };
@@ -2238,6 +2262,16 @@ document.addEventListener('DOMContentLoaded', () => {
         let westH = (showPlayerCard && playerFaction.league==='West' ? playerFactionHtml(playerFaction) : '') + sortedFactions.filter(f=>f.league==='West').map(cardHtml).join('');
         document.getElementById('fac-list-east').innerHTML = eastH || `<p style="font-size:1.5rem; color:var(--muted);">沒有符合條件的團隊。</p>`;
         document.getElementById('fac-list-west').innerHTML = westH || `<p style="font-size:1.5rem; color:var(--muted);">沒有符合條件的團隊。</p>`;
+
+        // 聯盟數量統計：一律用未篩選的完整資料計算，不受搜尋關鍵字/自建篩選影響，避免顯示出誤導性的數字
+        let allEastFactions = GS.factions.filter(f => f.league === 'East');
+        let allWestFactions = GS.factions.filter(f => f.league === 'West');
+        let eastPlayerTotal = allEastFactions.reduce((s,f) => s + (f.roster ? f.roster.length : 0), 0);
+        let westPlayerTotal = allWestFactions.reduce((s,f) => s + (f.roster ? f.roster.length : 0), 0);
+        let eastCountEl = document.getElementById('fac-count-east');
+        if(eastCountEl) eastCountEl.innerText = `（共${allEastFactions.length}隊・${eastPlayerTotal}位選手）`;
+        let westCountEl = document.getElementById('fac-count-west');
+        if(westCountEl) westCountEl.innerText = `（共${allWestFactions.length}隊・${westPlayerTotal}位選手）`;
         
         let c = document.getElementById('sv-c'); 
         if(c) {
@@ -2856,6 +2890,8 @@ function draftCompetitorCount(w) {
         if(window.renderTrophyWall) window.renderTrophyWall();
         if(window.renderSeasonSchedule) window.renderSeasonSchedule();
         if(window.renderSeasonGoals) window.renderSeasonGoals();
+        let brEntryCard = document.getElementById('battle-royal-entry-card');
+        if(brEntryCard) brEntryCard.style.display = (GS.battleRoyal && GS.battleRoyal.active) ? 'block' : 'none';
         if(window.renderPersonalMatchRecords) window.renderPersonalMatchRecords();
     };
 
@@ -3396,6 +3432,12 @@ function draftCompetitorCount(w) {
             // 新一季開始，重新生成賽程表(第4、8週的比賽對手)
             if(window.generateSeasonSchedule) window.generateSeasonSchedule();
             if(window.generateSeasonGoals) window.generateSeasonGoals();
+            // 生存大逃殺：每年開春(跨年進入新的一年)自動建立參賽名單，不強制彈出UI(避免跟頒獎典禮等其他年末自動流程衝突)，改用新聞通知讓玩家自行前往查看
+            if(enteringNewYear && window.startBattleRoyal) {
+                if(window.startBattleRoyal()) {
+                    window.addNewsLog(`💥 開春例行活動賽「生存大逃殺」已經開幕！請至「賽季行事曆」查看並進行比賽。`);
+                }
+            }
             // 保險：若上一季的大賽沒有正式跑完收尾流程就跳到下一季，這裡自動處理，避免新季節開賽時卡住
             if(GS.tournament && GS.tournament.active) {
                 if(GS.tournament.champion) {
@@ -5686,6 +5728,115 @@ document.addEventListener('DOMContentLoaded', () => {
         return { teams: shuffled, rounds: [round1, []] };
     }
 
+    // 生存大逃殺(Battle Royal)：每年開春例行活動賽，8人混戰、加權隨機輪次淘汰(戰力越低越容易被淘汰，但保留隨機性)
+    window.startBattleRoyal = function() {
+        let entries = [];
+        let myBest = GS.roster.filter(w => !((w.injuryWeeks||0)>0)).sort((a,b)=>(b.str+b.spd+b.tech+b.end+b.mnt)-(a.str+a.spd+a.tech+a.end+a.mnt))[0];
+        if(!myBest) return false; // 沒有健康選手可派出，本次活動賽從缺
+        entries.push({ facId: 0, wrestler: myBest });
+        let aiFactions = GS.factions.slice(1).filter(f => f.roster && f.roster.length > 0).sort(() => 0.5-Math.random());
+        for(let f of aiFactions) {
+            if(entries.length >= 8) break;
+            let rep = f.roster[Math.floor(Math.random()*f.roster.length)];
+            entries.push({ facId: f.id, wrestler: rep, facName: f.name });
+        }
+        if(entries.length < 4) return false; // 參賽者不足，從缺(極端邊界保護)
+
+        GS.battleRoyal = { active: true, year: GS.year, participants: entries, eliminated: [], champion: null, log: [] };
+        window.addHallOfFame(`💥 <strong style="color:var(--gold);">生存大逃殺</strong>開幕！${entries.length}位選手齊聚一堂，誓奪最後生還者寶座！`);
+        return true;
+    };
+
+    window.advanceBattleRoyal = function() {
+        let br = GS.battleRoyal;
+        if(!br) return;
+        if(br.champion) {
+            const BASE_PRIZE = 800;
+            if(br.champion.facId === 0) {
+                GS.money += BASE_PRIZE;
+                GS.yearIncome = (GS.yearIncome||0) + BASE_PRIZE;
+                let realW = GS.roster.find(w => w.id === br.champion.wrestler.id);
+                if(realW) realW.pop = Math.min(100, realW.pop + 40);
+                let myFaction = GS.factions.find(f => f.id === 0);
+                if(myFaction) myFaction.pop = Math.min(100, (myFaction.pop||0) + 8);
+                if(window.grantPresidentXp) window.grantPresidentXp(30, "生存大逃殺奪冠");
+            } else {
+                let champFaction = GS.factions.find(f => f.id === br.champion.facId);
+                if(champFaction) champFaction.pop = Math.min(100, (champFaction.pop||0) + 8);
+            }
+            window.addHallOfFame(`💥 <strong style="color:var(--gold);">生存大逃殺・最後生還者</strong>：${br.champion.wrestler.name}${br.champion.facId===0?'（我方）':''}！`);
+            window.showBigEvent('💥 生存大逃殺', '☠️ 最後生還者誕生！', `${br.champion.wrestler.name}${br.champion.facId===0?'（我方）':''}擊敗其餘${br.participants.length-1}位選手，成為最後生還者！${br.champion.facId===0?`獲得獎金 $${BASE_PRIZE.toLocaleString()}萬，人氣+40！`:''}`, br.champion.wrestler.img);
+            window.closeModal('battle-royal-overlay');
+            br.active = false;
+            window.updateUI();
+            window.saveGame();
+            return;
+        }
+
+        let remaining = br.participants.filter(p => !br.eliminated.some(e => e.wrestler.id === p.wrestler.id));
+        if(remaining.length <= 1) {
+            br.champion = remaining[0];
+            window.renderBattleRoyal();
+            return;
+        }
+
+        let weights = remaining.map(p => {
+            let stat = p.wrestler.str+p.wrestler.spd+p.wrestler.tech+p.wrestler.end+p.wrestler.mnt;
+            return Math.max(10, 600 - stat); // 戰力越低權重越高(越容易被淘汰)，但不是絕對，保留隨機性
+        });
+        let total = weights.reduce((s,w)=>s+w, 0);
+        let roll = Math.random() * total;
+        let cum = 0;
+        let eliminatedIdx = remaining.length - 1;
+        for(let i=0; i<remaining.length; i++) {
+            cum += weights[i];
+            if(roll <= cum) { eliminatedIdx = i; break; }
+        }
+        let eliminatedEntry = remaining[eliminatedIdx];
+        br.eliminated.push(eliminatedEntry);
+        br.log.unshift(`☠️ ${eliminatedEntry.wrestler.name}${eliminatedEntry.facId===0?'（我方）':''}被淘汰出局！（剩餘${remaining.length-1}人）`);
+
+        let newRemaining = remaining.filter(p => p.wrestler.id !== eliminatedEntry.wrestler.id);
+        if(newRemaining.length === 1) br.champion = newRemaining[0];
+        window.renderBattleRoyal();
+    };
+
+    window.renderBattleRoyal = function() {
+        let br = GS.battleRoyal;
+        if(!br) return;
+        let el = document.getElementById('battle-royal-content');
+        if(!el) return;
+
+        let remaining = br.participants.filter(p => !br.eliminated.some(e => e.wrestler.id === p.wrestler.id));
+        let html = `<p style="text-align:center; font-size:1.4rem; color:var(--muted); margin-bottom:15px;">第${br.year}年・生存大逃殺　剩餘 ${remaining.length}/${br.participants.length} 人</p>`;
+
+        html += `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(90px, 1fr)); gap:10px; margin-bottom:20px;">`;
+        br.participants.forEach(p => {
+            let isEliminated = br.eliminated.some(e => e.wrestler.id === p.wrestler.id);
+            html += `<div style="text-align:center; opacity:${isEliminated?0.35:1};">
+                <img src="${window.escAttr(p.wrestler.img)}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(p.wrestler.name)}'" style="width:56px; height:56px; border-radius:50%; object-fit:cover; border:2px solid ${isEliminated?'var(--muted)':'var(--neon-pink)'}; ${isEliminated?'filter:grayscale(100%);':''}">
+                <p style="font-size:1rem; margin-top:4px; color:${p.facId===0?'var(--gold)':'var(--muted)'};">${window.escAttr(p.wrestler.name)}${isEliminated?' ☠️':''}</p>
+            </div>`;
+        });
+        html += `</div>`;
+
+        if(br.log.length > 0) {
+            html += `<div style="background:rgba(0,0,0,0.4); border-radius:8px; padding:15px; max-height:150px; overflow-y:auto;">`;
+            br.log.slice(0, 8).forEach(l => { html += `<p style="font-size:1.3rem; margin-bottom:6px;">${l}</p>`; });
+            html += `</div>`;
+        }
+
+        if(br.champion) {
+            html += `<div style="margin-top:20px; text-align:center; padding:20px; background:rgba(196,30,58,0.2); border-radius:8px;">
+                <h2 style="color:var(--gold); font-size:2.2rem;">☠️ 最後生還者：${window.escAttr(br.champion.wrestler.name)}${br.champion.facId===0?'（我方）':''} ☠️</h2>
+            </div>`;
+        }
+
+        el.innerHTML = html;
+        let advBtn = document.getElementById('btn-advance-battle-royal');
+        if(advBtn) advBtn.innerText = br.champion ? '🏆 領取生還者獎勵' : '☠️ 進行下一波淘汰';
+    };
+
     window.startGrandFinale = function() {
         if(window.GS.roster.length === 0) {
             window.showSysMsg("無法開賽", "請先至自由市場招募至少 1 名選手！", true);
@@ -6235,6 +6386,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let btnAdvanceGrandFinale = document.getElementById('btn-advance-grand-finale');
     if(btnAdvanceGrandFinale) btnAdvanceGrandFinale.addEventListener('click', () => window.advanceGrandFinale());
+
+    let btnAdvanceBattleRoyal = document.getElementById('btn-advance-battle-royal');
+    if(btnAdvanceBattleRoyal) btnAdvanceBattleRoyal.addEventListener('click', () => window.advanceBattleRoyal());
 
     /* ---------- 王座（冠軍腰帶）系統 ---------- */
     function pickRandomAiChampionCandidate() {
@@ -7596,18 +7750,28 @@ document.addEventListener('DOMContentLoaded', () => {
     let btnTagChampionship = document.getElementById('btn-tag-championship-match');
     if(btnTagChampionship) btnTagChampionship.addEventListener('click', () => window.openTagChampionshipMatch());
 
-    function runChampionshipBattle(playerWrestler, isDefense) {
+    function runChampionshipBattle(playerWrestler, isDefense, isLadder) {
         let aiPick = pickRandomAiChampionCandidate();
         if(!aiPick) return window.showSysMsg("錯誤", "找不到可挑戰的對手！", true);
 
+        let popGain = isLadder ? 60 : 30;
+        let moneyGain = isLadder ? 1200 : 600;
+        let ladderTag = isLadder ? '🪜【階梯挑戰賽】' : '';
+
         window.MatchEngine.startCustom([playerWrestler], [aiPick.wrestler], (winnerSide) => {
             let playerWon = (winnerSide === 1);
+            // 階梯挑戰賽：無規則賽事，不論輸贏，落敗方都有較高機率掛彩(比一般王座賽更激烈)
+            let injuredWrestler = playerWon ? aiPick.wrestler : (GS.roster.find(w => w.id === playerWrestler.id) || playerWrestler);
+            if(isLadder && Math.random() < 0.35) {
+                let injuryWeeks = 1 + RB(4);
+                injuredWrestler.injuryWeeks = Math.max(injuredWrestler.injuryWeeks||0, injuryWeeks);
+            }
             if(playerWon) {
                 let realW = GS.roster.find(w => w.id === playerWrestler.id);
-                if(realW) realW.pop = Math.min(100, realW.pop + 30);
-                GS.money += 600;
+                if(realW) realW.pop = Math.min(100, realW.pop + popGain);
+                GS.money += moneyGain;
                 let myFaction = GS.factions.find(f => f.id === 0);
-                if(myFaction) myFaction.pop = Math.min(100, (myFaction.pop||0) + 3);
+                if(myFaction) myFaction.pop = Math.min(100, (myFaction.pop||0) + (isLadder?6:3));
                 let prevDefenses = (GS.champion && GS.champion.isPlayerOwned && GS.champion.id === playerWrestler.id) ? GS.champion.defenses + 1 : 0;
                 if(window.checkAllTimeRecord) {
                     window.checkAllTimeRecord('defenses', { name: playerWrestler.name, value: prevDefenses, facName: '我方' });
@@ -7619,20 +7783,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     GS.domeUnlocked = true;
                     window.addHallOfFame(`🏟️ <strong style="color:var(--gold);">ドーム興行の権利を獲得！</strong>（人氣がさらに高まれば一般試合でもドームが選べるようになる）`);
                 }
-                window.addNewsLog(`👑 ${playerWrestler.name} ${isDefense?'成功衛冕':'登上王座'}！人氣+30，團隊人氣+3，冠軍分紅 $600萬！`);
-                window.addHallOfFame(`👑 <strong style="color:var(--gold);">王座${isDefense?'衛冕成功':'登基'}</strong>：${playerWrestler.name}（我方）${isDefense?`，連續防衛 ${prevDefenses} 次`:''}`);
-                if(window.grantPresidentXp) window.grantPresidentXp(20, isDefense ? "王座衛冕成功" : "王座登基");
-                window.showBigEvent('👑 王座易主', isDefense ? '🏆 衛冕成功！' : '🏆 登基成功！', `${playerWrestler.name} ${isDefense?'成功守住':'奪得'}王座！人氣+30，冠軍分紅 $600萬！`, playerWrestler.img);
+                window.addNewsLog(`👑 ${ladderTag}${playerWrestler.name} ${isDefense?'成功衛冕':'登上王座'}！人氣+${popGain}，團隊人氣+${isLadder?6:3}，冠軍分紅 $${moneyGain}萬！`);
+                window.addHallOfFame(`👑 <strong style="color:var(--gold);">${ladderTag}王座${isDefense?'衛冕成功':'登基'}</strong>：${playerWrestler.name}（我方）${isDefense?`，連續防衛 ${prevDefenses} 次`:''}`);
+                if(window.grantPresidentXp) window.grantPresidentXp(isLadder?35:20, isDefense ? "王座衛冕成功" : "王座登基");
+                window.showBigEvent(isLadder ? '🪜 階梯挑戰賽' : '👑 王座易主', isDefense ? '🏆 衛冕成功！' : '🏆 登基成功！', `${playerWrestler.name} ${isDefense?'成功守住':'奪得'}王座！人氣+${popGain}，冠軍分紅 $${moneyGain}萬！`, playerWrestler.img);
             } else {
                 let aiFaction = GS.factions.find(f => f.id === aiPick.factionId);
-                if(aiFaction) aiFaction.pop = Math.min(100, (aiFaction.pop||0) + 3);
+                if(aiFaction) aiFaction.pop = Math.min(100, (aiFaction.pop||0) + (isLadder?6:3));
                 if(window.checkAllTimeRecord && !isDefense) {
                     window.checkAllTimeRecord('youngestChampion', { name: aiPick.wrestler.name, value: aiPick.wrestler.age, facName: aiPick.factionName });
                 }
                 GS.champion = snapshotChampion(aiPick.wrestler, false, aiPick.factionName);
-                window.addNewsLog(`📉 王座${isDefense?'易主':'挑戰失敗'}！新科冠軍：${aiPick.wrestler.name}（${aiPick.factionName}）`);
-                window.addHallOfFame(`👑 <strong style="color:var(--gold);">王座${isDefense?'易主':'加冕'}</strong>：${aiPick.wrestler.name}（${aiPick.factionName}）`);
-                window.showSysMsg(isDefense ? "😱 王座易主！" : "😢 挑戰失敗", isDefense ? `王座已被 ${aiPick.wrestler.name} 奪走！` : `挑戰失敗，${aiPick.wrestler.name} 依然是冠軍！`, true);
+                window.addNewsLog(`📉 ${ladderTag}王座${isDefense?'易主':'挑戰失敗'}！新科冠軍：${aiPick.wrestler.name}（${aiPick.factionName}）`);
+                window.addHallOfFame(`👑 <strong style="color:var(--gold);">${ladderTag}王座${isDefense?'易主':'加冕'}</strong>：${aiPick.wrestler.name}（${aiPick.factionName}）`);
+                window.showSysMsg(isDefense ? "😱 王座易主！" : "😢 挑戰失敗", isDefense ? `王座已被 ${aiPick.wrestler.name} 奪走！${isLadder?'無規則的激戰讓我方選手也身受重傷...':''}` : `挑戰失敗，${aiPick.wrestler.name} 依然是冠軍！${isLadder?'無規則的激戰讓我方選手也身受重傷...':''}`, true);
             }
             window.updateUI();
             window.saveGame();
@@ -7652,7 +7816,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let challenger = GS.roster.find(w => w.id === parseInt(ch.value));
             if(!challenger) return;
             window.closeModal('action-overlay');
-            runChampionshipBattle(challenger, false);
+            runChampionshipBattle(challenger, false, false);
         };
         document.getElementById('action-overlay').style.display = 'flex';
     }
@@ -7671,10 +7835,34 @@ document.addEventListener('DOMContentLoaded', () => {
             if((defender.injuryWeeks||0) > 0) {
                 return window.showSysMsg("無法防衛", `現任冠軍 ${defender.name} 傷病中（剩${defender.injuryWeeks}週），暫時無法出戰防衛！請等傷癒後再來。`, true);
             }
-            runChampionshipBattle(defender, true);
+            // 防衛次數達5次以上時，主動提議改用階梯挑戰賽形式(無規則、高風險高回報，製造話題)
+            if((GS.champion.defenses||0) >= 5) {
+                window.offerLadderMatchChoice(defender, true);
+            } else {
+                runChampionshipBattle(defender, true, false);
+            }
         } else {
             openChallengerPicker();
         }
+    };
+
+    // 詢問是否要改用階梯挑戰賽形式：無規則、贏家直接摘下腰帶，人氣/獎金加倍但受傷風險也大幅提高
+    window.offerLadderMatchChoice = function(wrestler, isDefense) {
+        document.getElementById('act-title').innerText = '🪜 階梯挑戰賽提案';
+        document.getElementById('act-desc').innerText = `${wrestler.name} 的衛冕次數已經相當可觀，媒體提議改用「階梯挑戰賽」形式舉辦本次王座賽——無規則、直接摘下懸掛在擂台上方的腰帶複製品才算獲勝！話題度與獎勵都會大幅提升，但受傷風險也明顯更高。要接受這個提案嗎？`;
+        document.getElementById('act-content').innerHTML = '';
+        document.getElementById('btn-act-cancel').style.display = 'block';
+        document.getElementById('btn-act-cancel').innerText = '維持一般王座賽';
+        document.getElementById('btn-act-confirm').innerText = '🪜 接受階梯挑戰賽（高風險高回報）';
+        document.getElementById('btn-act-cancel').onclick = () => {
+            window.closeModal('action-overlay');
+            runChampionshipBattle(wrestler, isDefense, false);
+        };
+        document.getElementById('btn-act-confirm').onclick = () => {
+            window.closeModal('action-overlay');
+            runChampionshipBattle(wrestler, isDefense, true);
+        };
+        document.getElementById('action-overlay').style.display = 'flex';
     };
 
     /* ---------- 行事曆週次UI刷新（王座/大賽鎖定狀態、目前進度） ---------- */
@@ -8241,6 +8429,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(imported.grandFinale === undefined) imported.grandFinale = null;
                     if(imported.coachRefreshCounter === undefined) imported.coachRefreshCounter = 4;
                     if(imported._equipmentTempFixWeeks === undefined) imported._equipmentTempFixWeeks = 0;
+                    if(imported.battleRoyal === undefined) imported.battleRoyal = null;
                     (imported.factions||[]).forEach(f => { if(f.emblem === undefined) f.emblem = window.pickUniqueEmblem(imported.factions); });
                     if(imported.coaches === undefined) imported.coaches = [];
                     (imported.coaches||[]).forEach(c => { if(c.coachXp === undefined) { c.coachXp = 0; c.coachLevel = 1; } });
