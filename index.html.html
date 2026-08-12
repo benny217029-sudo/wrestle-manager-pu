@@ -384,6 +384,17 @@ body { overflow-x: hidden; }
             <button class="btn" style="width:100%; padding:15px; font-size:1.6rem;" id="btn-close-msg">確認</button>
         </div>
     </div>
+
+    <!-- 大事件獨立彈窗：王座易主/大賽奪冠/成就達成/生涯里程碑等重大事件專用，含選手頭像顯示 -->
+    <div id="big-event-overlay" class="overlay" style="z-index:999999;">
+        <div class="modal-box" style="max-width:560px; border-color:var(--gold); text-align:center; background:radial-gradient(ellipse at top, rgba(212,175,55,0.18), rgba(10,6,5,0.97));">
+            <p id="big-event-tag" style="font-size:1.4rem; color:var(--gold); letter-spacing:4px; margin-bottom:12px; font-weight:bold;">⚡ BREAKING NEWS ⚡</p>
+            <img id="big-event-img" style="width:130px; height:130px; border-radius:50%; object-fit:cover; border:3px solid var(--gold); margin-bottom:15px; box-shadow:0 0 25px rgba(212,175,55,0.5); display:none;">
+            <h2 id="big-event-title" style="font-size:2.6rem; color:var(--gold); margin-bottom:15px; text-shadow:0 0 15px rgba(212,175,55,0.5);"></h2>
+            <p id="big-event-desc" style="font-size:1.6rem; line-height:1.7; margin-bottom:25px; color:var(--text-main);"></p>
+            <button class="btn" style="width:100%; padding:16px; font-size:1.8rem; letter-spacing:2px;" id="btn-close-big-event">🎉 太棒了！</button>
+        </div>
+    </div>
     
     <!-- 讀取存檔 -->
     <div id="start-load-overlay" class="overlay">
@@ -954,7 +965,8 @@ body { overflow-x: hidden; }
 
         <!-- 自由市場 -->
         <section id="tab-market" class="tab">
-            <h2>🛒 自由市場 (招募選手)</h2>
+            <h2 style="margin-bottom:8px;">🛒 自由市場 (招募選手)</h2>
+            <p style="font-size:1.4rem; color:var(--muted); margin-bottom:15px;">目前市場上共有 <strong id="market-count-text" style="color:var(--gold); font-size:1.6rem;">0</strong> 位選手</p>
             <div class="grid" id="market-grid"></div>
         </section>
 
@@ -962,7 +974,7 @@ body { overflow-x: hidden; }
         <section id="tab-coaches" class="tab">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <h2 style="margin:0;">👨‍🏫 教練系統</h2>
-                <button class="btn btn-sec" style="font-size:1.6rem; padding:12px 25px;" id="btn-refresh-coach">🔄 手動刷新市場 ($200萬)</button>
+                <p style="font-size:1.3rem; color:var(--muted); margin:0;">🔄 教練市場每4週自動更新一次（<span id="coach-refresh-countdown">-</span>週後更新）</p>
             </div>
             <p style="color:var(--muted); font-size:1.4rem; margin-bottom:20px;">聘用教練後，可指派給特定選手。在「訓練」排班時，若有教練指導，屬性成長將大幅增加！</p>
             <div class="grid" id="coach-grid"></div>
@@ -1068,6 +1080,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const L_NAMES = ["佐藤","鈴木","高橋","田中","神崎","白鳥","伊達","九條","星野","結城","天王寺","藤原","黑澤","五十嵐","綾小路","渡邊","中村","小林","加藤","吉田","山本","松本","井上","木村","林","清水","山崎","森","池田","橋本","阿部","石川","前田","藤田","岡田","長谷川","村上","近藤","石井","坂本","遠藤","青木","福田","太田","西村","金子","中島","竹内","三浦","原田"];
     const F_NAMES = ["葵","美咲","結愛","凛","麗華","亞里沙","千代","未來","沙耶","初音","瑪麗","明日香","莉莉絲","櫻","雪乃","陽菜","結衣","愛莉","心愛","美月","真央","咲良","琴音","彩花","日向","綾音","杏奈","柚希","千夏","美羽","莉子","朱里","茉莉","紗英","瑠璃","詩織","栞","楓","瞳","菜々子","優奈","彩音","碧","伶奈","小夜子","雫","綺羅","泉美","紅葉","蘭"];
     const FAC_NAMES = ["暗黑之星","百合女王","東京女子","猛毒之牙","星光閃耀","爆裂紅唇","超凡女帝","銀河戰線","關西烈火","九州神鳴"];
+
+    // 團體徽章系統：圖示+底色組成的徽章池，每個團隊分配到的徽章保證不重複
+    window.FACTION_EMBLEMS = [
+        { icon: '🦅', color: '#4a5568' }, { icon: '🐆', color: '#c08a2e' }, { icon: '🦁', color: '#c53030' },
+        { icon: '🐯', color: '#dd6b20' }, { icon: '🛡️', color: '#2c5282' }, { icon: '🐺', color: '#546174' },
+        { icon: '🎭', color: '#276749' }, { icon: '🌙', color: '#2b6cb0' }, { icon: '🔧', color: '#b83280' },
+        { icon: '🐂', color: '#9b2c2c' }, { icon: '⚔️', color: '#744210' }, { icon: '🔥', color: '#c05621' },
+        { icon: '⭐', color: '#b7791f' }, { icon: '🐍', color: '#22543d' }, { icon: '👑', color: '#975a16' },
+        { icon: '💀', color: '#2d3748' }, { icon: '🌹', color: '#97266d' }, { icon: '⚡', color: '#805ad5' },
+        { icon: '🦂', color: '#5a3e1b' }, { icon: '🐉', color: '#1a4731' },
+    ];
+    // 從徽章池中挑一個「其他團隊還沒用過」的徽章；若全部用完(理論上不會，池子夠大)則允許重複
+    // factionsList參數可選：不傳入時預設用window.GS.factions判斷唯一性；批次處理一份「尚未賦值成window.GS」的陣列時(例如匯入JSON流程)，需要明確傳入該陣列本身，否則會誤判成跟舊遊戲比對
+    window.pickUniqueEmblem = function(factionsList) {
+        let list = factionsList || window.GS.factions || [];
+        let usedIcons = list.map(f => f.emblem && f.emblem.icon).filter(Boolean);
+        let available = window.FACTION_EMBLEMS.filter(e => !usedIcons.includes(e.icon));
+        let pool = available.length > 0 ? available : window.FACTION_EMBLEMS;
+        return pool[Math.floor(Math.random() * pool.length)];
+    };
+    // 更換指定團隊的徽章(重新隨機一個目前沒被使用的)
+    window.rerollFactionEmblem = function(facId) {
+        let f = window.GS.factions.find(x => x.id === facId);
+        if(!f) return;
+        f.emblem = window.pickUniqueEmblem();
+        window.updateUI();
+        window.saveGame();
+    };
+    // 渲染徽章HTML：圓形金邊、放射狀底紋、中央圖示
+    window.renderEmblemHtml = function(emblem, size) {
+        size = size || 48;
+        if(!emblem) return '';
+        return `<div style="width:${size}px; height:${size}px; border-radius:50%; background: radial-gradient(circle at 35% 30%, ${emblem.color}, #000 140%); border: 2px solid var(--gold); display:flex; align-items:center; justify-content:center; font-size:${Math.round(size*0.55)}px; box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15); flex-shrink:0;">${emblem.icon}</div>`;
+    };
     const R = max => Math.floor(Math.random() * max);
     const getRandName = () => L_NAMES[R(L_NAMES.length)] + " " + F_NAMES[R(F_NAMES.length)];
 
@@ -1223,6 +1269,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return {
             id: Date.now() + R(100000), name: (isFA ? "[FA] " : "") + window.getUniqueWrestlerName(),
             age: 17 + R(4), stamina: 100, // 選手生成年齡統一改成17~20歲隨機產生
+            declineStartAge: 25 + R(8), // 成長衰退系統：每位選手隨機從25~32歲之間某個年齡開始衰退，取代原本全員固定28歲
             str: base+R(20), spd: base+R(20), tech: base+R(20), mnt: base+R(20), end: base+R(20),
             pop: 30+R(40), loyalty: 60+R(40), salary: Math.floor(base*0.3)+R(20),
             img: `https://api.dicebear.com/7.x/avataaars/svg?seed=${Math.random()}`,
@@ -1551,6 +1598,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(window.addNewsLog) window.addNewsLog(`🏆 成就達成：${a.icon} ${a.name}！`);
                 if(window.addHallOfFame) window.addHallOfFame(`🏆 <strong style="color:var(--gold);">成就達成</strong>：${a.icon} ${a.name}（${a.desc}）`);
                 if(window.renderTrophyWall) window.renderTrophyWall();
+                if(window.showBigEvent) window.showBigEvent('🏆 成就達成', `${a.icon} ${a.name}`, a.desc);
             }
         });
     };
@@ -1720,6 +1768,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(window.addNewsLog) window.addNewsLog(`🏅 ${w.name} 生涯累積達成 ${m} 勝里程碑！人氣+${Math.round(m/2)}，獎金 $${reward.toLocaleString()}萬！`);
                     if(window.addHallOfFame) window.addHallOfFame(`🏅 <strong style="color:var(--gold);">${w.name}</strong> 生涯達成 <strong>${m}勝</strong> 里程碑！`);
                     w._milestoneMerchAvailable = m; // 標記可製作紀念商品的機會，玩家可在選手資料彈窗自行決定是否製作
+                    if(m >= 50 && window.showBigEvent) window.showBigEvent('🏅 生涯里程碑', `${w.name} 達成生涯${m}勝！`, `人氣+${Math.round(m/2)}，獎金 $${reward.toLocaleString()}萬！`, w.img);
                 }
             }
         });
@@ -1777,12 +1826,28 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('sys-msg-desc').innerHTML = desc;
         document.getElementById('sys-msg-overlay').style.display = 'flex';
     };
+    // 大事件獨立彈窗：王座易主/大賽奪冠/成就達成等重大事件專用，比一般系統訊息更醒目，可選擇性帶入選手頭像
+    // tag: 事件標籤(例如"👑 王座易主")；title: 主標題；desc: 說明文字；wrestlerImg: 選手頭像網址(可選，不帶入則不顯示照片)
+    window.showBigEvent = function(tag, title, desc, wrestlerImg) {
+        document.getElementById('big-event-tag').innerText = tag || '⚡ BREAKING NEWS ⚡';
+        document.getElementById('big-event-title').innerText = title;
+        document.getElementById('big-event-desc').innerHTML = desc;
+        let imgEl = document.getElementById('big-event-img');
+        if(wrestlerImg) {
+            imgEl.src = wrestlerImg;
+            imgEl.onerror = function(){ this.onerror=null; this.style.display='none'; };
+            imgEl.style.display = 'inline-block';
+        } else {
+            imgEl.style.display = 'none';
+        }
+        document.getElementById('big-event-overlay').style.display = 'flex';
+    };
     window.closeModal = function(id) { 
         let el = document.getElementById(id); 
         if(el) el.style.display = 'none'; 
     };
 
-    ['btn-close-msg', 'btn-close-load', 'btn-act-cancel', 'btn-close-npc', 'btn-bracket-cancel', 'btn-close-playoff'].forEach(id => {
+    ['btn-close-msg', 'btn-close-load', 'btn-act-cancel', 'btn-close-npc', 'btn-bracket-cancel', 'btn-close-playoff', 'btn-close-big-event'].forEach(id => {
         let b = document.getElementById(id);
         if(b) b.addEventListener('click', () => { b.closest('.overlay').style.display = 'none'; });
     });
@@ -1824,10 +1889,10 @@ document.addEventListener('DOMContentLoaded', () => {
         for(let i=0; i<25; i++) GS.fa.push(genWrestler(true));
         for(let i=0; i<30; i++) GS.coaches.push(genCoach());
         
-        GS.factions.push({ id: 0, name: "玩家團隊", league: "East", pop: 10, roster: GS.roster, record: {w:0, l:0}, points: 0, streak: 0 });
+        GS.factions.push({ id: 0, name: "玩家團隊", league: "East", pop: 10, roster: GS.roster, record: {w:0, l:0}, points: 0, streak: 0, emblem: window.pickUniqueEmblem() });
         for(let k=1; k<=15; k++) {
             let fR = []; for(let r=0; r<6; r++) fR.push(genWrestler(false, 20));
-            GS.factions.push({ id: k, name: (FAC_NAMES[k-1] || "地方團隊 "+k), league: k%2===0?"East":"West", pop: 10, roster: fR, record: {w:0, l:0}, points: 0, streak: 0 });
+            GS.factions.push({ id: k, name: (FAC_NAMES[k-1] || "地方團隊 "+k), league: k%2===0?"East":"West", pop: 10, roster: fR, record: {w:0, l:0}, points: 0, streak: 0, emblem: window.pickUniqueEmblem() });
         }
         if(window.generateSeasonSchedule) window.generateSeasonSchedule(); // 開局第一季也要有賽程表(第4、8週的比賽對手)
         if(window.generateSeasonGoals) window.generateSeasonGoals(); // 開局第一季也要有賽季目標
@@ -1896,6 +1961,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if(window.GS.u18Tournament === undefined) window.GS.u18Tournament = null;
             if(window.GS.schedule === undefined) { window.GS.schedule = []; if(window.generateSeasonSchedule) window.generateSeasonSchedule(); }
             if(window.GS.grandFinale === undefined) window.GS.grandFinale = null;
+            if(window.GS.coachRefreshCounter === undefined) window.GS.coachRefreshCounter = 4;
+            (window.GS.factions||[]).forEach(f => { if(f.emblem === undefined) f.emblem = window.pickUniqueEmblem(); }); // 舊存檔團隊補上徽章
             if(window.GS._equipmentTempFixWeeks === undefined) window.GS._equipmentTempFixWeeks = 0;
             if(window.GS.coaches === undefined) window.GS.coaches = [];
             (window.GS.coaches||[]).forEach(c => { if(c.coachXp === undefined) { c.coachXp = 0; c.coachLevel = 1; } }); // 舊存檔教練補上成長系統欄位(不依賴玩家是否切換過教練分頁)
@@ -1974,7 +2041,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if(GS.tvDeal === undefined) GS.tvDeal = null;
         if(GS.schedule === undefined) { GS.schedule = []; if(window.generateSeasonSchedule) window.generateSeasonSchedule(); }
         if(GS.grandFinale === undefined) GS.grandFinale = null;
+        if(GS.coachRefreshCounter === undefined) GS.coachRefreshCounter = 4;
         if(GS._equipmentTempFixWeeks === undefined) GS._equipmentTempFixWeeks = 0;
+        (GS.factions||[]).forEach(f => { if(f.emblem === undefined) f.emblem = window.pickUniqueEmblem(); }); // 舊存檔團隊補上徽章
         if(GS.coaches === undefined) GS.coaches = [];
         (GS.coaches||[]).forEach(c => { if(c.coachXp === undefined) { c.coachXp = 0; c.coachLevel = 1; } });
         if(GS.achievements === undefined) GS.achievements = [];
@@ -2122,6 +2191,11 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
         }).join('');
         document.getElementById('market-grid').innerHTML = faHTML || "<p style='font-size:1.6rem;'>市場上暫無選手</p>";
+        let marketCountEl = document.getElementById('market-count-text');
+        if(marketCountEl) marketCountEl.innerText = GS.fa.length;
+
+        let coachCountdownEl = document.getElementById('coach-refresh-countdown');
+        if(coachCountdownEl) coachCountdownEl.innerText = GS.coachRefreshCounter !== undefined ? GS.coachRefreshCounter : 4;
 
         let coachHTML = GS.coaches.map((c) => {
             if(c.coachXp === undefined) { c.coachXp = 0; c.coachLevel = 1; } // 舊存檔教練補上成長系統欄位
@@ -2141,9 +2215,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
         document.getElementById('coach-grid').innerHTML = coachHTML || "<p>暫無教練</p>";
 
-        let cardHtml = f => `<div class="card" style="border-color:${f.isCustom?'var(--gold)':'var(--border)'}; padding:15px; margin-bottom:10px;"><div style="display:flex; justify-content:space-between; align-items:center;"><h3 style="color:${f.league==='East'?'var(--neon-blue)':'var(--neon-pink)'}; font-size:2.2rem; margin:0;">${f.name}${f.isCustom?' <span style="font-size:1.1rem; color:var(--gold);">🏗️自建</span>':''}</h3><span style="font-size:1.4rem; color:var(--muted);">選手數: ${f.roster.length} ｜ 🌟人氣: ${f.pop||0}</span></div><div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;"><p style="font-size:1.8rem; color:var(--gold); font-weight:bold; margin:0;">${f.record.w}勝 ${f.record.l}敗｜積分：${f.points||0}分</p><button class="btn btn-sec" style="font-size:1.2rem; padding:8px 15px;" onclick="window.showNpcRoster(${f.id})">👥 查看名單</button></div>${(f.streak||0) >= 3 ? `<p style="color:#ff6b6b; font-size:1.3rem; margin-top:6px; font-weight:bold;">🔥連勝中：${f.streak}場</p>` : ''}</div>`;
+        let cardHtml = f => `<div class="card" style="border-color:${f.isCustom?'var(--gold)':'var(--border)'}; padding:15px; margin-bottom:10px;"><div style="display:flex; justify-content:space-between; align-items:center;"><h3 style="color:${f.league==='East'?'var(--neon-blue)':'var(--neon-pink)'}; font-size:2.2rem; margin:0; display:flex; align-items:center; gap:10px;">${window.renderEmblemHtml(f.emblem, 38)}<span>${f.name}${f.isCustom?' <span style="font-size:1.1rem; color:var(--gold);">🏗️自建</span>':''}</span></h3><span style="font-size:1.4rem; color:var(--muted);">選手數: ${f.roster.length} ｜ 🌟人氣: ${f.pop||0}</span></div><div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;"><p style="font-size:1.8rem; color:var(--gold); font-weight:bold; margin:0;">${f.record.w}勝 ${f.record.l}敗｜積分：${f.points||0}分</p><button class="btn btn-sec" style="font-size:1.2rem; padding:8px 15px;" onclick="window.showNpcRoster(${f.id})">👥 查看名單</button></div>${(f.streak||0) >= 3 ? `<p style="color:#ff6b6b; font-size:1.3rem; margin-top:6px; font-weight:bold;">🔥連勝中：${f.streak}場</p>` : ''}</div>`;
 
-        let playerFactionHtml = f => `<div class="card" style="border:2px solid var(--gold); padding:15px; margin-bottom:15px; background:rgba(251,191,36,0.08);"><div style="display:flex; justify-content:space-between; align-items:center;"><h3 style="color:var(--gold); font-size:2.4rem; margin:0;">👑 ${f.name} <span style="font-size:1.2rem; color:var(--muted);">(我方)</span></h3><span style="font-size:1.4rem; color:var(--muted);">選手數: ${f.roster.length} ｜ 🌟人氣: ${f.pop||0}</span></div><div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;"><p style="font-size:1.4rem; color:var(--muted); margin:0;">聯盟排名不計入我方戰績</p><div style="display:flex; gap:8px;"><button class="btn btn-sec" style="font-size:1.2rem; padding:8px 15px;" onclick="window.openRenameFaction(${f.id})">✏️ 改名</button><button class="btn btn-sec" style="font-size:1.2rem; padding:8px 15px;" onclick="window.showNpcRoster(${f.id})">👥 查看名單</button></div></div></div>`;
+        let playerFactionHtml = f => `<div class="card" style="border:2px solid var(--gold); padding:15px; margin-bottom:15px; background:rgba(251,191,36,0.08);"><div style="display:flex; justify-content:space-between; align-items:center;"><h3 style="color:var(--gold); font-size:2.4rem; margin:0; display:flex; align-items:center; gap:10px;">${window.renderEmblemHtml(f.emblem, 42)}<span>👑 ${f.name} <span style="font-size:1.2rem; color:var(--muted);">(我方)</span></span></h3><span style="font-size:1.4rem; color:var(--muted);">選手數: ${f.roster.length} ｜ 🌟人氣: ${f.pop||0}</span></div><div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;"><p style="font-size:1.4rem; color:var(--muted); margin:0;">聯盟排名不計入我方戰績</p><div style="display:flex; gap:8px;"><button class="btn btn-sec" style="font-size:1.2rem; padding:8px 15px;" onclick="window.rerollFactionEmblem(${f.id})">🔄 換徽章</button><button class="btn btn-sec" style="font-size:1.2rem; padding:8px 15px;" onclick="window.openRenameFaction(${f.id})">✏️ 改名</button><button class="btn btn-sec" style="font-size:1.2rem; padding:8px 15px;" onclick="window.showNpcRoster(${f.id})">👥 查看名單</button></div></div></div>`;
 
         let totalTitleEl = document.getElementById('fac-total-title');
         if(totalTitleEl) totalTitleEl.innerText = `🏢 雙聯盟總覽`;
@@ -2512,8 +2586,9 @@ function draftCompetitorCount(w) {
         }).join('');
         let allScouted = GS.draft.every(w => w.scouted);
         document.getElementById('act-title').innerText = "🎓 年度新人選秀會（NPB式）";
-        document.getElementById('act-desc').innerText = `請指名一位新秀。資質越好越可能被其他團隊同時指名，屆時將進行抽籤決定歸屬。剩餘候選：${GS.draft.length}人。「潛力值」是隱藏屬性，會影響選手日後訓練成長的速度(D<C<B<A<S)，可以花錢請球探偵查。`;
+        document.getElementById('act-desc').innerText = `請指名一位新秀。資質越好越可能被其他團隊同時指名，屆時將進行抽籤決定歸屬。「潛力值」是隱藏屬性，會影響選手日後訓練成長的速度(D<C<B<A<S)，可以花錢請球探偵查。`;
         document.getElementById('act-content').innerHTML = `
+            <p style="text-align:center; font-size:1.6rem; color:var(--gold); font-weight:bold; margin-bottom:12px;">📋 本屆選秀共有 ${GS.draft.length} 位候選新秀參與</p>
             ${!allScouted ? `<button type="button" class="btn btn-sec" style="width:100%; margin-bottom:15px; font-size:1.4rem; padding:10px;" onclick="window.scoutDraftPool()">🔍 雇用球探偵查全體新秀的潛力值（花費 $${Math.round(SCOUT_COST * (window.getScoutCostMult ? window.getScoutCostMult() : 1))}萬）</button>` : ''}
             ${h}
         `;
@@ -2588,6 +2663,7 @@ function draftCompetitorCount(w) {
         comeback.forEach(w => {
             w.injuryWeeks = 0; w.retirementCountdown = null; w.readyForRetirementMatch = false;
             w.stamina = 100; w.condition = '普通'; w.vacationWeeks = 0;
+            w.declineStartAge = 25 + R(8); // 引退轉生：重新隨機套入新的衰退起始年齡(25~32歲)
             w._draftSource = 'comeback';
             if(!w.name.startsWith('[復出] ')) w.name = `[復出] ${w.name}`;
             GS.draft.push(w);
@@ -3101,14 +3177,17 @@ function draftCompetitorCount(w) {
             let winRate = rawWinRate * sampleWeight + 0.5 * (1 - sampleWeight);
             let reinforceChance = Math.min(0.5, Math.max(0.2, 0.5 - winRate * 0.3)); // 勝率越低機率越高
 
-            // 補強：陣容 < 8人 → 依評分挑自由市場最佳選手簽入
+            // 補強：陣容 < 8人 → 依評分挑自由市場最佳選手簽入(套用跟玩家一致的人氣門檻限制，只能簽到自己團隊人氣範圍內的選手)
             if(f.roster.length < 8 && GS.fa.length > 0 && Math.random() < reinforceChance) {
-                let best = GS.fa.slice().sort((a,b) => scoutScore(b) - scoutScore(a))[0];
-                let idx = GS.fa.findIndex(w => w.id === best.id);
-                if(idx !== -1) {
-                    let w = GS.fa.splice(idx, 1)[0];
-                    w.name = w.name.replace('[FA] ', '');
-                    f.roster.push(w);
+                let affordable = GS.fa.filter(w => !window.calcFaRequiredPop || (f.pop||0) >= window.calcFaRequiredPop(w));
+                if(affordable.length > 0) {
+                    let best = affordable.slice().sort((a,b) => scoutScore(b) - scoutScore(a))[0];
+                    let idx = GS.fa.findIndex(w => w.id === best.id);
+                    if(idx !== -1) {
+                        let w = GS.fa.splice(idx, 1)[0];
+                        w.name = w.name.replace('[FA] ', '');
+                        f.roster.push(w);
+                    }
                 }
             }
 
@@ -3276,6 +3355,16 @@ function draftCompetitorCount(w) {
         // 器材緊急維修保護期每週遞減
         if(GS._equipmentTempFixWeeks > 0) GS._equipmentTempFixWeeks--;
 
+        // 教練市場每4週自動刷新一次：保留已聘用的教練，重新生成20位未聘用候選教練(取代原本的手動花錢刷新機制)
+        if(GS.coachRefreshCounter === undefined) GS.coachRefreshCounter = 4;
+        GS.coachRefreshCounter--;
+        if(GS.coachRefreshCounter <= 0) {
+            GS.coaches = GS.coaches.filter(c => c.hired);
+            for(let i=0; i<20; i++) GS.coaches.push(genCoach());
+            GS.coachRefreshCounter = 4;
+            window.addNewsLog(`🔄 教練市場已自動更新，新一批候選教練已上市！`);
+        }
+
         // 成就系統檢查
         if(window.checkAchievements) window.checkAchievements();
         // 賽季目標檢查
@@ -3365,9 +3454,10 @@ function draftCompetitorCount(w) {
 
             GS.roster.forEach(w => {
                 w.age++;
-                // 28歲開始能力衰退：年紀越大衰退越明顯
-                if(w.age >= 28) {
-                    let declineAmount = w.age - 27; // 28歲-1點, 29歲-2點, 30歲-3點...累加
+                if(w.declineStartAge === undefined) w.declineStartAge = 25 + R(8); // 舊存檔選手補上隨機衰退起始年齡
+                // 成長衰退系統：從選手個別的declineStartAge(25~32歲隨機)開始衰退，年紀越大衰退越明顯
+                if(w.age >= w.declineStartAge) {
+                    let declineAmount = w.age - (w.declineStartAge - 1); // 衰退起始那年-1點，之後累加
                     let statKeys = ['str','spd','tech','end','mnt'];
                     for(let i=0; i<declineAmount; i++) {
                         let key = statKeys[R(5)];
@@ -3381,7 +3471,7 @@ function draftCompetitorCount(w) {
                 }
             });
             GS.fa.forEach(w=>w.age++);
-            GS.fa = GS.fa.filter(w=>w.age<=35);
+            GS.fa = GS.fa.filter(w=>w.age<=32);
             events.push('🎉 新的一年開始');
 
             // AI團隊選手也比照玩家陣容每年老化+衰退，並在32歲以上有機率引退離隊(避免AI陣容永遠停留在遊戲剛開始的樣子)
@@ -3391,8 +3481,9 @@ function draftCompetitorCount(w) {
                 for(let i = f.roster.length - 1; i >= 0; i--) {
                     let w = f.roster[i];
                     w.age++;
-                    if(w.age >= 28) {
-                        let declineAmount = w.age - 27;
+                    if(w.declineStartAge === undefined) w.declineStartAge = 25 + R(8); // AI選手也套用個別隨機衰退起始年齡，跟玩家選手保持一致
+                    if(w.age >= w.declineStartAge) {
+                        let declineAmount = w.age - (w.declineStartAge - 1);
                         let statKeys = ['str','spd','tech','end','mnt'];
                         for(let k=0; k<declineAmount; k++) {
                             let key = statKeys[R(5)];
@@ -3957,19 +4048,6 @@ function draftCompetitorCount(w) {
         showSysMsg("簽約成功", `電視轉播合約已生效！`, false);
     });
 
-    let refCoach = document.getElementById('btn-refresh-coach');
-    if(refCoach) refCoach.addEventListener('click', () => { 
-        if(GS.money >= 200) { 
-            GS.money -= 200; 
-            GS.coaches = GS.coaches.filter(c=>c.hired); 
-            for(let i=0;i<20;i++) GS.coaches.push(genCoach()); 
-            updateUI(); 
-            window.saveGame();
-        } else {
-            showSysMsg("資金不足", "刷新教練市場需要 $200萬，目前資金不足！", true);
-        }
-    });
-
     // 填充場館選單(只需一次)，並綁定變更時更新預覽
     // 判斷某場館目前是否已解鎖(依當前人氣即時計算，非一次性成就)
     window.isVenueUnlocked = function(v) {
@@ -4205,6 +4283,7 @@ function draftCompetitorCount(w) {
             if(w && w.alignment === undefined) w.alignment = Math.random() < 0.75 ? 'face' : 'heel'; // 舊存檔選手補上正反派定位
             if(w && w.onIR === undefined) w.onIR = false; // 舊存檔選手補上傷兵名單欄位
             if(w && w.levelHistory === undefined) w.levelHistory = []; // 舊存檔選手補上成長曲線歷史(空陣列，之後會自然開始累積)
+            if(w && w.declineStartAge === undefined) w.declineStartAge = 25 + R(8); // 舊存檔選手補上隨機衰退起始年齡(25~32歲)
         };
         (GS.roster||[]).forEach(fillIfMissing);
         (GS.fa||[]).forEach(fillIfMissing);
@@ -5510,10 +5589,10 @@ document.addEventListener('DOMContentLoaded', () => {
             let league = document.getElementById('nf-league').value;
             let newId = Math.max(...window.GS.factions.map(f=>f.id)) + 1;
 
-            // 隨機生成5名選手，頭像優先從圖庫不重複帶入(洗牌後依序取用；圖庫不夠5張才會出現重複)
+            // 隨機生成10名選手，頭像優先從圖庫不重複帶入(洗牌後依序取用；圖庫不夠10張才會出現重複)
             let newRoster = [];
             let shuffledGallery = (window.GS.gallery || []).slice().sort(() => 0.5 - Math.random());
-            for(let i=0; i<5; i++) {
+            for(let i=0; i<10; i++) {
                 let w = window.genWrestler(false, 20);
                 if(shuffledGallery.length > 0) {
                     w.img = shuffledGallery[i % shuffledGallery.length];
@@ -5521,7 +5600,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 newRoster.push(w);
             }
 
-            window.GS.factions.push({ id: newId, name, league, pop, roster: newRoster, record: {w:0,l:0}, points: 0, streak: 0, isCustom: true });
+            window.GS.factions.push({ id: newId, name, league, pop, roster: newRoster, record: {w:0,l:0}, points: 0, streak: 0, isCustom: true, emblem: window.pickUniqueEmblem() });
             window.closeModal('action-overlay');
             window.updateUI();
             window.saveGame();
@@ -5743,7 +5822,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.closeModal('grand-finale-overlay');
             window.updateUI();
             window.saveGame();
-            window.showSysMsg("⚡ 大決戰落幕！", `究極王者：${gf.champion.name}！獲得冠軍分紅 $${GRAND_FINALE_PRIZE.toLocaleString()}萬，團隊人氣+15！`, false);
+            window.showBigEvent('⚡ 四年一度大決戰', '👑 究極王者誕生！', `${gf.champion.name}${gf.champion.facId===0?'（我方）':''}擊敗東西聯盟所有精銳，成為究極王者！獲得冠軍分紅 $${GRAND_FINALE_PRIZE.toLocaleString()}萬，團隊人氣+15！`, gf.champion.wrestlers && gf.champion.wrestlers[0] ? gf.champion.wrestlers[0].img : null);
             return;
         }
 
@@ -6092,7 +6171,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.closeModal('bracket-overlay');
             window.updateUI();
             window.saveGame();
-            window.showSysMsg("大賽落幕", `恭喜！${t.label || ''}最終冠軍為 ${t.champion.name}！${t.champion.facId === 0 ? '身為主辦方，我方獲得' : '主辦本次大賽獲得'}冠軍分紅 $${prize.toLocaleString()}萬，冠軍團隊人氣 +5！`, false);
+            window.showBigEvent('🏆 大賽落幕', `${t.label || ''}最終冠軍`, `恭喜！${t.champion.name}${t.champion.facId===0?'（我方）':''}奪得最終冠軍！${t.champion.facId === 0 ? '身為主辦方，我方獲得' : '主辦本次大賽獲得'}冠軍分紅 $${prize.toLocaleString()}萬，冠軍團隊人氣 +5！`, t.champion.img);
             return;
         }
 
@@ -6485,13 +6564,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if(candidates.length === 0) return false;
         let [w1, w2] = candidates[RB(candidates.length)];
         const ENERGY_COST = 2;
+        const MONEY_COST = 100;
 
         document.getElementById('act-title').innerText = '😤 選手不合傳聞';
         document.getElementById('act-desc').innerText = `有傳聞指出，${w1.name} 與 ${w2.name} 之間的更衣室關係並不融洽，甚至可能影響團隊氣氛。要親自介入調解，還是放任雙方自行處理？`;
         document.getElementById('act-content').innerHTML = '';
         document.getElementById('btn-act-cancel').style.display = 'block';
         document.getElementById('btn-act-cancel').innerText = '放任不管';
-        document.getElementById('btn-act-confirm').innerText = `🤝 介入調解（花費${ENERGY_COST}點精力）`;
+        document.getElementById('btn-act-confirm').innerText = `🤝 介入調解（花費${ENERGY_COST}點精力+$${MONEY_COST}萬）`;
         document.getElementById('btn-act-cancel').onclick = () => {
             window.closeModal('action-overlay');
             let loyaltyLoss = 5 + RB(6);
@@ -6505,8 +6585,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.showSysMsg("精力不足", `介入調解需要 ${ENERGY_COST} 點社長精力，目前精力不足！`, true);
                 return;
             }
+            if(GS.money < MONEY_COST) {
+                window.showSysMsg("資金不足", `介入調解需要 $${MONEY_COST}萬活動經費，目前資金不足！`, true);
+                return;
+            }
             window.closeModal('action-overlay');
             GS.presidentEnergy -= ENERGY_COST;
+            GS.money -= MONEY_COST;
+            GS.yearExpense = (GS.yearExpense||0) + MONEY_COST;
             if(Math.random() < 0.7) {
                 let bondGain = 8 + RB(8);
                 if(window.bumpBond) window.bumpBond(w1, w2, bondGain);
@@ -7536,7 +7622,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.addNewsLog(`👑 ${playerWrestler.name} ${isDefense?'成功衛冕':'登上王座'}！人氣+30，團隊人氣+3，冠軍分紅 $600萬！`);
                 window.addHallOfFame(`👑 <strong style="color:var(--gold);">王座${isDefense?'衛冕成功':'登基'}</strong>：${playerWrestler.name}（我方）${isDefense?`，連續防衛 ${prevDefenses} 次`:''}`);
                 if(window.grantPresidentXp) window.grantPresidentXp(20, isDefense ? "王座衛冕成功" : "王座登基");
-                window.showSysMsg(isDefense ? "🏆 衛冕成功！" : "🏆 登基成功！", `${playerWrestler.name} ${isDefense?'成功守住':'奪得'}王座！`, false);
+                window.showBigEvent('👑 王座易主', isDefense ? '🏆 衛冕成功！' : '🏆 登基成功！', `${playerWrestler.name} ${isDefense?'成功守住':'奪得'}王座！人氣+30，冠軍分紅 $600萬！`, playerWrestler.img);
             } else {
                 let aiFaction = GS.factions.find(f => f.id === aiPick.factionId);
                 if(aiFaction) aiFaction.pop = Math.min(100, (aiFaction.pop||0) + 3);
@@ -8153,7 +8239,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(imported.u18Tournament === undefined) imported.u18Tournament = null;
                     if(imported.schedule === undefined) imported.schedule = [];
                     if(imported.grandFinale === undefined) imported.grandFinale = null;
+                    if(imported.coachRefreshCounter === undefined) imported.coachRefreshCounter = 4;
                     if(imported._equipmentTempFixWeeks === undefined) imported._equipmentTempFixWeeks = 0;
+                    (imported.factions||[]).forEach(f => { if(f.emblem === undefined) f.emblem = window.pickUniqueEmblem(imported.factions); });
                     if(imported.coaches === undefined) imported.coaches = [];
                     (imported.coaches||[]).forEach(c => { if(c.coachXp === undefined) { c.coachXp = 0; c.coachLevel = 1; } });
                     if(imported.achievements === undefined) imported.achievements = [];
