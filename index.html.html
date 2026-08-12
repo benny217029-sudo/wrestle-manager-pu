@@ -1222,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let base = 30 + R(40);
         return {
             id: Date.now() + R(100000), name: (isFA ? "[FA] " : "") + window.getUniqueWrestlerName(),
-            age: ageLimit + R(5), stamina: 100,
+            age: 17 + R(4), stamina: 100, // 選手生成年齡統一改成17~20歲隨機產生
             str: base+R(20), spd: base+R(20), tech: base+R(20), mnt: base+R(20), end: base+R(20),
             pop: 30+R(40), loyalty: 60+R(40), salary: Math.floor(base*0.3)+R(20),
             img: `https://api.dicebear.com/7.x/avataaars/svg?seed=${Math.random()}`,
@@ -1236,6 +1236,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 跨資料池(旗下陣容/自由市場/所有團隊)依id查找選手本尊，供勝敗紀錄等即時更新使用
     // 全域HTML屬性逸出工具：選手圖片網址等使用者可自訂輸入的內容，插入HTML屬性前先逸出，避免含雙引號時打斷屬性語法
+    // 自由市場人氣門檻：選手素質(能力值總和+潛力)越高，需要的團隊人氣門檻越高才能簽約，讓團隊人氣真正影響能簽到什麼等級的選手
+    window.calcFaRequiredPop = function(w) {
+        let statSum = (w.str||0)+(w.spd||0)+(w.tech||0)+(w.end||0)+(w.mnt||0); // 約100~500
+        let potentialBonus = {S:25, A:15, B:5, C:0, D:0}[w.potential] || 0;
+        let threshold = Math.round((statSum - 100) / 400 * 55) + potentialBonus;
+        return Math.max(0, Math.min(95, threshold));
+    };
+    window.getMyTeamPop = function() {
+        let myFaction = GS.factions.find(f => f.id === 0);
+        return myFaction ? (myFaction.pop||0) : 0;
+    };
+
     window.escAttr = function(s) {
         return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
     };
@@ -1885,6 +1897,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if(window.GS.schedule === undefined) { window.GS.schedule = []; if(window.generateSeasonSchedule) window.generateSeasonSchedule(); }
             if(window.GS.grandFinale === undefined) window.GS.grandFinale = null;
             if(window.GS._equipmentTempFixWeeks === undefined) window.GS._equipmentTempFixWeeks = 0;
+            if(window.GS.coaches === undefined) window.GS.coaches = [];
             (window.GS.coaches||[]).forEach(c => { if(c.coachXp === undefined) { c.coachXp = 0; c.coachLevel = 1; } }); // 舊存檔教練補上成長系統欄位(不依賴玩家是否切換過教練分頁)
             if(window.GS.achievements === undefined) window.GS.achievements = [];
             if(window.GS.seasonGoals === undefined) { window.GS.seasonGoals = []; if(window.generateSeasonGoals) window.generateSeasonGoals(); }
@@ -1962,6 +1975,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(GS.schedule === undefined) { GS.schedule = []; if(window.generateSeasonSchedule) window.generateSeasonSchedule(); }
         if(GS.grandFinale === undefined) GS.grandFinale = null;
         if(GS._equipmentTempFixWeeks === undefined) GS._equipmentTempFixWeeks = 0;
+        if(GS.coaches === undefined) GS.coaches = [];
         (GS.coaches||[]).forEach(c => { if(c.coachXp === undefined) { c.coachXp = 0; c.coachLevel = 1; } });
         if(GS.achievements === undefined) GS.achievements = [];
         if(GS.seasonGoals === undefined) { GS.seasonGoals = []; if(window.generateSeasonGoals) window.generateSeasonGoals(); }
@@ -2083,21 +2097,30 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`).join('');
         document.getElementById('roster-grid').innerHTML = rosterHTML || "<p style='font-size:1.6rem;'>尚無選手</p>";
 
-        let faHTML = GS.fa.map((w) => `
-            <div class="card" style="border-color:var(--gold);">
+        let myTeamPop = window.getMyTeamPop ? window.getMyTeamPop() : 0;
+        let faHTML = GS.fa.map((w) => {
+            let requiredPop = window.calcFaRequiredPop ? window.calcFaRequiredPop(w) : 0;
+            let isLocked = myTeamPop < requiredPop;
+            let lockHtml = requiredPop > 0
+                ? `<div class="stat-row"><span style="color:${isLocked?'#ff6b6b':'#7CFC00'}; font-weight:bold;">${isLocked?'🔒':'🔓'} 需團隊人氣達 ${requiredPop}（我方目前 ${myTeamPop}）</span></div>`
+                : '';
+            return `
+            <div class="card" style="border-color:${isLocked?'var(--steel)':'var(--gold)'}; ${isLocked?'opacity:0.75;':''}">
                 <img src="${window.escAttr(w.img)}" class="wrestler-img" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
                 <h3 style="color:var(--gold); font-size:2.4rem; margin-bottom:10px;">${w.name} <span style="font-size:1.8rem; color:var(--neon-pink); font-weight:900;">${window.wrestlerLevel(w)}</span> <span style="font-size:1.4rem; color:var(--muted);">(${w.age}歲)</span></h3>
                 <div class="stat-row"><span>🌟 人氣: ${w.pop}</span><span>💪 力量:${w.str}</span></div>
                 <div class="stat-row"><span>⚡ 速度:${w.spd}</span><span>🎯 技巧:${w.tech}</span></div>
                 <div class="stat-row"><span style="color:var(--neon-blue); font-weight:bold;">簽約金: $${(w.salary*4).toLocaleString()}萬</span></div>
                 <div class="stat-row"><span style="color:#ff6b81;">💥 絕招: ${w.signatureMove ? w.signatureMove.move : '未綁定'}</span><span>🏅 ${w.w||0}勝${w.l||0}敗</span></div>
+                ${lockHtml}
                 <div style="display:flex; gap:8px; margin-top:15px;">
                     <button class="btn btn-sec" style="flex:1; font-size:1.4rem;" onclick="window.showWrestlerProfile('${w.id}')">📇 詳細資料</button>
                     <button class="btn btn-sec" style="flex:1; font-size:1.4rem;" onclick="window.openEditWrestler('fa', ${w.id})">✏️ 編輯資料</button>
-                    <button class="btn" style="flex:1; font-size:1.4rem;" onclick="window.signWrestler(${w.id})">重金簽約</button>
+                    <button class="btn" style="flex:1; font-size:1.4rem; ${isLocked?'opacity:0.4; cursor:not-allowed;':''}" ${isLocked?'disabled':''} onclick="window.signWrestler(${w.id})">${isLocked?'🔒 人氣不足':'重金簽約'}</button>
                 </div>
                 <button class="btn btn-danger" style="width:100%; margin-top:8px; font-size:1.3rem; padding:8px;" onclick="window.deleteFaWrestler(${w.id})">🗑️ 永久刪除（不可復原）</button>
-            </div>`).join('');
+            </div>`;
+        }).join('');
         document.getElementById('market-grid').innerHTML = faHTML || "<p style='font-size:1.6rem;'>市場上暫無選手</p>";
 
         let coachHTML = GS.coaches.map((c) => {
@@ -2398,6 +2421,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if((window.getActiveRosterCount?window.getActiveRosterCount():GS.roster.length) >= 20) return showSysMsg("招募失敗", "陣容已達 20 人上限！", true);
         let w = GS.fa.find(x => x.id === id);
         if(!w) return showSysMsg("錯誤", "找不到該選手，可能已被異動！", true);
+        let requiredPop = window.calcFaRequiredPop ? window.calcFaRequiredPop(w) : 0;
+        let myTeamPop = window.getMyTeamPop ? window.getMyTeamPop() : 0;
+        if(myTeamPop < requiredPop) return showSysMsg("人氣不足", `${w.name} 需要團隊人氣達到 ${requiredPop} 才願意加入，目前我方人氣僅 ${myTeamPop}，無法簽約！請先提升團隊人氣。`, true);
         if(!GS.pendingSignings) GS.pendingSignings = [];
         if(GS.pendingSignings.some(p => p.wrestlerId === id)) return showSysMsg("已在接洽中", "這位選手已經在簽約流程中了，請耐心等候結果。", true);
 
@@ -4905,7 +4931,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div><label style="color:var(--text-main); font-size:1.4rem;">大頭照網址</label><input type="text" id="c-img" placeholder="直接貼上圖片網址 (留空則隨機)"></div>
                 <div style="grid-column: 1 / -1; background:rgba(0,0,0,0.3); border-radius:8px; padding:15px;">
-                    <p style="font-size:1.3rem; color:var(--muted); margin-bottom:10px;">能力值無法直接輸入，只能重新隨機（合理範圍，不會出現極端值）：</p>
+                    <p style="font-size:1.3rem; color:var(--muted); margin-bottom:10px;">能力值無法直接輸入，只能重新隨機（合理範圍，不會出現極端值）；人氣值會隨能力值自動連動計算，無法單獨更改或隨機：</p>
                     <div class="stat-row" style="font-size:1.5rem; margin-bottom:10px; flex-wrap:wrap;">
                         <span>🛡️耐:<span id="c-end-display"></span></span>
                         <span>⚡速:<span id="c-spd-display"></span></span>
@@ -4913,10 +4939,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span>🎯技:<span id="c-tech-display"></span></span>
                         <span>🧠精:<span id="c-mnt-display"></span></span>
                         <span style="color:var(--gold); font-weight:bold;">⭐等級:<span id="c-level-display"></span></span>
+                        <span style="color:var(--neon-pink); font-weight:bold;">🌟人氣:<span id="c-pop-display"></span></span>
                     </div>
-                    <button type="button" class="btn btn-sec" style="width:100%; font-size:1.3rem; padding:8px;" id="btn-reroll-create-stats">🎲 重新隨機能力值</button>
+                    <button type="button" class="btn btn-sec" style="width:100%; font-size:1.3rem; padding:8px;" id="btn-reroll-create-stats">🎲 重新隨機能力值（人氣值會一併連動重新計算）</button>
                 </div>
-                <div><label style="color:var(--neon-pink); font-size:1.4rem; font-weight:bold;">🌟 人氣 (1-100)</label><input type="number" id="c-pop" value="50" min="1" max="100"></div>
                 <div style="grid-column: 1 / -1;"><label style="color:var(--text-main); font-size:1.4rem;">投入目標</label>
                     <select id="c-pool" style="font-size:1.4rem; padding:12px;">
                         <option value="roster">直接加入我方陣容</option>
@@ -4946,7 +4972,12 @@ document.addEventListener('DOMContentLoaded', () => {
         sigCreateSelect.innerHTML = `<option value="">🎲 隨機分配</option>` + window.FINISHER_POOL.map(f => `<option value="${f.move}">${f.move}</option>`).join('');
     }
 
-    // 能力值改為唯讀+重新隨機(合理範圍)，初始先隨機一組
+    // 能力值改為唯讀+重新隨機(合理範圍)，初始先隨機一組；人氣值依能力值總和自動連動計算，無法單獨更改或隨機
+    window.calcPopFromStats = function(s) {
+        let statSum = (s.str||0)+(s.spd||0)+(s.tech||0)+(s.end||0)+(s.mnt||0); // randomReasonableStats()產生的合理範圍約150~440
+        let pop = Math.round(20 + (statSum - 150) / 290 * 60); // 映射到20~80的人氣區間
+        return Math.max(15, Math.min(90, pop));
+    };
     window.refreshCreateStatsDisplay = function() {
         let s = window._createStatsPreview;
         if(!s) return;
@@ -4956,6 +4987,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('c-tech-display').innerText = s.tech;
         document.getElementById('c-mnt-display').innerText = s.mnt;
         document.getElementById('c-level-display').innerText = window.wrestlerLevel(s);
+        let popDisplay = document.getElementById('c-pop-display');
+        if(popDisplay) popDisplay.innerText = window.calcPopFromStats(s);
     };
     window._createStatsPreview = window.randomReasonableStats();
     window.refreshCreateStatsDisplay();
@@ -4975,9 +5008,9 @@ document.addEventListener('DOMContentLoaded', () => {
             let m = document.getElementById('c-img').value;
             if(!n) return window.showSysMsg("錯誤", "請務必為選手命名！", true);
 
-            // 能力值來自「重新隨機」的預覽值，不再手動輸入
+            // 能力值來自「重新隨機」的預覽值，不再手動輸入；人氣值依能力值連動計算，不可單獨更改
             let stats = window._createStatsPreview || window.randomReasonableStats();
-            let customPop = parseInt(document.getElementById('c-pop').value) || 50;
+            let customPop = window.calcPopFromStats(stats);
             
             let sigPick = document.getElementById('c-signature') ? document.getElementById('c-signature').value : '';
             let chosenSignature = sigPick && window.FINISHER_POOL ? window.FINISHER_POOL.find(f => f.move === sigPick) : null;
@@ -8121,6 +8154,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(imported.schedule === undefined) imported.schedule = [];
                     if(imported.grandFinale === undefined) imported.grandFinale = null;
                     if(imported._equipmentTempFixWeeks === undefined) imported._equipmentTempFixWeeks = 0;
+                    if(imported.coaches === undefined) imported.coaches = [];
                     (imported.coaches||[]).forEach(c => { if(c.coachXp === undefined) { c.coachXp = 0; c.coachLevel = 1; } });
                     if(imported.achievements === undefined) imported.achievements = [];
                     if(imported.seasonGoals === undefined) imported.seasonGoals = [];
