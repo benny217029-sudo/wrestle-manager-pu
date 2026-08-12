@@ -360,7 +360,7 @@ body { overflow-x: hidden; }
 .ceremony-quote::after { content:''; position:absolute; bottom:-10px; left:30px; border-width:10px 8px 0 8px; border-style:solid; border-color:#fff transparent transparent transparent; }
 .ceremony-stat-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.1); font-size:1.4rem; }
 .ceremony-stat-row .label { color:var(--muted); }
-.ceremony-stat-row .value { font-weight:bold; color:var(--gold); }.wp-portrait { width:160px; height:200px; object-fit:cover; border-radius:12px; border:3px solid var(--gold); box-shadow:0 10px 25px rgba(0,0,0,0.5); flex-shrink:0; }
+.ceremony-stat-row .value { font-weight:bold; color:var(--gold); }.wp-portrait { width:220px; height:275px; object-fit:cover; border-radius:12px; border:3px solid var(--gold); box-shadow:0 10px 25px rgba(0,0,0,0.5); flex-shrink:0; }
 </style>
 </head>
 <body>
@@ -458,17 +458,19 @@ body { overflow-x: hidden; }
                 <div><label>年齡</label><input type="number" id="e-age" disabled></div>
                 <div style="grid-column: 1 / 3;"><label>大頭照網址</label><input type="text" id="e-img"></div>
                 <div style="grid-column: 1 / 3; background:rgba(0,0,0,0.3); border-radius:8px; padding:12px;">
-                    <p style="font-size:1.3rem; color:var(--muted); margin-bottom:10px;">🖼️ 頭像顯示位置調整（圖片主體沒有置中時可以拖曳調整）：</p>
+                    <p style="font-size:1.3rem; color:var(--muted); margin-bottom:10px;">🖼️ 頭像顯示位置與縮放調整（圖片主體沒有置中或裁切太緊時可以調整）：</p>
                     <div style="display:flex; gap:15px; align-items:center;">
                         <img id="e-img-preview" style="width:100px; height:100px; border-radius:8px; object-fit:cover; border:2px solid var(--gold); flex-shrink:0; background:#000;">
                         <div style="flex:1;">
                             <label style="font-size:1.2rem; margin-bottom:2px; display:block;">↔️ 水平位置：<span id="e-imgpos-x-val">50</span>%</label>
-                            <input type="range" id="e-imgpos-x" min="0" max="100" value="50" style="width:100%; margin-bottom:10px;">
+                            <input type="range" id="e-imgpos-x" min="0" max="100" value="50" style="width:100%; margin-bottom:8px;">
                             <label style="font-size:1.2rem; margin-bottom:2px; display:block;">↕️ 垂直位置：<span id="e-imgpos-y-val">50</span>%</label>
-                            <input type="range" id="e-imgpos-y" min="0" max="100" value="50" style="width:100%;">
+                            <input type="range" id="e-imgpos-y" min="0" max="100" value="50" style="width:100%; margin-bottom:8px;">
+                            <label style="font-size:1.2rem; margin-bottom:2px; display:block;">🔍 縮放大小：<span id="e-imgscale-val">100</span>%</label>
+                            <input type="range" id="e-imgscale" min="50" max="250" value="100" style="width:100%;">
                         </div>
                     </div>
-                    <button type="button" class="btn btn-sec" style="width:100%; margin-top:10px; font-size:1.2rem; padding:8px;" id="btn-reset-imgpos">↺ 重設為置中</button>
+                    <button type="button" class="btn btn-sec" style="width:100%; margin-top:10px; font-size:1.2rem; padding:8px;" id="btn-reset-imgpos">↺ 重設為置中・原始大小</button>
                 </div>
                 <div><label>❤️ 體力</label><input type="number" id="e-hp"></div>
                 <div><label>⭐ 等級</label><input type="text" id="e-level" disabled style="font-weight:bold; color:var(--gold);"></div>
@@ -1302,7 +1304,7 @@ document.addEventListener('DOMContentLoaded', () => {
             id: Date.now() + R(100000), name: (isFA ? "[FA] " : "") + window.getUniqueWrestlerName(),
             age: 17 + R(4), stamina: 100, // 選手生成年齡統一改成17~20歲隨機產生
             declineStartAge: 25 + R(8), // 成長衰退系統：每位選手隨機從25~32歲之間某個年齡開始衰退，取代原本全員固定28歲
-            imgPosX: 50, imgPosY: 50, // 頭像顯示位置(預設置中)，可在編輯選手資料時調整
+            imgPosX: 50, imgPosY: 50, imgScale: 1, // 頭像顯示位置與縮放(預設置中、不縮放)，可在編輯選手資料時調整
             str: base+R(20), spd: base+R(20), tech: base+R(20), mnt: base+R(20), end: base+R(20),
             pop: 30+R(40), loyalty: 60+R(40), salary: Math.floor(base*0.3)+R(20),
             img: `https://api.dicebear.com/7.x/avataaars/svg?seed=${Math.random()}`,
@@ -1336,6 +1338,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let x = (w && w.imgPosX !== undefined) ? w.imgPosX : 50;
         let y = (w && w.imgPosY !== undefined) ? w.imgPosY : 50;
         return { x, y };
+    };
+    // 安全取得頭像縮放比例：預設1.0(不縮放)，範圍建議0.5~2.5
+    window.getImgScale = function(w) {
+        return (w && w.imgScale !== undefined && w.imgScale !== null) ? w.imgScale : 1;
     };
 
     // 傷兵名單(IR)系統：長期傷病選手可放入IR暫時不佔陣容名額，讓玩家能簽入替補選手
@@ -2198,7 +2204,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let rosterHTML = GS.roster.map((w) => `
             <div class="card" style="${w.readyForRetirementMatch ? 'border-color:var(--gold);' : ''}">
-                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%;" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
+                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
                 <h3 style="color:var(--neon-pink); font-size:2.4rem; margin-bottom:2px;">${w.name} <span style="font-size:1.8rem; color:var(--gold); font-weight:900;">${window.wrestlerLevel(w)}</span> <span style="font-size:1.4rem; color:var(--muted);">(${w.age}歲)</span></h3>
                 ${window.getWrestlerTitle && window.getWrestlerTitle(w) ? `<p style="color:var(--gold); font-size:1.2rem; font-weight:bold; margin-bottom:8px;">「${window.getWrestlerTitle(w)}」</p>` : '<div style="margin-bottom:10px;"></div>'}
                 <div class="stat-row"><span>❤️ 體力: ${w.stamina}</span><span>🌟 人氣: ${w.pop}</span><span style="color:${w.condition==='好調'?'#7CFC00':(w.condition==='不好調'?'#ff6b6b':'var(--muted)')};">${w.condition==='好調'?'📈':(w.condition==='不好調'?'📉':'➖')} ${w.condition||'普通'}</span></div>
@@ -2226,7 +2232,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 : '';
             return `
             <div class="card" style="border-color:${isLocked?'var(--steel)':'var(--gold)'}; ${isLocked?'opacity:0.75;':''}">
-                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%;" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
+                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
                 <h3 style="color:var(--gold); font-size:2.4rem; margin-bottom:10px;">${w.name} <span style="font-size:1.8rem; color:var(--neon-pink); font-weight:900;">${window.wrestlerLevel(w)}</span> <span style="font-size:1.4rem; color:var(--muted);">(${w.age}歲)</span></h3>
                 <div class="stat-row"><span>🌟 人氣: ${w.pop}</span><span>💪 力量:${w.str}</span></div>
                 <div class="stat-row"><span>⚡ 速度:${w.spd}</span><span>🎯 技巧:${w.tech}</span></div>
@@ -4249,8 +4255,16 @@ function draftCompetitorCount(w) {
         
         let h1="", h2=""; 
         for(let i=0; i<count; i++) { 
-            h1 += `<div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;"><img id="t1-p${i}-avatar" style="width:36px; height:36px; border-radius:50%; object-fit:cover; border:2px solid var(--neon-pink); flex-shrink:0;"><select id="t1-p${i}" style="font-size:1.4rem; padding:8px; flex:1;" onchange="window.updateBookingAvatar('t1-p${i}', 't1-p${i}-avatar', window.GS.roster)">${pO || '<option value="">無人可用</option>'}</select></div>`;
-            h2 += `<div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;"><img id="t2-p${i}-avatar" style="width:36px; height:36px; border-radius:50%; object-fit:cover; border:2px solid var(--neon-blue); flex-shrink:0;"><select id="t2-p${i}" style="font-size:1.4rem; padding:8px; flex:1;" onchange="window.updateBookingAvatar('t2-p${i}', 't2-p${i}-avatar', window._bookingPool2)">${eO || '<option value="">無人可用</option>'}</select></div>`;
+            h1 += `<div style="display:flex; flex-direction:column; align-items:center; gap:6px; margin-bottom:15px; background:rgba(0,0,0,0.3); padding:12px; border-radius:8px;">
+                <img id="t1-p${i}-avatar" style="width:72px; height:72px; border-radius:50%; object-fit:cover; border:3px solid var(--neon-pink);">
+                <p id="t1-p${i}-name" style="font-size:1.4rem; color:var(--gold); font-weight:bold; text-align:center; margin:0; min-height:1.4em;">-</p>
+                <select id="t1-p${i}" style="font-size:1.3rem; padding:6px; width:100%;" onchange="window.updateBookingAvatar('t1-p${i}', 't1-p${i}-avatar', window.GS.roster, 't1-p${i}-name')">${pO || '<option value="">無人可用</option>'}</select>
+            </div>`;
+            h2 += `<div style="display:flex; flex-direction:column; align-items:center; gap:6px; margin-bottom:15px; background:rgba(0,0,0,0.3); padding:12px; border-radius:8px;">
+                <img id="t2-p${i}-avatar" style="width:72px; height:72px; border-radius:50%; object-fit:cover; border:3px solid var(--neon-blue);">
+                <p id="t2-p${i}-name" style="font-size:1.4rem; color:var(--gold); font-weight:bold; text-align:center; margin:0; min-height:1.4em;">-</p>
+                <select id="t2-p${i}" style="font-size:1.3rem; padding:6px; width:100%;" onchange="window.updateBookingAvatar('t2-p${i}', 't2-p${i}-avatar', window._bookingPool2, 't2-p${i}-name')">${eO || '<option value="">無人可用</option>'}</select>
+            </div>`;
         }
         window._bookingPool2 = pool2; // 暫存目前的對手池，供頭像更新函式查找選手資料
         let t1Slots = document.getElementById('team1-slots');
@@ -4258,26 +4272,33 @@ function draftCompetitorCount(w) {
         if(t1Slots) t1Slots.innerHTML = h1; 
         if(t2Slots) t2Slots.innerHTML = h2;
 
-        // 渲染完成後，立即刷新每個頭像預覽(預設選中第一位選手，頭像也要跟著正確顯示，不能等玩家手動切換選單才出現)
+        // 渲染完成後，立即刷新每個頭像與名字預覽(預設選中第一位選手，不能等玩家手動切換選單才出現)
         for(let i=0; i<count; i++) {
-            window.updateBookingAvatar(`t1-p${i}`, `t1-p${i}-avatar`, GS.roster);
-            window.updateBookingAvatar(`t2-p${i}`, `t2-p${i}-avatar`, pool2);
+            window.updateBookingAvatar(`t1-p${i}`, `t1-p${i}-avatar`, GS.roster, `t1-p${i}-name`);
+            window.updateBookingAvatar(`t2-p${i}`, `t2-p${i}-avatar`, pool2, `t2-p${i}-name`);
         }
     };
     
-    // 依下拉選單目前選中的index，更新對應的頭像img
-    window.updateBookingAvatar = function(selectId, imgId, pool) {
+    // 依下拉選單目前選中的index，更新對應的頭像img與名字文字
+    window.updateBookingAvatar = function(selectId, imgId, pool, nameId) {
         let sel = document.getElementById(selectId);
         let img = document.getElementById(imgId);
         if(!sel || !img || !pool) return;
         let idx = parseInt(sel.value);
         let w = pool[idx];
+        let nameEl = nameId ? document.getElementById(nameId) : null;
         if(w) {
             img.src = w.img;
+            let pos = window.getImgPos ? window.getImgPos(w) : {x:50, y:50};
+            let scale = window.getImgScale ? window.getImgScale(w) : 1;
+            img.style.objectPosition = `${pos.x}% ${pos.y}%`;
+            img.style.transform = `scale(${scale})`;
             img.onerror = function(){ this.onerror=null; this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}`; };
             img.style.display = 'block';
+            if(nameEl) nameEl.innerText = w.name;
         } else {
             img.style.display = 'none';
+            if(nameEl) nameEl.innerText = '無人可用';
         }
     };
     
@@ -4354,6 +4375,7 @@ function draftCompetitorCount(w) {
             if(w && w.levelHistory === undefined) w.levelHistory = []; // 舊存檔選手補上成長曲線歷史(空陣列，之後會自然開始累積)
             if(w && w.declineStartAge === undefined) w.declineStartAge = 25 + R(8); // 舊存檔選手補上隨機衰退起始年齡(25~32歲)
             if(w && w.imgPosX === undefined) { w.imgPosX = 50; w.imgPosY = 50; } // 舊存檔選手補上頭像位置欄位(預設置中)
+            if(w && (w.imgScale === undefined || w.imgScale === null)) w.imgScale = 1; // 舊存檔選手補上頭像縮放欄位(預設不縮放)
         };
         (GS.roster||[]).forEach(fillIfMissing);
         (GS.fa||[]).forEach(fillIfMissing);
@@ -5348,13 +5370,16 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('e-hp').value = w.stamina;
         window.refreshEditStatsDisplay();
 
-        // 頭像位置調整：載入選手目前的位置設定(預設50/50置中)，並初始化即時預覽
+        // 頭像位置與縮放調整：載入選手目前的設定(預設位置50/50置中、縮放100%)，並初始化即時預覽
         let posX = (w.imgPosX !== undefined) ? w.imgPosX : 50;
         let posY = (w.imgPosY !== undefined) ? w.imgPosY : 50;
+        let scalePercent = (w.imgScale !== undefined && w.imgScale !== null) ? Math.round(w.imgScale * 100) : 100;
         document.getElementById('e-imgpos-x').value = posX;
         document.getElementById('e-imgpos-y').value = posY;
         document.getElementById('e-imgpos-x-val').innerText = posX;
         document.getElementById('e-imgpos-y-val').innerText = posY;
+        document.getElementById('e-imgscale').value = scalePercent;
+        document.getElementById('e-imgscale-val').innerText = scalePercent;
         window.updateEditImgPreview();
 
         let sigSelect = document.getElementById('e-signature');
@@ -5385,8 +5410,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let imgUrl = document.getElementById('e-img').value.trim();
         let posX = document.getElementById('e-imgpos-x').value;
         let posY = document.getElementById('e-imgpos-y').value;
+        let scalePercent = document.getElementById('e-imgscale').value;
         preview.src = window.escAttr ? window.escAttr(imgUrl) : imgUrl;
         preview.style.objectPosition = `${posX}% ${posY}%`;
+        preview.style.transform = `scale(${scalePercent/100})`;
         preview.onerror = function(){ this.onerror=null; this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(document.getElementById('e-name').value||'?')}`; };
     };
 
@@ -5402,12 +5429,19 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('e-imgpos-y-val').innerText = this.value;
         window.updateEditImgPreview();
     });
+    let editImgScale = document.getElementById('e-imgscale');
+    if(editImgScale) editImgScale.addEventListener('input', function() {
+        document.getElementById('e-imgscale-val').innerText = this.value;
+        window.updateEditImgPreview();
+    });
     let btnResetImgPos = document.getElementById('btn-reset-imgpos');
     if(btnResetImgPos) btnResetImgPos.addEventListener('click', function() {
         document.getElementById('e-imgpos-x').value = 50;
         document.getElementById('e-imgpos-y').value = 50;
         document.getElementById('e-imgpos-x-val').innerText = 50;
         document.getElementById('e-imgpos-y-val').innerText = 50;
+        document.getElementById('e-imgscale').value = 100;
+        document.getElementById('e-imgscale-val').innerText = 100;
         window.updateEditImgPreview();
     });
 
@@ -5452,6 +5486,8 @@ document.addEventListener('DOMContentLoaded', () => {
             let parsedY = parseInt(document.getElementById('e-imgpos-y').value);
             w.imgPosX = isNaN(parsedX) ? 50 : parsedX;
             w.imgPosY = isNaN(parsedY) ? 50 : parsedY;
+            let parsedScale = parseInt(document.getElementById('e-imgscale').value);
+            w.imgScale = isNaN(parsedScale) ? 1 : (parsedScale / 100);
 
             // 能力值只能透過「重新隨機」變更，直接套用預覽值
             if(window._editStatsPreview) {
@@ -5495,7 +5531,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let grid = document.getElementById('npc-r-grid');
         grid.innerHTML = f.roster.map(w => `
             <div class="card">
-                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="height:140px; object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%;" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
+                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="height:140px; object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
                 <h4 style="color:var(--gold); font-size:1.8rem; margin-bottom:8px;">${w.name} <span style="font-size:1.4rem; color:var(--neon-blue); font-weight:900;">${window.wrestlerLevel(w)}</span> <span style="font-size:1.2rem; color:var(--muted);">(${w.age}歲)</span></h4>
                 <div class="stat-row"><span>💪 力:${w.str}</span><span>⚡ 速:${w.spd}</span><span>🎯 技:${w.tech}</span></div>
                 <div class="stat-row"><span>🛡️ 耐:${w.end}</span><span>🧠 精:${w.mnt}</span><span>🌟 人氣:${w.pop}</span></div>
@@ -7377,7 +7413,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('all-wrestlers-grid').innerHTML = all.map(({w, team}) => `
             <div class="card" style="cursor:pointer;" onclick="window.showWrestlerProfile('${w.id}')">
-                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="height:120px; object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%;" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
+                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="height:120px; object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
                 <h4 style="font-size:1.6rem; color:var(--gold);">${w.name} <span style="font-size:1.4rem; color:var(--neon-blue); font-weight:900;">${window.wrestlerLevel(w)}</span></h4>
                 <p style="font-size:1.2rem; color:var(--muted);">${team}（${w.age}歲）</p>
                 <p style="font-size:1.2rem;">🏅 ${w.w||0}勝${w.l||0}敗</p>
@@ -7411,6 +7447,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('wp-img').src = w.img;
         document.getElementById('wp-img').style.objectPosition = `${window.getImgPos(w).x}% ${window.getImgPos(w).y}%`;
+        document.getElementById('wp-img').style.transform = `scale(${window.getImgScale(w)})`;
         document.getElementById('wp-img').onerror = function(){ this.onerror=null; this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}`; };
         document.getElementById('wp-name').innerText = w.name;
         document.getElementById('wp-level').innerText = window.wrestlerLevel(w);
