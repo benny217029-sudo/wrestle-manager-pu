@@ -178,7 +178,7 @@ select:focus, input:focus {
 }
 select:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 .stat-row { display: flex; justify-content: space-between; font-size: 1.2rem; margin-bottom: 6px; border-bottom: 1px dashed rgba(212,175,55,0.2); padding-bottom: 3px; color: var(--text-main); }
-.wrestler-img { width: 100%; height: 200px; object-fit: cover; border-radius: 4px 14px 4px 4px; background: #000; margin-bottom: 15px; border: 2px solid var(--border); }
+.wrestler-img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 4px 14px 4px 4px; background: #000; margin-bottom: 15px; border: 2px solid var(--border); }
 .badge { padding: 3px 8px; border-radius: 3px; font-size: 1rem; font-weight: bold; margin-left: 8px; color: #000; }
 
 /* 彈窗系統：海報質感 */
@@ -342,6 +342,10 @@ body { overflow-x: hidden; }
     /* 按鈕列在窄螢幕上改直排，避免擠爆 */
     #tab-president .grid > .card > div[style*="display:flex"] { flex-direction: column; }
     #venue-preview-img { width: 100%; height: auto; aspect-ratio: 220/135; }
+
+    /* VS對戰選人區塊在窄螢幕改成上下堆疊，避免隊伍名稱過長導致溢出跑版 */
+    #vs-booking-panel { flex-direction: column; }
+    #vs-booking-panel > div[style*="font-size:4rem"] { padding: 10px 0 !important; transform: rotate(90deg); }
 }
 
 @media (max-width: 480px) {
@@ -444,7 +448,7 @@ body { overflow-x: hidden; }
             <button type="button" onclick="window.closeModal('npc-roster-overlay')" style="position:absolute; top:12px; left:16px; background:rgba(0,0,0,0.6); border:2px solid var(--gold); color:var(--gold); width:38px; height:38px; border-radius:50%; font-size:1.6rem; font-weight:900; cursor:pointer; z-index:5; line-height:1;">✕</button>
             <h2 id="npc-r-title" style="color:var(--neon-blue); font-size:2.8rem; padding-left:50px;"></h2>
             <div id="npc-r-actions" style="display:flex; gap:10px; margin-bottom:15px;"></div>
-            <div class="grid" id="npc-r-grid" style="text-align:left; max-height:55vh; overflow-y:auto; padding-right:15px; margin-bottom:20px;"></div>
+            <div class="grid" id="npc-r-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); text-align:left; max-height:55vh; overflow-y:auto; padding-right:15px; margin-bottom:20px;"></div>
             <button class="btn btn-sec" style="width:100%; padding:15px; font-size:1.6rem;" id="btn-close-npc">關閉</button>
         </div>
     </div>
@@ -454,9 +458,9 @@ body { overflow-x: hidden; }
         <div class="modal-box" style="max-width: 650px; text-align: left;">
             <h2 style="color:var(--gold); margin-bottom:20px;">✏️ 編輯選手資料</h2>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                <div><label>姓名</label><input type="text" id="e-name"></div>
+                <div><label>姓名</label><div style="display:flex; gap:8px;"><input type="text" id="e-name" style="flex:1;"><button type="button" class="btn btn-sec" id="btn-random-ename" style="padding:8px 12px; font-size:1.3rem; flex-shrink:0;">🎲</button></div></div>
                 <div><label>年齡</label><input type="number" id="e-age" disabled></div>
-                <div style="grid-column: 1 / 3;"><label>大頭照網址</label><input type="text" id="e-img"></div>
+                <div style="grid-column: 1 / 3;"><label>大頭照網址</label><div style="display:flex; gap:8px;"><input type="text" id="e-img" style="flex:1;"><button type="button" class="btn btn-sec" id="btn-random-eimg" style="padding:8px 12px; font-size:1.3rem; flex-shrink:0;">🎲</button></div></div>
                 <div style="grid-column: 1 / 3; background:rgba(0,0,0,0.3); border-radius:8px; padding:12px;">
                     <p style="font-size:1.3rem; color:var(--muted); margin-bottom:10px;">🖼️ 頭像顯示位置與縮放調整（圖片主體沒有置中或裁切太緊時可以調整）：</p>
                     <div style="display:flex; gap:15px; align-items:center;">
@@ -513,7 +517,7 @@ body { overflow-x: hidden; }
     <div id="all-wrestlers-overlay" class="overlay">
         <div class="modal-box" style="max-width:1100px; width:95vw;">
             <h2 style="color:var(--gold); font-size:2.6rem; margin-bottom:15px;">📋 全選手總覽（依能力排序）</h2>
-            <div id="all-wrestlers-grid" class="grid" style="max-height:70vh; overflow-y:auto;"></div>
+            <div id="all-wrestlers-grid" class="grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); max-height:70vh; overflow-y:auto;"></div>
             <button class="btn btn-sec" style="width:100%; margin-top:15px; padding:15px; font-size:1.6rem;" onclick="window.closeModal('all-wrestlers-overlay')">關閉</button>
         </div>
     </div>
@@ -965,14 +969,14 @@ body { overflow-x: hidden; }
                     </div>
                 </div>
 
-                <div style="display:flex; justify-content:space-between; gap:20px; background: rgba(0,0,0,0.5); padding: 25px; border-radius: 12px; border:1px solid rgba(255,255,255,0.1);">
-                    <div style="flex:1;">
-                        <h4 style="color:var(--neon-pink); margin-bottom:15px; font-size:2rem; text-align:center;">主場隊伍 (我方陣容)</h4>
+                <div id="vs-booking-panel" style="display:flex; justify-content:space-between; gap:20px; background: rgba(0,0,0,0.5); padding: 25px; border-radius: 12px; border:1px solid rgba(255,255,255,0.1);">
+                    <div style="flex:1; min-width:0;">
+                        <h4 style="color:var(--neon-pink); margin-bottom:15px; font-size:2rem; text-align:center; word-break:break-word;">主場隊伍 (我方陣容)</h4>
                         <div id="team1-slots"></div>
                     </div>
-                    <div style="display:flex; align-items:center; font-size:4rem; font-weight:bold; font-style:italic; padding:0 20px;">VS</div>
-                    <div style="flex:1;">
-                        <h4 id="t2-title" style="color:var(--gold); margin-bottom:15px; font-size:2rem; text-align:center;">客場對手</h4>
+                    <div style="display:flex; align-items:center; font-size:4rem; font-weight:bold; font-style:italic; padding:0 20px; flex-shrink:0;">VS</div>
+                    <div style="flex:1; min-width:0;">
+                        <h4 id="t2-title" style="color:var(--gold); margin-bottom:15px; font-size:2rem; text-align:center; word-break:break-word;">客場對手</h4>
                         <div id="team2-slots"></div>
                     </div>
                 </div>
@@ -1124,6 +1128,22 @@ document.addEventListener('DOMContentLoaded', () => {
         { icon: '⭐', color: '#b7791f' }, { icon: '🐍', color: '#22543d' }, { icon: '👑', color: '#975a16' },
         { icon: '💀', color: '#2d3748' }, { icon: '🌹', color: '#97266d' }, { icon: '⚡', color: '#805ad5' },
         { icon: '🦂', color: '#5a3e1b' }, { icon: '🐉', color: '#1a4731' },
+        { icon: '🐻', color: '#6b4423' }, { icon: '🐘', color: '#4a5568' }, { icon: '🦈', color: '#2c5282' },
+        { icon: '🦉', color: '#744210' }, { icon: '🐊', color: '#22543d' }, { icon: '🦇', color: '#2d3748' },
+        { icon: '🦖', color: '#9b2c2c' }, { icon: '🐙', color: '#702459' }, { icon: '🦄', color: '#b83280' },
+        { icon: '🐎', color: '#975a16' }, { icon: '🐗', color: '#5a3e1b' }, { icon: '🦏', color: '#4a5568' },
+        { icon: '🦍', color: '#2d3748' }, { icon: '🐅', color: '#c05621' }, { icon: '🦚', color: '#2b6cb0' },
+        { icon: '🐬', color: '#2c5282' }, { icon: '🦔', color: '#744210' }, { icon: '🐢', color: '#276749' },
+        { icon: '🌟', color: '#b7791f' }, { icon: '💎', color: '#2b6cb0' }, { icon: '🔱', color: '#22543d' },
+        { icon: '🗡️', color: '#4a5568' }, { icon: '🏹', color: '#744210' }, { icon: '🪓', color: '#5a3e1b' },
+        { icon: '🔨', color: '#975a16' }, { icon: '⚓', color: '#2c5282' }, { icon: '🎯', color: '#c53030' },
+        { icon: '🌊', color: '#2b6cb0' }, { icon: '❄️', color: '#2c5282' }, { icon: '☄️', color: '#c05621' },
+        { icon: '🌈', color: '#805ad5' }, { icon: '🌋', color: '#9b2c2c' }, { icon: '🎪', color: '#b83280' },
+        { icon: '🎲', color: '#276749' }, { icon: '🃏', color: '#2d3748' }, { icon: '🔮', color: '#702459' },
+        { icon: '🕸️', color: '#4a5568' }, { icon: '🦋', color: '#b83280' }, { icon: '🐝', color: '#975a16' },
+        { icon: '🍀', color: '#276749' }, { icon: '🌵', color: '#22543d' }, { icon: '🌺', color: '#97266d' },
+        { icon: '🥊', color: '#c53030' }, { icon: '🏆', color: '#b7791f' }, { icon: '👹', color: '#9b2c2c' },
+        { icon: '👺', color: '#c05621' }, { icon: '🎃', color: '#c05621' },
     ];
     // 從徽章池中挑一個「其他團隊還沒用過」的徽章；若全部用完(理論上不會，池子夠大)則允許重複
     // factionsList參數可選：不傳入時預設用window.GS.factions判斷唯一性；批次處理一份「尚未賦值成window.GS」的陣列時(例如匯入JSON流程)，需要明確傳入該陣列本身，否則會誤判成跟舊遊戲比對
@@ -1951,8 +1971,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if(slot===undefined) slot = (window.GS && window.GS.currentSlot) || 1;
         window.GS.currentSlot = slot;
         try {
+            window.GS._lastSaveTime = Date.now(); // 記錄最後一次存檔的實際時間戳記
             localStorage.setItem('wm_ultimate_save_'+slot, JSON.stringify(GS));
-            showSysMsg("成功", "遊戲進度已安全儲存！(槽位 "+slot+")", false);
+            let now = new Date();
+            let timeStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+            showSysMsg("成功", `遊戲進度已安全儲存！(槽位 ${slot})<br><span style="font-size:1.2rem; color:var(--muted);">儲存時間：${timeStr}</span>`, false);
         } catch(e) {
             // 某些瀏覽器環境(隱私瀏覽模式、預覽/沙盒環境、第三方儲存被封鎖等)無法使用localStorage，優雅降級避免整個遊戲中斷
             console.warn("localStorage無法使用，本次進度暫時無法自動儲存：", e);
@@ -2046,7 +2069,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 let d = localStorage.getItem('wm_ultimate_save_'+i);
                 if(d) {
                     let data = JSON.parse(d);
-                    c.innerHTML += `<div class="card" style="text-align:left;"><h3 style="color:var(--gold); font-size:2rem;">📁 槽位 ${i}</h3><p style="font-size:1.4rem;">第${data.year}年 ${data.month}月 | 資金: $${data.money.toLocaleString()}萬</p><button class="btn" style="margin-top:10px;" onclick="window.loadGame(${i})">讀取進度</button></div>`;
+                    let saveTimeStr = data._lastSaveTime ? new Date(data._lastSaveTime).toLocaleString('zh-TW', {hour12:false}) : '未知時間';
+                    c.innerHTML += `<div class="card" style="text-align:left;"><h3 style="color:var(--gold); font-size:2rem;">📁 槽位 ${i}</h3><p style="font-size:1.4rem;">第${data.year}年 ${data.month}月 | 資金: $${data.money.toLocaleString()}萬</p><p style="font-size:1.1rem; color:var(--muted);">🕐 存檔時間：${saveTimeStr}</p><button class="btn" style="margin-top:10px;" onclick="window.loadGame(${i})">讀取進度</button></div>`;
                 } else {
                     c.innerHTML += `<div class="card" style="color:gray;">📁 槽位 ${i} - 空白</div>`;
                 }
@@ -2272,7 +2296,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
         document.getElementById('coach-grid').innerHTML = coachHTML || "<p>暫無教練</p>";
 
-        let cardHtml = f => `<div class="card" style="border-color:${f.isCustom?'var(--gold)':'var(--border)'}; padding:15px; margin-bottom:10px;"><div style="display:flex; justify-content:space-between; align-items:center;"><h3 style="color:${f.league==='East'?'var(--neon-blue)':'var(--neon-pink)'}; font-size:2.2rem; margin:0; display:flex; align-items:center; gap:10px;">${window.renderEmblemHtml(f.emblem, 38)}<span>${f.name}${f.isCustom?' <span style="font-size:1.1rem; color:var(--gold);">🏗️自建</span>':''}</span></h3><span style="font-size:1.4rem; color:var(--muted);">選手數: ${f.roster.length} ｜ 🌟人氣: ${f.pop||0}</span></div><div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;"><p style="font-size:1.8rem; color:var(--gold); font-weight:bold; margin:0;">${f.record.w}勝 ${f.record.l}敗｜積分：${f.points||0}分</p><button class="btn btn-sec" style="font-size:1.2rem; padding:8px 15px;" onclick="window.showNpcRoster(${f.id})">👥 查看名單</button></div>${(f.streak||0) >= 3 ? `<p style="color:#ff6b6b; font-size:1.3rem; margin-top:6px; font-weight:bold;">🔥連勝中：${f.streak}場</p>` : ''}</div>`;
+        let cardHtml = f => `<div class="card" style="border-color:${f.isCustom?'var(--gold)':'var(--border)'}; padding:15px; margin-bottom:10px;"><div style="display:flex; justify-content:space-between; align-items:center;"><h3 style="color:${f.league==='East'?'var(--neon-blue)':'var(--neon-pink)'}; font-size:2.2rem; margin:0; display:flex; align-items:center; gap:10px;">${window.renderEmblemHtml(f.emblem, 38)}<span>${f.name}</span></h3><span style="font-size:1.4rem; color:var(--muted);">選手數: ${f.roster.length} ｜ 🌟人氣: ${f.pop||0}</span></div><div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;"><p style="font-size:1.8rem; color:var(--gold); font-weight:bold; margin:0;">${f.record.w}勝 ${f.record.l}敗｜積分：${f.points||0}分</p><button class="btn btn-sec" style="font-size:1.2rem; padding:8px 15px;" onclick="window.showNpcRoster(${f.id})">👥 查看名單</button></div>${(f.streak||0) >= 3 ? `<p style="color:#ff6b6b; font-size:1.3rem; margin-top:6px; font-weight:bold;">🔥連勝中：${f.streak}場</p>` : ''}</div>`;
 
         let playerFactionHtml = f => `<div class="card" style="border:2px solid var(--gold); padding:15px; margin-bottom:15px; background:rgba(251,191,36,0.08);"><div style="display:flex; justify-content:space-between; align-items:center;"><h3 style="color:var(--gold); font-size:2.4rem; margin:0; display:flex; align-items:center; gap:10px;">${window.renderEmblemHtml(f.emblem, 42)}<span>👑 ${f.name} <span style="font-size:1.2rem; color:var(--muted);">(我方)</span></span></h3><span style="font-size:1.4rem; color:var(--muted);">選手數: ${f.roster.length} ｜ 🌟人氣: ${f.pop||0}</span></div><div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;"><p style="font-size:1.4rem; color:var(--muted); margin:0;">聯盟排名不計入我方戰績</p><div style="display:flex; gap:8px;"><button class="btn btn-sec" style="font-size:1.2rem; padding:8px 15px;" onclick="window.rerollFactionEmblem(${f.id})">🔄 換徽章</button><button class="btn btn-sec" style="font-size:1.2rem; padding:8px 15px;" onclick="window.openRenameFaction(${f.id})">✏️ 改名</button><button class="btn btn-sec" style="font-size:1.2rem; padding:8px 15px;" onclick="window.showNpcRoster(${f.id})">👥 查看名單</button></div></div></div>`;
 
@@ -2314,7 +2338,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     let d = localStorage.getItem('wm_ultimate_save_'+i);
                     if(d) {
                         let data = JSON.parse(d);
-                        c.innerHTML += `<div class="card" style="border-color:var(--gold);"><h3 style="color:var(--gold); font-size:2rem;">📁 槽位 ${i}</h3><p style="font-size:1.4rem; margin-top:5px;">進度: 第${data.year}年 ${data.month}月 | 資金: $${data.money.toLocaleString()}萬</p><div style="display:flex; gap:10px; margin-top:15px;"><button class="btn btn-sec" style="flex:1;" onclick="window.saveGame(${i})">覆蓋存檔</button><button class="btn" style="flex:1;" onclick="window.loadGame(${i})">讀取</button></div></div>`;
+                        let saveTimeStr = data._lastSaveTime ? new Date(data._lastSaveTime).toLocaleString('zh-TW', {hour12:false}) : '未知時間';
+                        c.innerHTML += `<div class="card" style="border-color:var(--gold);"><h3 style="color:var(--gold); font-size:2rem;">📁 槽位 ${i}</h3><p style="font-size:1.4rem; margin-top:5px;">進度: 第${data.year}年 ${data.month}月 | 資金: $${data.money.toLocaleString()}萬</p><p style="font-size:1.1rem; color:var(--muted); margin-top:3px;">🕐 存檔時間：${saveTimeStr}</p><div style="display:flex; gap:10px; margin-top:15px;"><button class="btn btn-sec" style="flex:1;" onclick="window.saveGame(${i})">覆蓋存檔</button><button class="btn" style="flex:1;" onclick="window.loadGame(${i})">讀取</button></div></div>`;
                     } else {
                         c.innerHTML += `<div class="card"><h3 style="color:var(--muted); font-size:2rem;">📁 槽位 ${i} - 空白</h3><button class="btn btn-sec" style="width:100%; margin-top:15px;" onclick="window.saveGame(${i})">建立存檔</button></div>`;
                     }
@@ -4432,8 +4457,8 @@ function draftCompetitorCount(w) {
                 let v1 = document.getElementById('t1-p'+i).value, v2 = document.getElementById('t2-p'+i).value;
                 if(v1 === "" || v2 === "") return showSysMsg("錯誤", "陣容不完整，請補齊雙方選手！", true);
                 if(bm === 'faction_intra' && v1 === v2) return showSysMsg("錯誤", "隊內對戰不能選擇同一個選手！", true);
-                let pW = JSON.parse(JSON.stringify(GS.roster[v1])); pW.oid = v1; pW.battleMaxHp = Math.floor(80 + (pW.end||0)*0.4); pW.battleHp = pW.battleMaxHp;
-                let eW = JSON.parse(JSON.stringify(this.pool2Ref[v2])); eW.oid = v2; eW.battleMaxHp = Math.floor(80 + (eW.end||0)*0.4); eW.battleHp = eW.battleMaxHp;
+                let pW = JSON.parse(JSON.stringify(GS.roster[v1])); pW.oid = v1; pW.battleMaxHp = Math.floor(700 + (pW.end||0)*5); pW.battleHp = pW.battleMaxHp;
+                let eW = JSON.parse(JSON.stringify(this.pool2Ref[v2])); eW.oid = v2; eW.battleMaxHp = Math.floor(700 + (eW.end||0)*5); eW.battleHp = eW.battleMaxHp;
                 t1Build.push(pW); t2Build.push(eW);
             }
             if(t1Build[0].stamina < 30) return showSysMsg("警告", "我方先發選手體力過低！", true);
@@ -4512,7 +4537,7 @@ function draftCompetitorCount(w) {
         act: function(atk, def) {
             if(def.tech > atk.tech + (Math.random()*50) && Math.random() < 0.2) {
                 this.log.push(`<span class="log-highlight">🔄 見事なカウンター！${def.name}が攻撃を凌ぎ、逆に叩きつけた！</span>`);
-                atk.battleHp -= 15; return;
+                atk.battleHp -= Math.max(1, Math.floor((atk.battleMaxHp||1000) * 0.15)); return; // 維持原本約15%HP上限的懲罰比例
             }
 
             // 絕招判定：血量 ≤ 上限30%，且不在冷卻中，40%機率觸發
@@ -4533,7 +4558,7 @@ function draftCompetitorCount(w) {
             let defCondMult = (window.conditionMultiplier ? window.conditionMultiplier(def) : 1.0) * (def._bondMult || 1) * (def._homeMult || 1);
             let critChance = Math.min(0.35, (atk.mnt || 0) * atkCondMult / 300);
             let isCrit = Math.random() < critChance;
-            let dmg = Math.floor(atk.str * atkCondMult * (0.8 + Math.random()*0.4) * (isCrit ? 1.5 : 1));
+            let dmg = Math.floor(atk.str * atkCondMult * (0.8 + Math.random()*0.4) * (isCrit ? 1.5 : 1) * 0.6); // 0.6倍縮放係數：配合放大10倍的HP池，讓對戰能撐足20~60回合以上，不再3~5回合就分勝負
             let dmgReduction = Math.min(0.4, (def.end || 0) * defCondMult / 300);
             dmg = Math.max(1, Math.floor(dmg * (1 - dmgReduction)));
             def.battleHp -= dmg;
@@ -4555,6 +4580,21 @@ function draftCompetitorCount(w) {
             this._finisherSplashTimer = setTimeout(() => { splash.classList.remove('show'); }, 2200);
         },
         check: function() {
+            // 倒地又起機制：血量歸零時先判定是否能掙扎站起(35%機率，每位選手生涯限1次)，製造更多回合的戲劇性拉鋸
+            if(this.f1.battleHp <= 0 && !this.f1._struggledUp && Math.random() < 0.35) {
+                this.f1._struggledUp = true;
+                this.f1.battleHp = Math.max(1, Math.floor(this.f1.battleMaxHp * 0.12));
+                this.log.push(`<span class="log-highlight" style="font-size:1.8rem; color:var(--gold);">🔥 執念の粘り！</span>${this.f1.name}、限界を超えてなんとか立ち上がった！`);
+                this.upd();
+                return;
+            }
+            if(this.f2.battleHp <= 0 && !this.f2._struggledUp && Math.random() < 0.35) {
+                this.f2._struggledUp = true;
+                this.f2.battleHp = Math.max(1, Math.floor(this.f2.battleMaxHp * 0.12));
+                this.log.push(`<span class="log-highlight" style="font-size:1.8rem; color:var(--gold);">🔥 執念の粘り！</span>${this.f2.name}、限界を超えてなんとか立ち上がった！`);
+                this.upd();
+                return;
+            }
             clearInterval(this.timer);
             if(this.f1.battleHp <= 0) {
                 this.log.push(`💀 ${this.f1.name}、体力尽きてダウン！`);
@@ -4738,12 +4778,21 @@ function draftCompetitorCount(w) {
         skipMatch: function() {
             clearInterval(this.timer);
             let rounds = 0;
-            while(this.i1 < this.t1.length && this.i2 < this.t2.length && rounds < 500) {
+            while(this.i1 < this.t1.length && this.i2 < this.t2.length && rounds < 2000) {
                 rounds++;
-                // 用跟正常對戰一致的數值公式估算傷害(略過str/end/mnt帶來的差異)，只是跳過逐招動畫
-                let dmg1 = Math.max(1, Math.floor(this.f1.str * (0.8 + Math.random()*0.4) * (1 - Math.min(0.4, (this.f2.end||0)/300))));
-                let dmg2 = Math.max(1, Math.floor(this.f2.str * (0.8 + Math.random()*0.4) * (1 - Math.min(0.4, (this.f1.end||0)/300))));
+                // 用跟正常對戰一致的數值公式估算傷害(含0.6倍縮放係數)，只是跳過逐招動畫
+                let dmg1 = Math.max(1, Math.floor(this.f1.str * (0.8 + Math.random()*0.4) * 0.6 * (1 - Math.min(0.4, (this.f2.end||0)/300))));
+                let dmg2 = Math.max(1, Math.floor(this.f2.str * (0.8 + Math.random()*0.4) * 0.6 * (1 - Math.min(0.4, (this.f1.end||0)/300))));
                 this.f2.battleHp -= dmg1; this.f1.battleHp -= dmg2;
+                // 倒地又起機制：跟正常對戰保持一致，避免快速結算跟逐招模式產生系統性不同的回合數結果
+                if(this.f1.battleHp <= 0 && !this.f1._struggledUp && Math.random() < 0.35) {
+                    this.f1._struggledUp = true;
+                    this.f1.battleHp = Math.max(1, Math.floor(this.f1.battleMaxHp * 0.12));
+                }
+                if(this.f2.battleHp <= 0 && !this.f2._struggledUp && Math.random() < 0.35) {
+                    this.f2._struggledUp = true;
+                    this.f2.battleHp = Math.max(1, Math.floor(this.f2.battleMaxHp * 0.12));
+                }
                 if(this.f1.battleHp <= 0) { this.i1++; if(this.i1 < this.t1.length) this.f1 = this.t1[this.i1]; }
                 if(this.f2.battleHp <= 0) { this.i2++; if(this.i2 < this.t2.length) this.f2 = this.t2[this.i2]; }
             }
@@ -5034,8 +5083,8 @@ function draftCompetitorCount(w) {
                 if(this.cardIndex < this.cardQueue.length) { this.runNextCardMatch(); } else { this.finishMatchCard(); }
                 return;
             }
-            let pW = JSON.parse(JSON.stringify(pSrc)); pW.oid = v1; pW.battleMaxHp = Math.floor(80 + (pW.end||0)*0.4); pW.battleHp = pW.battleMaxHp;
-            let eW = JSON.parse(JSON.stringify(eSrc)); eW.oid = v2; eW.battleMaxHp = Math.floor(80 + (eW.end||0)*0.4); eW.battleHp = eW.battleMaxHp;
+            let pW = JSON.parse(JSON.stringify(pSrc)); pW.oid = v1; pW.battleMaxHp = Math.floor(700 + (pW.end||0)*5); pW.battleHp = pW.battleMaxHp;
+            let eW = JSON.parse(JSON.stringify(eSrc)); eW.oid = v2; eW.battleMaxHp = Math.floor(700 + (eW.end||0)*5); eW.battleHp = eW.battleMaxHp;
             t1Build.push(pW); t2Build.push(eW);
         }
         this.t1 = t1Build; this.t2 = t2Build;
@@ -5445,6 +5494,31 @@ document.addEventListener('DOMContentLoaded', () => {
         window.updateEditImgPreview();
     });
 
+    let btnRandomEname = document.getElementById('btn-random-ename');
+    if(btnRandomEname) {
+        btnRandomEname.addEventListener('click', () => {
+            document.getElementById('e-name').value = window.getUniqueWrestlerName();
+            window.updateEditImgPreview(); // 名字變動時，預覽圖的錯誤替代圖(dicebear)seed也要跟著更新
+        });
+    }
+
+    let btnRandomEimg = document.getElementById('btn-random-eimg');
+    if(btnRandomEimg) {
+        btnRandomEimg.addEventListener('click', () => {
+            let gallery = window.GS && window.GS.gallery || [];
+            let currentImg = document.getElementById('e-img').value.trim();
+            // 優先從玩家的自建圖庫隨機抽取(風格才會跟遊戲裡其他選手一致)，盡量避免抽到跟目前一樣的圖(圖庫只有1張時無可避免會抽到同一張)
+            let candidates = gallery.filter(url => url !== currentImg);
+            let pool = candidates.length > 0 ? candidates : gallery;
+            if(pool.length > 0) {
+                document.getElementById('e-img').value = pool[Math.floor(Math.random() * pool.length)];
+            } else {
+                document.getElementById('e-img').value = `https://api.dicebear.com/7.x/avataaars/svg?seed=${Math.random()}`;
+            }
+            window.updateEditImgPreview();
+        });
+    }
+
     let btnRerollStats = document.getElementById('btn-reroll-stats');
     if(btnRerollStats) {
         btnRerollStats.addEventListener('click', () => {
@@ -5522,6 +5596,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let actionsBar = document.getElementById('npc-r-actions');
         if(actionsBar) {
             actionsBar.innerHTML = `
+                <button class="btn btn-sec" style="flex:1; font-size:1.3rem;" onclick="window.rerollFactionEmblem(${f.id}); window.showNpcRoster(${f.id});">🔄 換徽章</button>
                 <button class="btn btn-sec" style="flex:1; font-size:1.3rem;" onclick="window.openRenameFaction(${f.id})">✏️ 改名</button>
                 <button class="btn btn-sec" style="flex:1; font-size:1.3rem;" onclick="window.openSignToFaction(${f.id})">✍️ 簽約新選手</button>
                 ${f.id !== 0 ? `<button class="btn btn-danger" style="flex:1; font-size:1.3rem;" onclick="window.deleteFaction(${f.id})">🗑️ 解散此團隊</button>` : ''}
@@ -5531,11 +5606,14 @@ document.addEventListener('DOMContentLoaded', () => {
         let grid = document.getElementById('npc-r-grid');
         grid.innerHTML = f.roster.map(w => `
             <div class="card">
-                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="height:140px; object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
-                <h4 style="color:var(--gold); font-size:1.8rem; margin-bottom:8px;">${w.name} <span style="font-size:1.4rem; color:var(--neon-blue); font-weight:900;">${window.wrestlerLevel(w)}</span> <span style="font-size:1.2rem; color:var(--muted);">(${w.age}歲)</span></h4>
-                <div class="stat-row"><span>💪 力:${w.str}</span><span>⚡ 速:${w.spd}</span><span>🎯 技:${w.tech}</span></div>
-                <div class="stat-row"><span>🛡️ 耐:${w.end}</span><span>🧠 精:${w.mnt}</span><span>🌟 人氣:${w.pop}</span></div>
-                <div class="stat-row"><span style="color:#ff6b81;">💥 絕招: ${w.signatureMove ? w.signatureMove.move : '未綁定'}</span><span>🏅 ${w.w||0}勝${w.l||0}敗</span></div>
+                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
+                <h4 style="color:var(--gold); font-size:1.6rem; margin-bottom:2px;">${w.name} <span style="font-size:1.3rem; color:var(--neon-blue); font-weight:900;">${window.wrestlerLevel(w)}</span></h4>
+                <p style="font-size:1.1rem; color:var(--muted); margin-bottom:8px;">${w.age}歲</p>
+                <div class="stat-row" style="font-size:1.1rem;"><span>💪 力:${w.str}</span><span>⚡ 速:${w.spd}</span></div>
+                <div class="stat-row" style="font-size:1.1rem;"><span>🎯 技:${w.tech}</span><span>🛡️ 耐:${w.end}</span></div>
+                <div class="stat-row" style="font-size:1.1rem;"><span>🧠 精:${w.mnt}</span><span>🌟 人氣:${w.pop}</span></div>
+                <p style="font-size:1.1rem; color:#ff6b81; margin-bottom:4px;">💥 ${w.signatureMove ? w.signatureMove.move : '未綁定'}</p>
+                <p style="font-size:1.1rem; margin-bottom:8px;">🏅 ${w.w||0}勝${w.l||0}敗</p>
                 <div style="display:flex; gap:8px; margin-top:10px;">
                     <button class="btn btn-sec" style="flex:1; font-size:1.2rem;" onclick="window.showWrestlerProfile('${w.id}')">📇 資料</button>
                     <button class="btn btn-sec" style="flex:1; font-size:1.2rem;" onclick="window.openEditWrestler('faction', ${w.id}, ${f.id})">✏️ 編輯</button>
@@ -7413,10 +7491,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('all-wrestlers-grid').innerHTML = all.map(({w, team}) => `
             <div class="card" style="cursor:pointer;" onclick="window.showWrestlerProfile('${w.id}')">
-                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="height:120px; object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
-                <h4 style="font-size:1.6rem; color:var(--gold);">${w.name} <span style="font-size:1.4rem; color:var(--neon-blue); font-weight:900;">${window.wrestlerLevel(w)}</span></h4>
-                <p style="font-size:1.2rem; color:var(--muted);">${team}（${w.age}歲）</p>
-                <p style="font-size:1.2rem;">🏅 ${w.w||0}勝${w.l||0}敗</p>
+                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
+                <h4 style="font-size:1.4rem; color:var(--gold); margin-bottom:2px;">${w.name} <span style="font-size:1.2rem; color:var(--neon-blue); font-weight:900;">${window.wrestlerLevel(w)}</span></h4>
+                <p style="font-size:1.1rem; color:var(--muted);">${team}（${w.age}歲）</p>
+                <p style="font-size:1.1rem;">🏅 ${w.w||0}勝${w.l||0}敗</p>
             </div>
         `).join('') || '<p style="font-size:1.6rem;">目前沒有任何選手資料</p>';
         document.getElementById('all-wrestlers-overlay').style.display = 'flex';
@@ -8055,8 +8133,8 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ---------- MatchEngine 擴充：支援自訂 1v1 對戰（供錦標賽呼叫） ---------- */
     if(window.MatchEngine) {
         window.MatchEngine.startCustom = function(team1, team2, onComplete, hpOverrides) {
-            this.t1 = team1.map(w => { let c = JSON.parse(JSON.stringify(w)); c.battleMaxHp = Math.floor(80 + (c.end||0)*0.4); c.battleHp = c.battleMaxHp; return c; });
-            this.t2 = team2.map(w => { let c = JSON.parse(JSON.stringify(w)); c.battleMaxHp = Math.floor(80 + (c.end||0)*0.4); c.battleHp = c.battleMaxHp; return c; });
+            this.t1 = team1.map(w => { let c = JSON.parse(JSON.stringify(w)); c.battleMaxHp = Math.floor(700 + (c.end||0)*5); c.battleHp = c.battleMaxHp; return c; });
+            this.t2 = team2.map(w => { let c = JSON.parse(JSON.stringify(w)); c.battleMaxHp = Math.floor(700 + (c.end||0)*5); c.battleHp = c.battleMaxHp; return c; });
             // 極限連戰等特殊賽制用：套用血量繼承(不從滿血開始)
             if(hpOverrides) {
                 this.t1.concat(this.t2).forEach(w => {
@@ -8122,7 +8200,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 每位選手的極限連戰血量狀態(跨場次繼承，不重置)：初始滿血
             let hpState = {};
             teams.forEach(t => {
-                let maxHp = Math.floor(80 + (t.wrestler.end||0)*0.4);
+                let maxHp = Math.floor(700 + (t.wrestler.end||0)*5);
                 hpState[t.wrestler.id] = { hp: maxHp, maxHp, eliminated: false };
             });
 
