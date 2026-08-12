@@ -2036,6 +2036,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if(saveBtn) saveBtn.addEventListener('click', () => window.saveGame());
 
     window.updateUI = function() {
+        // 修正根本性bug：GS.roster跟GS.factions[0].roster原本設計成共享同一個陣列引用，
+        // 但JSON存讀檔(localStorage/匯出匯入)沒有「物件引用」的概念，每次存讀檔都會把這個共享關係打斷成兩個獨立陣列，
+        // 之後簽新選手只會更新GS.roster，導致雙聯盟畫面看到的GS.factions[0].roster停留在讀檔當下的過期資料。
+        // 每次畫面更新前強制重新同步，確保兩者永遠指向同一份資料，不會再出現「旗下陣容顯示10人、雙聯盟卻顯示0人」的狀況
+        let myFactionSync = GS.factions && GS.factions.find(f => f.id === 0);
+        if(myFactionSync) myFactionSync.roster = GS.roster;
+
         if(!GS.newsLog) GS.newsLog = [];
         if(!GS.weekPhase) GS.weekPhase = 'management';
         if(GS.bankruptcyCount === undefined) GS.bankruptcyCount = 0;
