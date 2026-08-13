@@ -661,6 +661,31 @@ body { overflow-x: hidden; }
         </div>
     </div>
 
+    <!-- 車輪戰擂台賽(Gauntlet Match)：一位選手連續應戰多位對手，體力持續消耗不完全恢復，考驗續戰力 -->
+    <div id="gauntlet-overlay" class="overlay">
+        <div class="modal-box" style="max-width:650px; width:100%; background:radial-gradient(ellipse at top, rgba(120,60,10,0.35), rgba(10,6,5,0.97)); border-color:#ff8c00;">
+            <h2 style="text-align:center; color:#ff8c00; font-size:3rem; letter-spacing:3px; text-shadow:0 0 20px rgba(255,140,0,0.6);">🔥 車輪戰擂台賽 🔥</h2>
+            <p style="text-align:center; color:var(--muted); font-size:1.3rem; margin-bottom:20px;">連續應戰・血量不完全恢復，考驗選手的極限續戰力！</p>
+            <div id="gauntlet-content" style="max-height:55vh; overflow-y:auto; margin-bottom:20px;"></div>
+            <div style="display:flex; gap:15px;">
+                <button class="btn btn-danger" style="flex:1; font-size:1.5rem; padding:16px;" id="btn-gauntlet-retire">🏳️ 見好就收</button>
+                <button class="btn" style="flex:2; font-size:1.8rem; padding:16px; letter-spacing:2px; background:linear-gradient(135deg, #ff8c00, var(--crimson-dark));" id="btn-gauntlet-next">⚔️ 迎戰下一位挑戰者</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 跨團隊聯合陣線：建立/管理不限同團隊的敘事陣線，成員彼此羈絆值有保底加成 -->
+    <div id="stable-overlay" class="overlay">
+        <div class="modal-box" style="max-width:600px; width:100%; border-color:#a855f7;">
+            <h2 style="text-align:center; color:#a855f7; font-size:2.6rem; margin-bottom:15px;" id="stable-modal-title">🤝 聯合陣線</h2>
+            <div id="stable-modal-content" style="max-height:60vh; overflow-y:auto; margin-bottom:20px;"></div>
+            <div style="display:flex; gap:15px;">
+                <button class="btn btn-sec" style="flex:1; font-size:1.5rem; padding:14px;" onclick="window.closeModal('stable-overlay')">關閉</button>
+                <button class="btn" style="flex:1; font-size:1.5rem; padding:14px; background:#a855f7; display:none;" id="btn-stable-confirm">確認建立</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ATB 實況戰鬥視窗 -->
     <div id="match-overlay" class="overlay">
         <div class="modal-box">
@@ -902,6 +927,15 @@ body { overflow-x: hidden; }
                     <h3 style="font-size:2.2rem; margin-bottom:10px; color:var(--steel);">🏖️ 安排休假</h3>
                     <p style="color:var(--muted); font-size:1.3rem; margin-bottom:15px;">一週只能安排1位選手休假，可選1~4週。費用＝週薪×週數+10萬，消耗1點能量。休假結束後大幅回復忠誠、體力與狀態。</p>
                     <button class="btn" style="width:100%; padding:15px; font-size:1.5rem; background:var(--steel); color:#000;" id="btn-vacation">安排休假</button>
+                </div>
+                <div class="card" style="border-color:#a855f7;">
+                    <h3 style="font-size:2.2rem; margin-bottom:10px; color:#a855f7;">🤝 跨團隊聯合陣線</h3>
+                    <p style="color:var(--muted); font-size:1.3rem; margin-bottom:15px;">把最多5位選手(不限同團隊)組成敘事上的聯合陣線，陣線成員彼此的羈絆值有保底加成，同台出賽時更容易觸發團隊羈絆加成效果。</p>
+                    <p style="font-size:1.3rem; color:var(--gold); margin-bottom:10px;">目前共有 <strong id="stable-count-text">0</strong> 個陣線</p>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn" style="flex:1; padding:15px; font-size:1.4rem; background:#a855f7;" onclick="window.openCreateStable()">➕ 建立陣線</button>
+                        <button class="btn btn-sec" style="flex:1; padding:15px; font-size:1.4rem;" onclick="window.openManageStables()">📋 管理陣線</button>
+                    </div>
                 </div>
                 <div class="card" style="border-color:var(--copper);">
                     <h3 style="font-size:2.2rem; margin-bottom:10px; color:var(--copper);">🧪 怪博士的秘密實驗</h3>
@@ -1574,7 +1608,13 @@ document.addEventListener('DOMContentLoaded', () => {
         window.getRelationship(w1, w2.id).bond = Math.min(100, window.getRelationship(w1, w2.id).bond + amount);
         window.getRelationship(w2, w1.id).bond = Math.min(100, window.getRelationship(w2, w1.id).bond + amount);
     };
-    // 隊伍(陣容陣列)內部所有成員兩兩之間的平均羈絆值，用來判斷團隊戰是否有羈絆加成
+    // 跨團隊聯合陣線：判斷兩位選手是否同屬一個陣線，若是則回傳保底羈絆值(不修改實際儲存的bond數值，只在計算團隊加成時動態生效)
+    window.getStableBondBonus = function(w1id, w2id) {
+        let stables = GS.stables || [];
+        let sameStable = stables.some(s => s.memberIds.includes(w1id) && s.memberIds.includes(w2id));
+        return sameStable ? 50 : 0;
+    };
+    // 隊伍(陣容陣列)內部所有成員兩兩之間的平均羈絆值，用來判斷團隊戰是否有羈絆加成(套用陣線保底：同陣線成員的羈絆值不會低於保底值)
     window.getTeamAvgBond = function(team) {
         if(!team || team.length < 2) return 0;
         let real = team.map(fw => window.findLiveWrestlerById(fw.id)).filter(Boolean);
@@ -1582,12 +1622,104 @@ document.addEventListener('DOMContentLoaded', () => {
         let total = 0, pairs = 0;
         for(let i=0; i<real.length; i++) {
             for(let j=i+1; j<real.length; j++) {
-                total += window.getRelationship(real[i], real[j].id).bond;
+                let bond = window.getRelationship(real[i], real[j].id).bond;
+                let stableBonus = window.getStableBondBonus(real[i].id, real[j].id);
+                total += Math.max(bond, stableBonus);
                 pairs++;
             }
         }
         return pairs > 0 ? total / pairs : 0;
     };
+
+    // 建立陣線：彙整所有選手(旗下陣容+全部NPC團隊)供玩家勾選，最多5位、不限同團隊
+    window.openCreateStable = function() {
+        if(!GS.stables) GS.stables = [];
+        if(GS.stables.length >= 10) return window.showSysMsg("已達上限", "聯合陣線已達10個上限，請先解散一些陣線再建立新的！", true);
+        document.getElementById('stable-modal-title').innerText = '🤝 建立聯合陣線';
+        let allWrestlers = [];
+        GS.roster.forEach(w => allWrestlers.push({ w, teamName: '我方陣容' }));
+        GS.factions.slice(1).forEach(f => (f.roster||[]).forEach(w => allWrestlers.push({ w, teamName: f.name })));
+
+        let html = `
+            <div style="margin-bottom:15px;"><label style="font-size:1.3rem; display:block; margin-bottom:6px;">陣線名稱：</label>
+                <input type="text" id="stable-name-input" placeholder="請輸入陣線名稱" style="width:100%; font-size:1.4rem; padding:10px;"></div>
+            <p style="font-size:1.2rem; color:var(--muted); margin-bottom:10px;">勾選最多5位成員(不限同團隊，已選：<span id="stable-select-count">0</span>/5)：</p>
+            <div style="max-height:300px; overflow-y:auto;">
+        `;
+        allWrestlers.forEach(({w, teamName}) => {
+            html += `<label style="display:flex; align-items:center; gap:10px; padding:8px; border-bottom:1px dashed rgba(255,255,255,0.1); cursor:pointer;">
+                <input type="checkbox" class="stable-member-checkbox" value="${w.id}" style="width:20px; height:20px;" onchange="window.updateStableSelectCount()">
+                <span style="font-size:1.3rem;">${window.escAttr(w.name)} <span style="color:var(--muted); font-size:1.1rem;">（${window.escAttr(teamName)}）</span></span>
+            </label>`;
+        });
+        html += `</div>`;
+        document.getElementById('stable-modal-content').innerHTML = html;
+
+        let confirmBtn = document.getElementById('btn-stable-confirm');
+        confirmBtn.style.display = 'block';
+        confirmBtn.innerText = '✅ 確認建立';
+        confirmBtn.onclick = window.confirmCreateStable;
+        document.getElementById('stable-overlay').style.display = 'flex';
+    };
+
+    window.updateStableSelectCount = function() {
+        let checked = document.querySelectorAll('.stable-member-checkbox:checked');
+        let countEl = document.getElementById('stable-select-count');
+        if(countEl) countEl.innerText = checked.length;
+        if(checked.length > 5) {
+            checked[checked.length-1].checked = false; // 超過5位時自動取消最後一個勾選，避免超額
+            if(countEl) countEl.innerText = 5;
+            window.showSysMsg("已達上限", "聯合陣線最多只能有5位成員！", true);
+        }
+    };
+
+    window.confirmCreateStable = function() {
+        let name = document.getElementById('stable-name-input').value.trim();
+        if(!name) return window.showSysMsg("尚未命名", "請先為聯合陣線輸入一個名稱！", true);
+        let checked = Array.from(document.querySelectorAll('.stable-member-checkbox:checked'));
+        if(checked.length < 2) return window.showSysMsg("成員不足", "聯合陣線至少需要2位成員才有意義！", true);
+        let memberIds = checked.map(c => parseInt(c.value));
+        if(!GS.stables) GS.stables = [];
+        GS.stables.push({ id: Date.now(), name, memberIds, createdYear: GS.year });
+        window.addNewsLog(`🤝 全新聯合陣線「${name}」正式成軍！`);
+        window.closeModal('stable-overlay');
+        window.updateUI();
+        window.saveGame();
+    };
+
+    // 管理陣線：查看現有陣線清單、解散
+    window.openManageStables = function() {
+        document.getElementById('stable-modal-title').innerText = '📋 管理聯合陣線';
+        let stables = GS.stables || [];
+        let html = '';
+        if(stables.length === 0) {
+            html = `<p style="font-size:1.4rem; color:var(--muted); text-align:center; padding:20px;">目前還沒有任何聯合陣線</p>`;
+        } else {
+            stables.forEach(s => {
+                let memberNames = s.memberIds.map(id => {
+                    let w = window.findLiveWrestlerById ? window.findLiveWrestlerById(id) : null;
+                    return w ? w.name : '（已離隊）';
+                }).join('、');
+                html += `<div class="card" style="border-color:#a855f7; margin-bottom:12px; padding:15px;">
+                    <h3 style="color:#a855f7; font-size:1.6rem; margin-bottom:8px;">${window.escAttr(s.name)}</h3>
+                    <p style="font-size:1.2rem; color:var(--muted); margin-bottom:10px;">成員：${window.escAttr(memberNames)}</p>
+                    <button class="btn btn-danger" style="width:100%; font-size:1.2rem; padding:8px;" onclick="window.disbandStable(${s.id})">🗑️ 解散陣線</button>
+                </div>`;
+            });
+        }
+        document.getElementById('stable-modal-content').innerHTML = html;
+        document.getElementById('btn-stable-confirm').style.display = 'none';
+        document.getElementById('stable-overlay').style.display = 'flex';
+    };
+
+    window.disbandStable = function(id) {
+        if(!confirm("確定要解散這個聯合陣線嗎？")) return;
+        GS.stables = (GS.stables||[]).filter(s => s.id !== id);
+        window.updateUI();
+        window.saveGame();
+        window.openManageStables();
+    };
+
     // 羈絆加成：隊伍平均羈絆值越高，全員攻防數值有小幅加成(最高+10%)，只有2人以上的團隊戰才有意義
     window.applyTeamBondBonus = function(team) {
         if(!team || team.length < 2) return;
@@ -2110,6 +2242,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if(window.GS.coachRefreshCounter === undefined) window.GS.coachRefreshCounter = 4;
             if(window.GS.battleRoyal === undefined) window.GS.battleRoyal = null;
             if(window.GS.worldChampionship === undefined) window.GS.worldChampionship = null;
+            if(window.GS.gauntletMatch === undefined) window.GS.gauntletMatch = null;
+            if(window.GS.stables === undefined) window.GS.stables = [];
             (window.GS.factions||[]).forEach(f => { if(f.emblem === undefined) f.emblem = window.pickUniqueEmblem(); }); // 舊存檔團隊補上徽章
             if(window.GS._equipmentTempFixWeeks === undefined) window.GS._equipmentTempFixWeeks = 0;
             if(window.GS.coaches === undefined) window.GS.coaches = [];
@@ -2200,6 +2334,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(GS.coachRefreshCounter === undefined) GS.coachRefreshCounter = 4;
         if(GS.battleRoyal === undefined) GS.battleRoyal = null;
         if(GS.worldChampionship === undefined) GS.worldChampionship = null;
+        if(GS.gauntletMatch === undefined) GS.gauntletMatch = null;
+        if(GS.stables === undefined) GS.stables = [];
         if(GS._equipmentTempFixWeeks === undefined) GS._equipmentTempFixWeeks = 0;
         (GS.factions||[]).forEach(f => { if(f.emblem === undefined) f.emblem = window.pickUniqueEmblem(); }); // 舊存檔團隊補上徽章
         if(GS.coaches === undefined) GS.coaches = [];
@@ -2271,6 +2407,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(window.renderSeasonGoals) window.renderSeasonGoals();
         let brEntryCard = document.getElementById('battle-royal-entry-card');
         if(brEntryCard) brEntryCard.style.display = (GS.battleRoyal && GS.battleRoyal.active) ? 'block' : 'none';
+        let stableCountEl = document.getElementById('stable-count-text');
+        if(stableCountEl) stableCountEl.innerText = (GS.stables||[]).length;
         if(window.renderPersonalMatchRecords) window.renderPersonalMatchRecords();
 
         let cN = id => { let c = GS.coaches.find(x=>x.id===id); return c ? c.name : "無教練"; };
@@ -6148,23 +6286,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // 世界大賽分層獎金制度：依最終戰績(勝場數)分級發放，冠軍(4勝全勝)獎金為全遊戲最高規格，其餘依戰績遞減，
+    // 打進世界大賽本身就有基本出場費，不再只有冠軍才有獎勵，體現「代表國家出征」的最高榮譽舞台定位
+    const WC_PRIZE_TIERS = [
+        { minWins: 4, prize: 20000, popGain: 50, teamPopGain: 20, label: '世界冠軍（4戰全勝）' },
+        { minWins: 3, prize: 8000, popGain: 30, teamPopGain: 10, label: '準決賽級戰績（3勝1敗）' },
+        { minWins: 2, prize: 3000, popGain: 15, teamPopGain: 5, label: '中段戰績（2勝2敗）' },
+        { minWins: 0, prize: 1000, popGain: 5, teamPopGain: 2, label: '完賽出場費' },
+    ];
     window.finishWorldChampionship = function() {
         let wc = GS.worldChampionship;
-        let champion = wc.worldStage.champion;
-        const PRIZE = 10000; // 世界大賽為史上最高規格賽事，獎金也是最高等級
-        if(champion.facId === 0) {
-            GS.money += PRIZE;
-            GS.yearIncome = (GS.yearIncome||0) + PRIZE;
-            let realW = GS.roster.find(w => w.id === champion.wrestlers[0].id);
-            if(realW) realW.pop = Math.min(100, realW.pop + 50);
+        let ws = wc.worldStage;
+        let champion = ws.champion;
+
+        ws.entrants.forEach(e => {
+            if(e.facId !== 0) return; // 只有玩家團隊選手需要真的結算金錢/人氣獎勵，AI與外國選手不需要
+            let tier = WC_PRIZE_TIERS.find(t => e.wins >= t.minWins);
+            GS.money += tier.prize;
+            GS.yearIncome = (GS.yearIncome||0) + tier.prize;
+            let realW = GS.roster.find(w => w.id === e.wrestlers[0].id);
+            if(realW) realW.pop = Math.min(100, realW.pop + tier.popGain);
             let myFaction = GS.factions.find(f => f.id === 0);
-            if(myFaction) myFaction.pop = Math.min(100, (myFaction.pop||0) + 20);
-            if(window.grantPresidentXp) window.grantPresidentXp(80, "世界冠軍賽奪冠");
-        }
+            if(myFaction) myFaction.pop = Math.min(100, (myFaction.pop||0) + tier.teamPopGain);
+            window.addNewsLog(`🌍 ${e.wrestlers[0].name} 在世界大賽以${e.wins}勝戰績畫下句點（${tier.label}），獲得 $${tier.prize.toLocaleString()}萬獎金！`);
+            if(champion.facId === 0 && window.grantPresidentXp) window.grantPresidentXp(80, "世界冠軍賽奪冠");
+        });
+
         window.addHallOfFame(`🌍🏆 <strong style="color:var(--gold);">世界冠軍賽・世界冠軍</strong>：${champion.wrestlers[0].name}（${champion.facName}）！`);
         if(!GS.yearTournamentChampions) GS.yearTournamentChampions = [];
         GS.yearTournamentChampions.push({ label: '世界冠軍賽(取代冬季賽)', name: champion.wrestlers[0].name, facId: champion.facId, img: champion.wrestlers[0].img });
-        window.showBigEvent('🌍 世界冠軍賽', '👑 世界冠軍誕生！', `${champion.wrestlers[0].name}（${champion.facName}）擊敗來自全球8個國家的好手，榮登世界冠軍寶座！${champion.facId===0?`獲得獎金 $${PRIZE.toLocaleString()}萬！`:''}`, champion.wrestlers[0].img);
+        window.showBigEvent('🌍 世界冠軍賽', '👑 世界冠軍誕生！', `${champion.wrestlers[0].name}（${champion.facName}）擊敗來自全球8個國家的好手，榮登世界冠軍寶座！${champion.facId===0?`獲得獎金 $${WC_PRIZE_TIERS[0].prize.toLocaleString()}萬！`:''}`, champion.wrestlers[0].img);
         wc.active = false;
         window.updateUI();
         window.saveGame();
@@ -6211,6 +6362,128 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 生存大逃殺(Battle Royal)：每年開春例行活動賽，8人混戰、加權隨機輪次淘汰(戰力越低越容易被淘汰，但保留隨機性)
+    // 車輪戰擂台賽(Gauntlet Match)：玩家選一位選手連續應戰多位對手，血量不完全恢復，考驗續戰力。對手強度隨連勝場次逐漸提升
+    window.startGauntletMatch = function(wrestlerId) {
+        let w = GS.roster.find(x => x.id === wrestlerId);
+        if(!w) return;
+        if((w.injuryWeeks||0) > 0) return window.showSysMsg("無法應戰", `${w.name} 傷病中（剩${w.injuryWeeks}週），暫時無法出戰車輪戰！`, true);
+        if((w.stamina||0) < 50) return window.showSysMsg("體力不足", `${w.name} 目前體力不足50，請先安排休息再挑戰車輪戰！`, true);
+        let maxHp = Math.floor(700 + (w.end||0)*5);
+        GS.gauntletMatch = { active: true, wrestlerId, hp: maxHp, maxHp, winStreak: 0, opponentLog: [], finished: false };
+        window.closeModal('wrestler-profile-overlay');
+        window.renderGauntletMatch();
+        document.getElementById('gauntlet-overlay').style.display = 'flex';
+    };
+
+    // 依連勝場次生成強度逐漸提升的對手：優先從自由市場挑選，數量不足則從AI團隊補齊
+    function genGauntletOpponent(winStreak) {
+        let pool = (GS.fa||[]).concat(GS.factions.slice(1).flatMap(f => f.roster||[]));
+        if(pool.length === 0) return null;
+        let sorted = pool.slice().sort((a,b) => (b.str+b.spd+b.tech+b.end+b.mnt) - (a.str+a.spd+a.tech+a.end+a.mnt));
+        // 連勝場次越多，對手從排序清單中挑選的位置越靠前(越強)，但保留隨機性避免每次都選到同一位
+        let topPortion = Math.max(1, Math.floor(sorted.length * Math.max(0.05, 0.5 - winStreak*0.08)));
+        let candidates = sorted.slice(0, topPortion);
+        return candidates[RB(candidates.length)];
+    }
+
+    window.advanceGauntletMatch = function() {
+        let g = GS.gauntletMatch;
+        if(!g || !g.active) return;
+        let w = GS.roster.find(x => x.id === g.wrestlerId);
+        if(!w) { g.active = false; return; }
+        let opponent = genGauntletOpponent(g.winStreak);
+        if(!opponent) return window.showSysMsg("無人可戰", "目前沒有可供挑戰的對手，車輪戰暫時無法繼續！", true);
+
+        let hpOverrides = {};
+        hpOverrides[w.id] = { hp: g.hp, maxHp: g.maxHp };
+        let oppMaxHp = Math.floor(700 + (opponent.end||0)*5);
+        hpOverrides[opponent.id] = { hp: oppMaxHp, maxHp: oppMaxHp }; // 對手每次都是全新登場，滿血迎戰
+
+        window.MatchEngine.startCustom([w], [opponent], (winnerSide) => {
+            if(winnerSide === 1) {
+                g.winStreak++;
+                g.hp = Math.min(g.maxHp, Math.max(1, Math.round(g.maxHp * 0.15))); // 贏了只回復15%血量，體力持續消耗
+                g.opponentLog.unshift(`✅ 第${g.winStreak}戰擊敗 ${opponent.name}！`);
+                window.renderGauntletMatch();
+                document.getElementById('gauntlet-overlay').style.display = 'flex';
+            } else {
+                g.finished = true;
+                g.opponentLog.unshift(`❌ 第${g.winStreak+1}戰不敵 ${opponent.name}，車輪戰結束！`);
+                window.finishGauntletMatch(false);
+            }
+        }, hpOverrides);
+    };
+
+    window.retireFromGauntlet = function() {
+        let g = GS.gauntletMatch;
+        if(!g || !g.active) return;
+        window.finishGauntletMatch(true);
+    };
+
+    window.finishGauntletMatch = function(voluntaryRetire) {
+        let g = GS.gauntletMatch;
+        if(!g) return;
+        let w = GS.roster.find(x => x.id === g.wrestlerId);
+        g.active = false;
+        if(w && g.winStreak > 0) {
+            let moneyGain = 50 * g.winStreak;
+            let popGain = 2 * g.winStreak;
+            GS.money += moneyGain;
+            GS.yearIncome = (GS.yearIncome||0) + moneyGain;
+            w.pop = Math.min(100, w.pop + popGain);
+            window.addNewsLog(`🔥 ${w.name} 在車輪戰擂台賽中${voluntaryRetire?'見好就收':'力戰到底'}，連勝${g.winStreak}場！獲得 $${moneyGain.toLocaleString()}萬，人氣+${popGain}！`);
+            if(g.winStreak >= 8) {
+                window.showBigEvent('🔥 車輪戰擂台賽', '💪 傳奇續戰力！', `${w.name} 在車輪戰擂台賽中連勝${g.winStreak}場，展現驚人的續戰力！獲得 $${moneyGain.toLocaleString()}萬，人氣+${popGain}！`, w.img);
+            }
+        }
+        if(w && !voluntaryRetire) {
+            // 力戰到底、力竭落敗的選手，有機率掛彩(呼應「打到極限」的敘事)
+            if(Math.random() < 0.3) {
+                let injuryWeeks = 1 + RB(3);
+                w.injuryWeeks = Math.max(w.injuryWeeks||0, injuryWeeks);
+            }
+        }
+        window.updateUI();
+        window.saveGame();
+        window.renderGauntletMatch();
+    };
+
+    window.renderGauntletMatch = function() {
+        let g = GS.gauntletMatch;
+        if(!g) return;
+        let el = document.getElementById('gauntlet-content');
+        if(!el) return;
+        let w = GS.roster.find(x => x.id === g.wrestlerId);
+        if(!w) return;
+
+        let hpPct = Math.max(0, Math.round(g.hp / g.maxHp * 100));
+        let html = `<div style="text-align:center; margin-bottom:15px;">
+            <img src="${window.escAttr(w.img)}" style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid #ff8c00; object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
+            <h3 style="color:#ff8c00; font-size:2rem; margin:8px 0 4px;">${window.escAttr(w.name)}</h3>
+            <p style="font-size:1.6rem; color:var(--gold); font-weight:bold;">🔥 連勝：${g.winStreak} 場</p>
+            <div class="progress-track" style="margin:10px 0;"><div class="progress-fill" style="width:${hpPct}%; background:linear-gradient(90deg, #ff8c00, ${hpPct<30?'#ff2222':'var(--gold)'});"></div></div>
+            <p style="font-size:1.2rem; color:var(--muted);">體力 ${g.hp} / ${g.maxHp}（${hpPct}%）</p>
+        </div>`;
+
+        if(g.opponentLog.length > 0) {
+            html += `<div style="background:rgba(0,0,0,0.4); border-radius:8px; padding:12px; max-height:150px; overflow-y:auto;">`;
+            g.opponentLog.slice(0, 10).forEach(l => { html += `<p style="font-size:1.3rem; margin-bottom:6px;">${l}</p>`; });
+            html += `</div>`;
+        }
+
+        if(g.finished) {
+            html += `<div style="margin-top:15px; text-align:center; padding:15px; background:rgba(255,140,0,0.2); border-radius:8px;">
+                <p style="font-size:1.6rem; color:#ff8c00; font-weight:bold;">車輪戰結束！最終連勝 ${g.winStreak} 場</p>
+            </div>`;
+        }
+
+        el.innerHTML = html;
+        let nextBtn = document.getElementById('btn-gauntlet-next');
+        let retireBtn = document.getElementById('btn-gauntlet-retire');
+        if(nextBtn) { nextBtn.style.display = g.active ? 'block' : 'none'; }
+        if(retireBtn) { retireBtn.innerText = g.active ? '🏳️ 見好就收' : '✅ 關閉'; retireBtn.onclick = g.active ? window.retireFromGauntlet : (() => window.closeModal('gauntlet-overlay')); }
+    };
+
     window.startBattleRoyal = function() {
         let entries = [];
         let myBest = GS.roster.filter(w => !((w.injuryWeeks||0)>0)).sort((a,b)=>(b.str+b.spd+b.tech+b.end+b.mnt)-(a.str+a.spd+a.tech+a.end+a.mnt))[0];
@@ -6970,6 +7243,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let btnAdvanceBattleRoyal = document.getElementById('btn-advance-battle-royal');
     if(btnAdvanceBattleRoyal) btnAdvanceBattleRoyal.addEventListener('click', () => window.advanceBattleRoyal());
+
+    let btnGauntletNext = document.getElementById('btn-gauntlet-next');
+    if(btnGauntletNext) btnGauntletNext.addEventListener('click', () => window.advanceGauntletMatch());
 
     let btnAdvanceWorldChampionship = document.getElementById('btn-advance-world-championship');
     if(btnAdvanceWorldChampionship) btnAdvanceWorldChampionship.addEventListener('click', () => window.advanceWorldChampionship());
@@ -8107,10 +8383,13 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if((w.injuryWeeks||0) >= 4) {
                 irHtml = `<button class="btn btn-sec" style="width:100%; margin-bottom:10px; font-size:1.4rem;" onclick="window.placeOnIR(${w.id})">🏥 放入傷兵名單（暫時釋出陣容名額）</button>`;
             }
+            let canGauntlet = !((w.injuryWeeks||0) > 0) && (w.stamina||0) >= 50;
+            let gauntletHtml = `<button class="btn" style="width:100%; margin-bottom:10px; font-size:1.4rem; background:linear-gradient(135deg, #ff8c00, var(--crimson-dark)); ${canGauntlet?'':'opacity:0.4; cursor:not-allowed;'}" ${canGauntlet?'':'disabled'} onclick="window.startGauntletMatch(${w.id})">🔥 發起車輪戰擂台賽${canGauntlet?'':'（需健康且體力≥50）'}</button>`;
             actionsEl.innerHTML = `
                 ${endorseHtml}
                 ${merchHtml}
                 ${irHtml}
+                ${gauntletHtml}
                 <button class="btn btn-sec" style="flex:1; font-size:1.4rem;" onclick="window.closeModal('wrestler-profile-overlay'); window.openEditWrestler('roster', ${w.id});">✏️ 編輯資料</button>
                 <button class="btn btn-danger" style="flex:1; font-size:1.4rem;" onclick="window.closeModal('wrestler-profile-overlay'); window.fireWrestler(${w.id});">🗑️ 解約釋出</button>
             `;
@@ -9105,6 +9384,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(imported._equipmentTempFixWeeks === undefined) imported._equipmentTempFixWeeks = 0;
                     if(imported.battleRoyal === undefined) imported.battleRoyal = null;
                     if(imported.worldChampionship === undefined) imported.worldChampionship = null;
+                    if(imported.gauntletMatch === undefined) imported.gauntletMatch = null;
+                    if(imported.stables === undefined) imported.stables = [];
                     (imported.factions||[]).forEach(f => { if(f.emblem === undefined) f.emblem = window.pickUniqueEmblem(imported.factions); });
                     if(imported.coaches === undefined) imported.coaches = [];
                     (imported.coaches||[]).forEach(c => { if(c.coachXp === undefined) { c.coachXp = 0; c.coachLevel = 1; } });
