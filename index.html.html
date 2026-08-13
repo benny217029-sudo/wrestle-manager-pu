@@ -542,9 +542,9 @@ body { overflow-x: hidden; }
                         <h3 id="wp-name" style="font-size:2.2rem; color:var(--gold); margin:0;"></h3>
                         <span id="wp-level" style="font-size:2.6rem; font-weight:900; color:var(--neon-blue);"></span>
                     </div>
-                    <p id="wp-sub" style="font-size:1.3rem; color:var(--muted); margin-top:6px;"></p>
+                    <div id="wp-sub" style="font-size:1.3rem; color:var(--muted); margin-top:6px; display:flex; flex-direction:column; gap:3px;"></div>
                     <p id="wp-record" style="font-size:1.5rem; margin-top:10px; color:var(--gold); font-weight:bold;"></p>
-                    <p id="wp-status-line" style="font-size:1.4rem; margin-top:6px;"></p>
+                    <div id="wp-status-line" style="font-size:1.4rem; margin-top:6px; display:flex; flex-direction:column; gap:4px;"></div>
                     <p id="wp-traits-line" style="font-size:1.4rem; margin-top:4px;"></p>
                     <p id="wp-alignment-line" style="font-size:1.4rem; margin-top:4px;"></p>
                 </div>
@@ -7572,11 +7572,19 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('wp-name').innerText = w.name;
         document.getElementById('wp-level').innerText = window.wrestlerLevel(w);
         let title = window.getWrestlerTitle ? window.getWrestlerTitle(w) : null;
-        document.getElementById('wp-sub').innerHTML = `${title ? `<span style="color:var(--gold); font-weight:bold;">「${title}」</span>　` : ''}${w.age}歲　🌟人氣 ${w.pop}　${context==='npc' ? '所屬：'+facName : (context==='roster' ? '所屬：我方團隊' : '自由市場')}`;
+        let subLines = [];
+        if(title) subLines.push(`<span style="color:var(--gold); font-weight:bold; white-space:nowrap;">「${title}」</span>`);
+        subLines.push(`<span style="white-space:nowrap;">${w.age}歲　🌟人氣 ${w.pop}</span>`);
+        subLines.push(`<span style="white-space:nowrap;">${context==='npc' ? '所屬：'+facName : (context==='roster' ? '所屬：我方團隊' : '自由市場')}</span>`);
+        document.getElementById('wp-sub').innerHTML = subLines.join('');
         document.getElementById('wp-record').innerText = `🏅 生涯戰績：${w.w||0}勝 ${w.l||0}敗`;
         let conditionColor = w.condition==='好調' ? '#7CFC00' : (w.condition==='不好調' ? '#ff6b6b' : 'var(--muted)');
         let conditionIcon = w.condition==='好調' ? '📈' : (w.condition==='不好調' ? '📉' : '➖');
-        document.getElementById('wp-status-line').innerHTML = `💗 忠誠度：<strong style="color:${w.loyalty<=30?'#ff6b6b':'var(--neon-blue)'};">${w.loyalty!==undefined?w.loyalty:'—'}</strong>　${conditionIcon} 狀態：<strong style="color:${conditionColor};">${w.condition||'普通'}</strong>　🌱 潛力：<strong style="color:${(w.scouted!==false && w.potential) ? ((window.POTENTIAL_COLORS && window.POTENTIAL_COLORS[w.potential])||'#fff') : 'var(--muted)'};">${(w.scouted!==false && w.potential) ? w.potential : '？？？'}</strong>`;
+        document.getElementById('wp-status-line').innerHTML = `
+            <span style="white-space:nowrap;">💗 忠誠度：<strong style="color:${w.loyalty<=30?'#ff6b6b':'var(--neon-blue)'};">${w.loyalty!==undefined?w.loyalty:'—'}</strong></span>
+            <span style="white-space:nowrap;">${conditionIcon} 狀態：<strong style="color:${conditionColor};">${w.condition||'普通'}</strong></span>
+            <span style="white-space:nowrap;">🌱 潛力：<strong style="color:${(w.scouted!==false && w.potential) ? ((window.POTENTIAL_COLORS && window.POTENTIAL_COLORS[w.potential])||'#fff') : 'var(--muted)'};">${(w.scouted!==false && w.potential) ? w.potential : '？？？'}</strong></span>
+        `;
         let traitLine = document.getElementById('wp-traits-line');
         if(traitLine) {
             let traitNames = (w.traits||[]).map(k => window.getTraitLabel ? window.getTraitLabel(k) : k);
