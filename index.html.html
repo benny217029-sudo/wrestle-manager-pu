@@ -998,6 +998,7 @@ body { overflow-x: hidden; }
         <!-- 旗下陣容 -->
         <section id="tab-roster" class="tab">
             <h2>📋 旗下陣容管理 (上限 20 人)</h2>
+            <button class="btn btn-sec" style="margin-bottom:15px; font-size:1.3rem; padding:10px 20px;" onclick="window.bulkApplyGalleryImages('roster')">🖼️ 一鍵套用圖庫頭像（依序不重複分配給全部選手）</button>
             <div class="grid" id="roster-grid"></div>
         </section>
 
@@ -1005,6 +1006,7 @@ body { overflow-x: hidden; }
         <section id="tab-market" class="tab">
             <h2 style="margin-bottom:8px;">🛒 自由市場 (招募選手)</h2>
             <p style="font-size:1.4rem; color:var(--muted); margin-bottom:15px;">目前市場上共有 <strong id="market-count-text" style="color:var(--gold); font-size:1.6rem;">0</strong> 位選手</p>
+            <button class="btn btn-sec" style="margin-bottom:15px; font-size:1.3rem; padding:10px 20px;" onclick="window.bulkApplyGalleryImages('fa')">🖼️ 一鍵套用圖庫頭像（依序不重複分配給全部選手）</button>
             <div class="grid" id="market-grid"></div>
         </section>
 
@@ -1147,6 +1149,28 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     // 從徽章池中挑一個「其他團隊還沒用過」的徽章；若全部用完(理論上不會，池子夠大)則允許重複
     // factionsList參數可選：不傳入時預設用window.GS.factions判斷唯一性；批次處理一份「尚未賦值成window.GS」的陣列時(例如匯入JSON流程)，需要明確傳入該陣列本身，否則會誤判成跟舊遊戲比對
+    // 一鍵套用圖庫頭像：洗牌後依序分配給整個選手池，圖庫充足時完全不重複，不足時均勻分散重複使用
+    window.bulkApplyGalleryImages = function(poolType) {
+        let gallery = (window.GS.gallery || []).slice();
+        if(gallery.length === 0) return window.showSysMsg("圖庫是空的", "請先到「情報中心」或創作中心上傳圖片到自建圖庫，才能使用一鍵套用功能！", true);
+        let pool = poolType === 'roster' ? window.GS.roster : window.GS.fa;
+        if(!pool || pool.length === 0) return window.showSysMsg("沒有選手", "目前這個名單是空的，沒有選手可以套用頭像！", true);
+
+        let poolLabel = poolType === 'roster' ? '旗下陣容' : '自由市場';
+        if(!confirm(`確定要把圖庫裡的 ${gallery.length} 張圖片，依序不重複分配給「${poolLabel}」目前的 ${pool.length} 位選手嗎？\n\n這會覆蓋這些選手目前的頭像設定（含個別調整過的位置/縮放），且無法復原。`)) return;
+
+        let shuffled = gallery.slice().sort(() => 0.5 - Math.random());
+        pool.forEach((w, i) => {
+            w.img = shuffled[i % shuffled.length];
+            w.imgPosX = 50; w.imgPosY = 50; w.imgScale = 1; // 換了新圖片，舊的位置/縮放調整不再適用，重置為預設置中
+        });
+
+        window.addNewsLog(`🖼️ 已將圖庫頭像一鍵套用給「${poolLabel}」的 ${pool.length} 位選手。`);
+        window.updateUI();
+        window.saveGame();
+        window.showSysMsg("套用完成", `已成功為「${poolLabel}」的 ${pool.length} 位選手套用圖庫頭像！`, false);
+    };
+
     window.pickUniqueEmblem = function(factionsList) {
         let list = factionsList || window.GS.factions || [];
         let usedIcons = list.map(f => f.emblem && f.emblem.icon).filter(Boolean);
