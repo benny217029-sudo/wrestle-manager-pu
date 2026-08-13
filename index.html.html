@@ -1048,6 +1048,7 @@ body { overflow-x: hidden; }
         <!-- 旗下陣容 -->
         <section id="tab-roster" class="tab">
             <h2>📋 旗下陣容管理 (上限 20 人)</h2>
+            <div id="roster-coaches-summary" style="margin-bottom:20px;"></div>
             <button class="btn btn-sec" style="margin-bottom:15px; font-size:1.3rem; padding:10px 20px;" onclick="window.bulkApplyGalleryImages('roster')">🖼️ 一鍵套用圖庫頭像（依序不重複分配給全部選手）</button>
             <div class="grid" id="roster-grid"></div>
         </section>
@@ -1953,6 +1954,32 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 賽程表渲染：顯示本季兩場賽程表比賽的對手與結果
+    // 旗下陣容分頁的已聘用教練摘要：方便玩家在管理選手的同時，也能一併看到教練陣容與各自指導的選手，不用額外切到教練分頁
+    window.renderRosterCoachesSummary = function() {
+        let el = document.getElementById('roster-coaches-summary');
+        if(!el) return;
+        let hiredCoaches = (GS.coaches||[]).filter(c => c.hired && c.hiredBy === 0);
+        if(hiredCoaches.length === 0) {
+            el.innerHTML = '';
+            return;
+        }
+        const MAX_STUDENTS = 3;
+        let html = `<div class="card" style="border-color:var(--neon-blue); padding:15px;">
+            <h3 style="color:var(--neon-blue); font-size:1.8rem; margin-bottom:12px;">👨‍🏫 已聘用教練（${hiredCoaches.length}位）</h3>
+            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:10px;">`;
+        hiredCoaches.forEach(c => {
+            let students = GS.roster.filter(w => w.coachId === c.id);
+            let studentNames = students.length > 0 ? students.map(w => window.escAttr(w.name)).join('、') : '尚未指導任何選手';
+            html += `<div style="background:rgba(0,0,0,0.3); border-radius:8px; padding:10px; cursor:pointer;" onclick="window.switchTab('coaches')">
+                <p style="font-size:1.3rem; color:var(--gold); font-weight:bold; margin-bottom:4px;">${window.escAttr(c.name)}　⭐Lv.${c.coachLevel||1}</p>
+                <p style="font-size:1.1rem; color:var(--muted); margin-bottom:4px;">專長：${window.escAttr(c.specialty)}</p>
+                <p style="font-size:1.1rem; color:var(--neon-pink);">👥 指導中（${students.length}/${MAX_STUDENTS}）：${studentNames}</p>
+            </div>`;
+        });
+        html += `</div><p style="font-size:1.1rem; color:var(--muted); margin-top:10px;">💡 點擊教練卡片可前往「專屬教練」分頁調整指導名單</p></div>`;
+        el.innerHTML = html;
+    };
+
     window.renderSeasonSchedule = function() {
         let el = document.getElementById('season-schedule-content');
         if(!el) return;
@@ -2404,6 +2431,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(window.renderTvStation) window.renderTvStation();
         if(window.renderTrophyWall) window.renderTrophyWall();
         if(window.renderSeasonSchedule) window.renderSeasonSchedule();
+        if(window.renderRosterCoachesSummary) window.renderRosterCoachesSummary();
         if(window.renderSeasonGoals) window.renderSeasonGoals();
         let brEntryCard = document.getElementById('battle-royal-entry-card');
         if(brEntryCard) brEntryCard.style.display = (GS.battleRoyal && GS.battleRoyal.active) ? 'block' : 'none';
@@ -3336,6 +3364,7 @@ function draftCompetitorCount(w) {
         });
         GS.money -= salarySum;
         GS.yearExpense = (GS.yearExpense||0) + salarySum;
+        GS._lastWeekSalarySum = salarySum; // 暫存本週薪資支出，供finishWeek組裝新聞跑馬燈時讀取(finishWeek是獨立函式，無法直接存取這裡的區域變數)
 
         // 周邊商品被動收入：團隊人氣+選手總人氣越高，每週自動入帳越多(不用主動辦比賽)
         let merchFaction = GS.factions.find(f => f.id === 0);
@@ -3988,7 +4017,7 @@ function draftCompetitorCount(w) {
         window.switchTab('dashboard');
 
         // 組裝新聞跑馬燈：本週薪資支出 + 隨機1-2則AI團隊賽果
-        let tickerParts = [`💰 本週支付選手薪資 $${salarySum.toLocaleString()}萬`];
+        let tickerParts = [`💰 本週支付選手薪資 $${(GS._lastWeekSalarySum||0).toLocaleString()}萬`];
         if(aiMatchResults.length > 0) {
             let shuffled = aiMatchResults.slice().sort(() => 0.5 - Math.random());
             shuffled.slice(0, 2).forEach(r => tickerParts.push(`📰 ${r}`));
@@ -4489,8 +4518,15 @@ function draftCompetitorCount(w) {
                     targetSelect.value = entry.opponentId;
                     targetSelect.disabled = true;
                 }
-            } else if(targetSelect.options.length === 0) {
-                targetSelect.innerHTML = GS.factions.slice(1).map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+            } else {
+                // 每次都重新產生完整選項清單，確保反映最新的團體狀態(新增/解散團體都要即時更新)，
+                // 但盡量保留玩家原本選中的對手(如果該團隊依然存在)，避免選單被意外重置
+                let currentValue = targetSelect.value;
+                let availableFactions = GS.factions.slice(1);
+                targetSelect.innerHTML = availableFactions.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+                if(currentValue && availableFactions.some(f => String(f.id) === currentValue)) {
+                    targetSelect.value = currentValue;
+                }
                 targetSelect.disabled = false;
             }
         }
