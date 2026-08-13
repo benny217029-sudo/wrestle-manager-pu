@@ -2504,9 +2504,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `<p style="font-size:1.2rem; margin-bottom:6px; color:var(--gold);">⭐ Lv.${c.coachLevel}（已滿級）</p>`
                 : `<p style="font-size:1.2rem; margin-bottom:4px; color:var(--gold);">⭐ Lv.${c.coachLevel}</p><div class="progress-track" style="margin-bottom:8px;"><div class="progress-fill" style="width:${Math.round(c.coachXp/xpNeeded*100)}%; background:linear-gradient(90deg, var(--copper), var(--gold));"></div></div>`;
             if(c.hired && c.hiredBy === 0) {
-                let opts = `<option value="">-- 指派給旗下選手 --</option>` + GS.roster.map((w) => `<option value="${w.id}" ${w.coachId===c.id?'selected':''}>${w.name}</option>`).join('');
+                const MAX_STUDENTS = 3;
+                let assignedWrestlers = GS.roster.filter(w => w.coachId === c.id);
+                let studentsHtml = assignedWrestlers.length > 0
+                    ? assignedWrestlers.map(w => `<div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:6px 10px; border-radius:6px; margin-bottom:6px;"><span style="font-size:1.3rem;">${window.escAttr(w.name)}</span><button class="btn btn-danger" style="width:auto; padding:4px 10px; font-size:1.1rem;" onclick="window.removeCoachAssignment(${w.id})">移除</button></div>`).join('')
+                    : `<p style="font-size:1.2rem; color:var(--muted); margin-bottom:6px;">尚未指導任何選手</p>`;
+                let availableForAssign = GS.roster.filter(w => w.coachId !== c.id);
+                let opts = `<option value="">-- 新增指導選手 --</option>` + availableForAssign.map((w) => `<option value="${w.id}">${w.name}${w.coachId?'（將轉移指派）':''}</option>`).join('');
+                let atLimit = assignedWrestlers.length >= MAX_STUDENTS;
                 let termHtml = c.isFormerWrestler ? `<p style="font-size:1.2rem; margin-bottom:10px; color:var(--steel);">🎓 前選手轉任・任期至第${c.coachTermEndYear}年（剩餘${Math.max(0, c.coachTermEndYear - GS.year)}年）</p>` : '';
-                return `<div class="card" style="border-color:var(--neon-pink);"><h3 style="color:var(--neon-pink); font-size:2.2rem; margin-bottom:10px;">${c.name} (我方)</h3>${levelHtml}${termHtml}<p style="font-size:1.4rem; margin-bottom:8px;">專長指導: <strong style="color:var(--gold);">${c.specialty}</strong></p><p style="font-size:1.3rem; margin-bottom:15px; color:var(--muted);">指導效果：每次訓練專長項目額外 +${bonusPerStat}${levelBonus>0?`（含等級加成+${levelBonus}）`:''}</p><select style="font-size:1.4rem; padding:8px;" onchange="window.assignCoach(this.value, '${c.id}')">${opts}</select><button class="btn btn-danger" style="width:100%; margin-top:10px;" onclick="window.fireCoach('${c.id}')">解雇教練</button></div>`;
+                return `<div class="card" style="border-color:var(--neon-pink);"><h3 style="color:var(--neon-pink); font-size:2.2rem; margin-bottom:10px;">${c.name} (我方)</h3>${levelHtml}${termHtml}<p style="font-size:1.4rem; margin-bottom:8px;">專長指導: <strong style="color:var(--gold);">${c.specialty}</strong></p><p style="font-size:1.3rem; margin-bottom:15px; color:var(--muted);">指導效果：每次訓練專長項目額外 +${bonusPerStat}${levelBonus>0?`（含等級加成+${levelBonus}）`:''}</p><p style="font-size:1.3rem; color:var(--neon-pink); margin-bottom:6px;">👥 指導中（${assignedWrestlers.length}/${MAX_STUDENTS}）：</p>${studentsHtml}<select style="font-size:1.4rem; padding:8px; width:100%; ${atLimit?'opacity:0.4;':''}" ${atLimit?'disabled':''} onchange="window.assignCoach(this.value, '${c.id}')">${atLimit?'<option>已達3人上限，請先移除才能新增</option>':opts}</select><button class="btn btn-danger" style="width:100%; margin-top:10px;" onclick="window.fireCoach('${c.id}')">解雇教練</button></div>`;
             } else if (!c.hired) {
                 return `<div class="card"><h3 style="color:var(--gold); font-size:2.2rem; margin-bottom:10px;">${c.name}</h3>${levelHtml}<p style="font-size:1.4rem; margin-bottom:8px;">專長指導: <strong style="color:var(--neon-blue);">${c.specialty}</strong></p><p style="font-size:1.3rem; margin-bottom:15px; color:var(--muted);">指導效果：每次訓練專長項目額外 +${bonusPerStat}</p><button class="btn" style="width:100%; font-size:1.6rem;" onclick="window.hireCoach('${c.id}')">聘用 ($${c.cost.toLocaleString()}萬)</button></div>`;
             } return "";
@@ -2857,17 +2864,27 @@ document.addEventListener('DOMContentLoaded', () => {
         updateUI();
         window.saveGame();
     };
+    // 教練指派：一位教練最多可同時指導3位選手(不再限制1對1)。指派時若該教練已達上限，會被擋下並提示
     window.assignCoach = function(wId, cId) {
         let c = GS.coaches.find(c => c.id === cId);
         if(!c) return;
-        // 修復bug：先清空這位教練原本綁定的其他選手，確保一個教練同時只能帶一位選手
-        GS.roster.forEach(w => { if(w.coachId === c.id) w.coachId = null; });
-        if(wId === "" || wId === undefined || wId === null) {
-            // 什麼都不做，上面已經清空過了
-        } else {
-            let w = GS.roster.find(w => String(w.id) === String(wId));
-            if(w) w.coachId = c.id;
+        if(wId === "" || wId === undefined || wId === null) return; // 選單選了空白選項時不做任何事
+        let w = GS.roster.find(w => String(w.id) === String(wId));
+        if(!w) return;
+        const MAX_STUDENTS = 3;
+        let currentCount = GS.roster.filter(x => x.coachId === c.id).length;
+        if(currentCount >= MAX_STUDENTS) {
+            return window.showSysMsg("已達上限", `${c.name} 目前已同時指導 ${MAX_STUDENTS} 位選手，已達上限！請先移除其中一位才能新增指導對象。`, true);
         }
+        w.coachId = c.id; // 直接指派(若該選手原本已被其他教練指導，這裡會直接轉移過來)
+        updateUI();
+        window.saveGame();
+    };
+
+    // 移除某位選手目前的教練指派
+    window.removeCoachAssignment = function(wId) {
+        let w = GS.roster.find(x => String(x.id) === String(wId));
+        if(w) w.coachId = null;
         updateUI();
         window.saveGame();
     };
@@ -6090,9 +6107,16 @@ document.addEventListener('DOMContentLoaded', () => {
             let league = document.getElementById('nf-league').value;
             let newId = Math.max(...window.GS.factions.map(f=>f.id)) + 1;
 
-            // 隨機生成10名選手，頭像優先從圖庫不重複帶入(洗牌後依序取用；圖庫不夠10張才會出現重複)
+            // 隨機生成10名選手，頭像優先從圖庫不重複帶入：先排除所有現存選手(玩家陣容+全部AI團隊+自由市場)已經在用的圖片，
+            // 避免新團隊選手跟既有選手撞頭像；洗牌後依序取用，扣除已用圖片後仍不夠10張才會出現重複
             let newRoster = [];
-            let shuffledGallery = (window.GS.gallery || []).slice().sort(() => 0.5 - Math.random());
+            let usedImages = [];
+            window.GS.roster.forEach(w => { if(w.img) usedImages.push(w.img); });
+            window.GS.factions.forEach(f => (f.roster||[]).forEach(w => { if(w.img) usedImages.push(w.img); }));
+            window.GS.fa.forEach(w => { if(w.img) usedImages.push(w.img); });
+            let availableGallery = (window.GS.gallery || []).filter(url => !usedImages.includes(url));
+            let galleryPool = availableGallery.length > 0 ? availableGallery : (window.GS.gallery || []);
+            let shuffledGallery = galleryPool.slice().sort(() => 0.5 - Math.random());
             for(let i=0; i<10; i++) {
                 let w = window.genWrestler(false, 20);
                 if(shuffledGallery.length > 0) {
