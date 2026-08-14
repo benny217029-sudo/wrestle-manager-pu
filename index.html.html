@@ -605,6 +605,7 @@ body { overflow-x: hidden; }
                 <div style="flex:0 0 auto;">
                     <div class="ceremony-quote" id="ceremony-quote"></div>
                     <img id="ceremony-img" class="ceremony-portrait">
+                    <div id="ceremony-emblem-wrap" style="display:none; justify-content:center;"></div>
                     <p style="text-align:center; font-size:1.8rem; font-weight:bold; margin-top:8px;" id="ceremony-name"></p>
                     <p style="text-align:center; font-size:1.3rem; color:var(--muted);" id="ceremony-sub"></p>
                 </div>
@@ -803,6 +804,15 @@ body { overflow-x: hidden; }
             <h2 style="text-align:center; color:var(--gold); font-size:2.2rem; margin-bottom:15px;">⚔️ 選擇換人上場</h2>
             <div id="tactical-switch-list" style="display:flex; flex-direction:column; gap:10px; max-height:50vh; overflow-y:auto;"></div>
             <button type="button" class="btn btn-sec" style="width:100%; margin-top:15px; font-size:1.5rem; padding:12px;" onclick="window.closeModal('tactical-switch-overlay')">取消</button>
+        </div>
+    </div>
+
+    <!-- 選手選擇彈窗(共用)：固定顯示在畫面中央，不受頁面捲動/巢狀容器影響，取代原本容易跟賽事卡列表重疊的絕對定位清單 -->
+    <div id="wrestler-picker-overlay" class="overlay" style="z-index:100001;">
+        <div class="modal-box" style="max-width:420px;">
+            <h2 id="wrestler-picker-title" style="text-align:center; color:var(--gold); font-size:2rem; margin-bottom:15px;">選擇選手</h2>
+            <div id="wrestler-picker-modal-list" style="display:flex; flex-direction:column; gap:8px; max-height:60vh; overflow-y:auto;"></div>
+            <button type="button" class="btn btn-sec" style="width:100%; margin-top:15px; font-size:1.5rem; padding:12px;" onclick="window.closeModal('wrestler-picker-overlay')">取消</button>
         </div>
     </div>
 
@@ -4788,19 +4798,17 @@ function draftCompetitorCount(w) {
         
         let h1="", h2=""; 
         for(let i=0; i<count; i++) { 
-            h1 += `<div style="display:flex; flex-direction:column; align-items:center; gap:6px; margin-bottom:15px; background:rgba(0,0,0,0.3); padding:12px; border-radius:8px; position:relative;">
+            h1 += `<div style="display:flex; flex-direction:column; align-items:center; gap:6px; margin-bottom:15px; background:rgba(0,0,0,0.3); padding:12px; border-radius:8px;">
                 <img id="t1-p${i}-avatar" style="width:72px; height:72px; border-radius:50%; object-fit:cover; border:3px solid var(--neon-pink);">
                 <p id="t1-p${i}-name" style="font-size:1.4rem; color:var(--gold); font-weight:bold; text-align:center; margin:0; min-height:1.4em;">-</p>
                 <select id="t1-p${i}" style="display:none;" onchange="window.updateBookingAvatar('t1-p${i}', 't1-p${i}-avatar', window.GS.roster, 't1-p${i}-name')">${pO || '<option value="">無人可用</option>'}</select>
                 <button type="button" class="btn btn-sec" style="width:100%; padding:8px; font-size:1.2rem;" onclick="window.togglePicker('t1', ${i})">選擇選手 ▾</button>
-                <div id="t1-p${i}-picker" class="wrestler-picker-list" style="display:none;"></div>
             </div>`;
-            h2 += `<div style="display:flex; flex-direction:column; align-items:center; gap:6px; margin-bottom:15px; background:rgba(0,0,0,0.3); padding:12px; border-radius:8px; position:relative;">
+            h2 += `<div style="display:flex; flex-direction:column; align-items:center; gap:6px; margin-bottom:15px; background:rgba(0,0,0,0.3); padding:12px; border-radius:8px;">
                 <img id="t2-p${i}-avatar" style="width:72px; height:72px; border-radius:50%; object-fit:cover; border:3px solid var(--neon-blue);">
                 <p id="t2-p${i}-name" style="font-size:1.4rem; color:var(--gold); font-weight:bold; text-align:center; margin:0; min-height:1.4em;">-</p>
                 <select id="t2-p${i}" style="display:none;" onchange="window.updateBookingAvatar('t2-p${i}', 't2-p${i}-avatar', window._bookingPool2, 't2-p${i}-name')">${eO || '<option value="">無人可用</option>'}</select>
                 <button type="button" class="btn btn-sec" style="width:100%; padding:8px; font-size:1.2rem;" onclick="window.togglePicker('t2', ${i})">選擇選手 ▾</button>
-                <div id="t2-p${i}-picker" class="wrestler-picker-list" style="display:none;"></div>
             </div>`;
         }
         window._bookingPool2 = pool2; // 暫存目前的對手池，供頭像更新函式查找選手資料
@@ -4841,13 +4849,8 @@ function draftCompetitorCount(w) {
 
     // 開關自訂選手選擇清單：點擊「選擇選手」按鈕時呼叫，每次展開都重新計算頭像/正反派/已上場狀態
     window.togglePicker = function(team, idx) {
-        let pickerId = team + '-p' + idx + '-picker';
-        let picker = document.getElementById(pickerId);
-        if(!picker) return;
-        let wasOpen = picker.style.display === 'block';
-        // 展開新清單前，先收起其他所有已開啟的清單，避免畫面同時堆疊多個清單
-        document.querySelectorAll('.wrestler-picker-list').forEach(el => { el.style.display = 'none'; });
-        if(wasOpen) return; // 原本就開著代表這次點擊是要關閉它，收起後直接結束
+        window._currentPickerTeam = team;
+        window._currentPickerIdx = idx;
         let pool = team === 't1' ? window.GS.roster : window._bookingPool2;
         if(!pool) return;
         let matchFormatElem = document.getElementById('match-format');
@@ -4877,8 +4880,9 @@ function draftCompetitorCount(w) {
                 ${used ? '<span class="wp-used-tag">已上場</span>' : ''}
             </div>`;
         }).join('');
-        picker.innerHTML = rows || '<div style="padding:10px; color:var(--text-muted); text-align:center;">無人可用</div>';
-        picker.style.display = 'block';
+        document.getElementById('wrestler-picker-title').innerText = team === 't1' ? '選擇我方選手' : '選擇對手選手';
+        document.getElementById('wrestler-picker-modal-list').innerHTML = rows || '<div style="padding:10px; color:var(--text-muted); text-align:center;">無人可用</div>';
+        document.getElementById('wrestler-picker-overlay').style.display = 'flex';
     };
 
     // 從自訂清單中選定選手：同步回隱藏的原生select(維持原有陣容組建/比賽開始邏輯不變)，並更新頭像預覽
@@ -4889,17 +4893,9 @@ function draftCompetitorCount(w) {
         sel.value = poolIdx;
         let pool = team === 't1' ? window.GS.roster : window._bookingPool2;
         window.updateBookingAvatar(selId, selId+'-avatar', pool, selId+'-name');
-        let picker = document.getElementById(selId+'-picker');
-        if(picker) picker.style.display = 'none';
+        window.closeModal('wrestler-picker-overlay');
     };
 
-    // 點擊清單與觸發按鈕以外的地方時，自動收起所有展開中的選手選擇清單
-    document.addEventListener('click', function(e) {
-        if(e.target.closest('.wrestler-picker-list')) return;
-        if(e.target.closest('button[onclick*="togglePicker"]')) return;
-        document.querySelectorAll('.wrestler-picker-list').forEach(el => { el.style.display = 'none'; });
-    });
-    
     ['match-format', 'booking-mode', 'target-faction-select'].forEach(id => {
         let el = document.getElementById(id);
         if(el) el.addEventListener('change', window.updateBookingSelects);
@@ -4909,10 +4905,30 @@ function draftCompetitorCount(w) {
     if(randMatch) randMatch.addEventListener('click', () => { 
         window.updateBookingSelects(); 
         let count = parseInt(document.getElementById('match-format').value);
+
+        // 不重複抽樣：分別為t1、t2各自準備一份「可用選項index」池，每抽完一位就從池子移除，
+        // 確保同一隊伍的多個槽位不會抽到同一位選手(原本每個槽位各自獨立隨機，會出現重複/已上場選手被再次抽中的問題)
+        let buildPool = (selEl) => {
+            if(!selEl) return [];
+            let pool = [];
+            for(let i=0; i<selEl.options.length; i++) pool.push(i);
+            return pool;
+        };
+        let pool1 = buildPool(document.getElementById('t1-p0'));
+        let pool2 = buildPool(document.getElementById('t2-p0'));
+
         for(let i=0; i<count; i++) {
             let s1 = document.getElementById('t1-p'+i), s2 = document.getElementById('t2-p'+i);
-            if(s1 && s1.options.length > 0) s1.selectedIndex = R(s1.options.length);
-            if(s2 && s2.options.length > 0) s2.selectedIndex = R(s2.options.length);
+            if(s1 && pool1.length > 0) {
+                let pickIdx = Math.floor(Math.random() * pool1.length);
+                s1.selectedIndex = pool1[pickIdx];
+                pool1.splice(pickIdx, 1); // 抽走後從池子移除，下一個槽位就不會再抽到同一人
+            }
+            if(s2 && pool2.length > 0) {
+                let pickIdx = Math.floor(Math.random() * pool2.length);
+                s2.selectedIndex = pool2[pickIdx];
+                pool2.splice(pickIdx, 1);
+            }
             // 隱藏select的selectedIndex變更不會自動觸發畫面更新，手動刷新頭像與名字顯示
             window.updateBookingAvatar('t1-p'+i, 't1-p'+i+'-avatar', window.GS.roster, 't1-p'+i+'-name');
             window.updateBookingAvatar('t2-p'+i, 't2-p'+i+'-avatar', window._bookingPool2, 't2-p'+i+'-name');
@@ -5573,8 +5589,8 @@ function draftCompetitorCount(w) {
             if(this._lastLogLen !== this.log.length) {
                 this._lastLogLen = this.log.length;
                 let l = document.getElementById('match-log');
-                l.innerHTML = this.log.slice(-20).map(x => `<div class="log-line">${x}</div>`).join('');
-                l.scrollTop = l.scrollHeight;
+                l.innerHTML = this.log.slice(-20).reverse().map(x => `<div class="log-line">${x}</div>`).join(''); // 新到舊：最新的一則顯示在最上方
+                l.scrollTop = 0;
             }
         },
         renderStatCard: function(side, w) {
@@ -7077,6 +7093,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(champFaction) champFaction.pop = Math.min(100, (champFaction.pop||0) + 8);
             }
             window.addHallOfFame(`💥 <strong style="color:var(--gold);">生存大逃殺・最後生還者</strong>：${br.champion.wrestler.name}${br.champion.facId===0?'（我方）':''}！`);
+            if(!GS.yearTournamentChampions) GS.yearTournamentChampions = [];
+            GS.yearTournamentChampions.push({ label: '生存大逃殺', name: br.champion.wrestler.name, facId: br.champion.facId, img: br.champion.wrestler.img });
             window.showBigEvent('💥 生存大逃殺', '☠️ 最後生還者誕生！', `${br.champion.wrestler.name}${br.champion.facId===0?'（我方）':''}擊敗其餘${br.participants.length-1}位選手，成為最後生還者！${br.champion.facId===0?`獲得獎金 $${BASE_PRIZE.toLocaleString()}萬，人氣+40！`:''}`, br.champion.wrestler.img);
             window.closeModal('battle-royal-overlay');
             br.active = false;
@@ -8594,12 +8612,49 @@ document.addEventListener('DOMContentLoaded', () => {
     const CEREMONY_QUOTES = {
         tournament: ["「苦しい試合もあった。でも全部、今のわたしを作ってくれた」", "「この栄光を、応援してくれたファンに捧げます」", "「まだまだ上を目指す。これがゴールじゃない」"],
         top3: ["「努力は絶対に裏切らない、それを証明できた」", "「まだ成長できる、そう信じてる」", "「この結果に満足せず、さらに上を目指します」"],
-        mvp: ["「苦しい試合もあった。でも全部、今のわたしを作ってくれた」", "「一年間、本当にありがとうございました」", "「この団体を、もっと大きくしていきたい」"]
+        mvp: ["「苦しい試合もあった。でも全部、今のわたしを作ってくれた」", "「一年間、本当にありがとうございました」", "「この団体を、もっと大きくしていきたい」"],
+        team_best: ["「この一年の積み重ねが、ようやく結果になりました」", "「団体全員の努力が実を結んだ瞬間です」", "「来年も、この栄光を守り抜いてみせる」"],
+        team_dark_horse: ["「誰も予想しなかった躍進、これがわたしたちの底力」", "「まだまだ序章に過ぎない、本当の勝負はこれから」", "「下から這い上がる強さを、証明できた一年でした」"],
+        team_popularity: ["「ファンの声援が、わたしたちを一番強くしてくれる」", "「この人気に恥じない試合を、これからも見せていきます」", "「応援してくれる皆さんへ、心からの感謝を」"]
     };
 
-    // 年底表揚儀式：依序展示①各大賽冠軍 ②綜合能力前三名 ③年度MVP
+    // 年底表揚儀式：依序展示①團隊獎項(最佳團隊/黑馬崛起/人氣王) ②各大賽冠軍 ③綜合能力前三名 ④年度MVP
     window.showYearEndCeremony = function(onDone) {
         let queue = [];
+
+        // 團隊獎項：整合團隊綜合評價排名系統，用團隊徽章取代選手頭像顯示
+        let overallRankings = (GS._lastOverallRankings && GS._lastOverallRankings.length > 0) ? GS._lastOverallRankings : (window.getTeamOverallRankings ? window.getTeamOverallRankings() : []);
+        if(overallRankings.length > 0) {
+            let bestTeam = overallRankings[0];
+            let bestTeamFac = GS.factions.find(f => f.id === bestTeam.facId);
+            queue.push({ type:'team_best', badge:'🏆', label:'年度最佳團隊', name: bestTeam.name, sub: `綜合評價 ${bestTeam.total} 分`, emblem: bestTeamFac ? bestTeamFac.emblem : null, teamStats: bestTeam });
+
+            // 黑馬崛起獎：比較最近兩年度的排名名次，找出進步幅度最大的團隊(需要至少2年歷史紀錄才能比較，第一年從缺)
+            let history = GS.yearEndRankingHistory || [];
+            if(history.length >= 2) {
+                let thisYear = history[history.length - 1], lastYear = history[history.length - 2];
+                let bestImprovement = null, bestImprovementAmount = 0;
+                thisYear.rankings.forEach(cur => {
+                    let prev = lastYear.rankings.find(p => p.facId === cur.facId);
+                    if(prev) {
+                        let improvement = prev.rank - cur.rank; // 名次數字變小代表進步
+                        if(improvement > bestImprovementAmount) { bestImprovementAmount = improvement; bestImprovement = { cur, prev }; }
+                    }
+                });
+                if(bestImprovement && bestImprovementAmount > 0) {
+                    let fac = GS.factions.find(f => f.id === bestImprovement.cur.facId);
+                    queue.push({ type:'team_dark_horse', badge:'📈', label:'黑馬崛起獎', name: bestImprovement.cur.name, sub: `第${bestImprovement.prev.rank}名 → 第${bestImprovement.cur.rank}名`, emblem: fac ? fac.emblem : null });
+                }
+            }
+
+            // 人氣王團隊：單純比較目前人氣值(此時尚未重置，可直接讀GS.factions)
+            let popRanked = GS.factions.slice().sort((a,b) => (b.pop||0) - (a.pop||0));
+            let popKing = popRanked[0];
+            if(popKing) {
+                queue.push({ type:'team_popularity', badge:'🌟', label:'人氣王團隊', name: popKing.name, sub: `人氣 ${popKing.pop||0}`, emblem: popKing.emblem });
+            }
+        }
+
         (GS.yearTournamentChampions || []).forEach(t => queue.push({ type:'tournament', badge:'🏆', label: `${t.label} 優勝`, name: t.name, sub: t.facId===0?'我方選手':'', img: t.img }));
 
         let allWrestlers = GS.roster.concat(...GS.factions.map(f => f.roster));
@@ -8627,8 +8682,20 @@ document.addEventListener('DOMContentLoaded', () => {
             let item = queue[idx];
             document.getElementById('ceremony-badge').innerText = item.badge;
             document.getElementById('ceremony-label').innerText = item.label;
-            document.getElementById('ceremony-img').src = item.img || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(item.name)}`;
-            document.getElementById('ceremony-img').onerror = function(){ this.onerror=null; this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(item.name)}`; };
+            let isTeamAward = item.type === 'team_best' || item.type === 'team_dark_horse' || item.type === 'team_popularity';
+            let imgEl = document.getElementById('ceremony-img');
+            let emblemWrap = document.getElementById('ceremony-emblem-wrap');
+            if(isTeamAward) {
+                // 團隊獎項用團隊徽章取代選手頭像顯示
+                imgEl.style.display = 'none';
+                emblemWrap.style.display = 'flex';
+                emblemWrap.innerHTML = item.emblem ? window.renderEmblemHtml(item.emblem, 120) : '';
+            } else {
+                imgEl.style.display = '';
+                emblemWrap.style.display = 'none';
+                imgEl.src = item.img || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(item.name)}`;
+                imgEl.onerror = function(){ this.onerror=null; this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(item.name)}`; };
+            }
             document.getElementById('ceremony-name').innerText = item.name;
             document.getElementById('ceremony-sub').innerText = item.sub || '';
             let quotePool = CEREMONY_QUOTES[item.type] || CEREMONY_QUOTES.mvp;
@@ -8652,6 +8719,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="ceremony-stat-row"><span class="label">🛡️ 耐</span><span class="value">${w.end}</span></div>
                     <div class="ceremony-stat-row"><span class="label">🧠 精</span><span class="value">${w.mnt}</span></div>
                 `;
+            } else if(item.type === 'team_best' && item.teamStats) {
+                let t = item.teamStats;
+                statsEl.innerHTML = `
+                    <div class="ceremony-stat-row"><span class="label">⚔️ 戰績分</span><span class="value">${t.recordScore}/40（勝率${t.winRatePct}%）</span></div>
+                    <div class="ceremony-stat-row"><span class="label">🌟 人氣分</span><span class="value">${t.popScore}/30</span></div>
+                    <div class="ceremony-stat-row"><span class="label">💪 陣容分</span><span class="value">${t.powerScore}/20</span></div>
+                    <div class="ceremony-stat-row"><span class="label">👑 王座分</span><span class="value">${t.titleScore}/10</span></div>
+                `;
+            } else if(isTeamAward) {
+                statsEl.innerHTML = `<div class="ceremony-stat-row"><span class="label">🏟️ 会場</span><span class="value">ドーム</span></div>`;
             } else {
                 statsEl.innerHTML = `<div class="ceremony-stat-row"><span class="label">🏟️ 会場</span><span class="value">ドーム</span></div>`;
             }
