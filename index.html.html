@@ -1122,6 +1122,17 @@ body { overflow-x: hidden; }
             <h2 style="margin-bottom:8px;">🛒 自由市場 (招募選手)</h2>
             <p style="font-size:1.4rem; color:var(--muted); margin-bottom:15px;">目前市場上共有 <strong id="market-count-text" style="color:var(--gold); font-size:1.6rem;">0</strong> 位選手</p>
             <button class="btn btn-sec" style="margin-bottom:15px; font-size:1.3rem; padding:10px 20px;" onclick="window.bulkApplyGalleryImages('fa')">🖼️ 一鍵套用圖庫頭像（依序不重複分配給全部選手）</button>
+            <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
+                <select id="market-sort-key" style="font-size:1.3rem; padding:8px 10px; flex:1; min-width:120px;" onchange="window.renderMarketGrid()">
+                    <option value="ovr" selected>依能力值排序</option>
+                    <option value="pop">依人氣度排序</option>
+                    <option value="joined">依新增時間排序</option>
+                </select>
+                <select id="market-sort-dir" style="font-size:1.3rem; padding:8px 10px; flex:1; min-width:100px;" onchange="window.renderMarketGrid()">
+                    <option value="desc" selected>▼ 遞減（高到低）</option>
+                    <option value="asc">▲ 遞增（低到高）</option>
+                </select>
+            </div>
             <div class="grid" id="market-grid"></div>
         </section>
 
@@ -2662,6 +2673,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(window.renderTrophyWall) window.renderTrophyWall();
         if(window.renderSeasonSchedule) window.renderSeasonSchedule();
         if(window.renderRosterCoachesSummary) window.renderRosterCoachesSummary();
+        if(window.renderMarketGrid) window.renderMarketGrid();
         if(window.renderSeasonGoals) window.renderSeasonGoals();
         let brEntryCard = document.getElementById('battle-royal-entry-card');
         if(brEntryCard) brEntryCard.style.display = (GS.battleRoyal && GS.battleRoyal.active) ? 'block' : 'none';
@@ -2722,33 +2734,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`).join('');
         document.getElementById('roster-grid').innerHTML = rosterHTML || "<p style='font-size:1.6rem;'>尚無選手</p>";
 
-        let myTeamPop = window.getMyTeamPop ? window.getMyTeamPop() : 0;
-        let faHTML = GS.fa.map((w) => {
-            let requiredPop = window.calcFaRequiredPop ? window.calcFaRequiredPop(w) : 0;
-            let isLocked = myTeamPop < requiredPop;
-            let lockHtml = requiredPop > 0
-                ? `<div class="stat-row"><span style="color:${isLocked?'#ff6b6b':'#7CFC00'}; font-weight:bold;">${isLocked?'🔒':'🔓'} 需團隊人氣達 ${requiredPop}（我方目前 ${myTeamPop}）</span></div>`
-                : '';
-            return `
-            <div class="card" style="border-color:${isLocked?'var(--steel)':'var(--gold)'}; ${isLocked?'opacity:0.75;':''}">
-                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
-                <h3 style="color:var(--gold); font-size:2.4rem; margin-bottom:10px;">${w.name} <span style="font-size:1.8rem; color:var(--neon-pink); font-weight:900;">${window.wrestlerLevel(w)}</span> <span style="font-size:1.4rem; color:var(--muted);">(${w.age}歲)</span></h3>
-                <div class="stat-row"><span>🌟 人氣: ${w.pop}</span><span>💪 力量:${w.str}</span></div>
-                <div class="stat-row"><span>⚡ 速度:${w.spd}</span><span>🎯 技巧:${w.tech}</span></div>
-                <div class="stat-row"><span style="color:var(--neon-blue); font-weight:bold;">簽約金: $${(w.salary*4).toLocaleString()}萬</span></div>
-                <div class="stat-row"><span style="color:#ff6b81;">💥 絕招: ${w.signatureMove ? w.signatureMove.move : '未綁定'}</span><span>🏅 ${w.w||0}勝${w.l||0}敗</span></div>
-                ${lockHtml}
-                <div style="display:flex; gap:8px; margin-top:15px;">
-                    <button class="btn btn-sec" style="flex:1; font-size:1.4rem;" onclick="window.showWrestlerProfile('${w.id}')">📇 詳細資料</button>
-                    <button class="btn btn-sec" style="flex:1; font-size:1.4rem;" onclick="window.openEditWrestler('fa', ${w.id})">✏️ 編輯資料</button>
-                    <button class="btn" style="flex:1; font-size:1.4rem; ${isLocked?'opacity:0.4; cursor:not-allowed;':''}" ${isLocked?'disabled':''} onclick="window.signWrestler(${w.id})">${isLocked?'🔒 人氣不足':'重金簽約'}</button>
-                </div>
-                <button class="btn btn-danger" style="width:100%; margin-top:8px; font-size:1.3rem; padding:8px;" onclick="window.deleteFaWrestler(${w.id})">🗑️ 永久刪除（不可復原）</button>
-            </div>`;
-        }).join('');
-        document.getElementById('market-grid').innerHTML = faHTML || "<p style='font-size:1.6rem;'>市場上暫無選手</p>";
-        let marketCountEl = document.getElementById('market-count-text');
-        if(marketCountEl) marketCountEl.innerText = GS.fa.length;
+        window.renderMarketGrid();
 
         let coachCountdownEl = document.getElementById('coach-refresh-countdown');
         if(coachCountdownEl) coachCountdownEl.innerText = GS.coachRefreshCounter !== undefined ? GS.coachRefreshCounter : 4;
@@ -3120,6 +3106,48 @@ document.addEventListener('DOMContentLoaded', () => {
         window.updateUI();
         window.saveGame();
     };
+    // 自由市場清單渲染：支援依能力值/人氣度/新增時間排序，預設依能力值由高到低
+    // (新增時間沒有獨立時間戳記欄位，選手id本身即以時間為基礎產生，數值越大代表越晚加入，用來排序足夠準確且不需要改動所有選手建立點)
+    window.renderMarketGrid = function() {
+        let countEl = document.getElementById('market-count-text');
+        if(countEl) countEl.innerText = GS.fa.length;
+
+        let sortKeyEl = document.getElementById('market-sort-key');
+        let sortDirEl = document.getElementById('market-sort-dir');
+        let sortKey = sortKeyEl ? sortKeyEl.value : 'ovr';
+        let sortDir = sortDirEl ? sortDirEl.value : 'desc';
+
+        let sorted = GS.fa.slice().sort((a, b) => {
+            let va, vb;
+            if(sortKey === 'pop') { va = a.pop||0; vb = b.pop||0; }
+            else if(sortKey === 'joined') { va = a.id; vb = b.id; }
+            else { va = window.wrestlerLevel(a); vb = window.wrestlerLevel(b); } // 'ovr'：綜合能力等級
+            return sortDir === 'asc' ? va - vb : vb - va;
+        });
+
+        let myTeamPop = window.getMyTeamPop ? window.getMyTeamPop() : 0;
+        let marketHTML = sorted.map((w) => {
+            let requiredPop = window.calcFaRequiredPop ? window.calcFaRequiredPop(w) : 0;
+            let affordable = myTeamPop >= requiredPop;
+            return `
+            <div class="card" style="${affordable ? '' : 'opacity:0.7;'}">
+                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
+                <h3 style="color:var(--neon-pink); font-size:2.4rem; margin-bottom:2px;">${w.name.replace('[FA] ','')} <span style="font-size:1.8rem; color:var(--gold); font-weight:900;">${window.wrestlerLevel(w)}</span> <span style="font-size:1.4rem; color:var(--muted);">(${w.age}歲)</span></h3>
+                <div class="stat-row"><span>🌟 人氣: ${w.pop}</span><span>🔮 潛力: ${w.potential||'-'}</span></div>
+                <div class="stat-row"><span>💪 力:${w.str}</span><span>⚡ 速:${w.spd}</span><span>🎯 技:${w.tech}</span></div>
+                <div class="stat-row"><span>🛡️ 耐:${w.end}</span><span>🧠 精:${w.mnt}</span></div>
+                <div class="stat-row"><span style="color:var(--gold);">💰 月薪: $${(w.salary||0).toLocaleString()}萬</span></div>
+                <div class="stat-row"><span style="color:${affordable?'#7CFC00':'#ff6b6b'};">${affordable?'✅':'🔒'} 簽約門檻: 人氣${requiredPop}（我方${myTeamPop}）</span></div>
+                <div style="display:flex; gap:8px; margin-top:15px;">
+                    <button class="btn btn-sec" style="flex:1; font-size:1.4rem;" onclick="window.showWrestlerProfile('${w.id}')">📇 詳細資料</button>
+                    <button class="btn" style="flex:1; font-size:1.4rem;" onclick="window.signWrestler(${w.id})">🤝 洽談簽約</button>
+                    <button class="btn btn-danger" style="flex:1; font-size:1.4rem;" onclick="window.deleteFaWrestler(${w.id})">🗑️ 刪除</button>
+                </div>
+            </div>`;
+        }).join('');
+        document.getElementById('market-grid').innerHTML = marketHTML || "<p style='font-size:1.6rem;'>目前自由市場沒有選手</p>";
+    };
+
     window.deleteFaWrestler = function(id) {
         let idx = GS.fa.findIndex(w => w.id === id);
         if(idx === -1) return showSysMsg("錯誤", "找不到該選手，可能已被異動！", true);
