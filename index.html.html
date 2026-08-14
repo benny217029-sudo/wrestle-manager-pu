@@ -816,6 +816,15 @@ body { overflow-x: hidden; }
         </div>
     </div>
 
+    <!-- 教練新增指導選手選擇彈窗(含頭像)，取代原本無法顯示圖片的原生select -->
+    <div id="coach-student-picker-overlay" class="overlay" style="z-index:100001;">
+        <div class="modal-box" style="max-width:420px;">
+            <h2 style="text-align:center; color:var(--gold); font-size:2rem; margin-bottom:15px;">👥 新增指導選手</h2>
+            <div id="coach-student-picker-list" style="display:flex; flex-direction:column; gap:8px; max-height:60vh; overflow-y:auto;"></div>
+            <button type="button" class="btn btn-sec" style="width:100%; margin-top:15px; font-size:1.5rem; padding:12px;" onclick="window.closeModal('coach-student-picker-overlay')">取消</button>
+        </div>
+    </div>
+
     <!-- 團隊綜合評價排名榜 -->
     <div id="overall-rankings-overlay" class="overlay">
         <div class="modal-box" style="max-width:600px; width:100%;">
@@ -2186,13 +2195,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>`).join('')
                 : `<p style="font-size:1.1rem; color:var(--muted); margin-bottom:5px;">尚未指導任何選手</p>`;
             let availableForAssign = GS.roster.filter(w => w.coachId !== c.id);
-            let opts = `<option value="">-- 新增指導選手 --</option>` + availableForAssign.map((w) => `<option value="${w.id}">${window.escAttr(w.name)}${w.coachId?'（將轉移指派）':''}</option>`).join('');
             html += `<div style="background:rgba(0,0,0,0.3); border-radius:8px; padding:10px;">
                 <p style="font-size:1.3rem; color:var(--gold); font-weight:bold; margin-bottom:4px;">${window.escAttr(c.name)}　⭐Lv.${c.coachLevel||1}</p>
                 <p style="font-size:1.1rem; color:var(--muted); margin-bottom:6px;">專長：${window.escAttr(c.specialty)}</p>
                 <p style="font-size:1.1rem; color:var(--neon-pink); margin-bottom:4px;">👥 指導中（${students.length}/${MAX_STUDENTS}）：</p>
                 ${studentsHtml}
-                <select style="font-size:1.2rem; padding:6px; width:100%; margin-top:4px; ${atLimit?'opacity:0.4;':''}" ${atLimit?'disabled':''} onchange="window.assignCoach(this.value, '${c.id}')">${atLimit?'<option>已達3人上限，請先移除才能新增</option>':opts}</select>
+                <button type="button" class="btn btn-sec" style="font-size:1.2rem; padding:8px; width:100%; margin-top:4px; ${atLimit?'opacity:0.4;':''}" ${atLimit?'disabled':''} onclick="window.openCoachStudentPicker('${c.id}')">${atLimit?'已達3人上限，請先移除才能新增':'-- 新增指導選手 --'}</button>
             </div>`;
         });
         html += `</div><p style="font-size:1.1rem; color:var(--muted); margin-top:10px;">💡 可在此直接指派/移除指導選手，或點擊「專屬教練」分頁做更完整的教練管理（解雇等）</p></div>`;
@@ -2757,13 +2765,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const MAX_STUDENTS = 3;
                 let assignedWrestlers = GS.roster.filter(w => w.coachId === c.id);
                 let studentsHtml = assignedWrestlers.length > 0
-                    ? assignedWrestlers.map(w => `<div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:6px 10px; border-radius:6px; margin-bottom:6px;"><span style="font-size:1.3rem;">${window.escAttr(w.name)}</span><button class="btn btn-danger" style="width:auto; padding:4px 10px; font-size:1.1rem;" onclick="window.removeCoachAssignment(${w.id})">移除</button></div>`).join('')
+                    ? assignedWrestlers.map(w => `<div style="display:flex; align-items:center; gap:8px; background:rgba(0,0,0,0.3); padding:6px 10px; border-radius:6px; margin-bottom:6px;">
+                        <img src="${window.escAttr(w.img)}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'" style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:2px solid var(--neon-pink); flex-shrink:0;">
+                        <span style="font-size:1.3rem; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escAttr(w.name)}</span>
+                        <button class="btn btn-danger" style="width:auto; padding:4px 10px; font-size:1.1rem; flex-shrink:0;" onclick="window.removeCoachAssignment(${w.id})">移除</button>
+                    </div>`).join('')
                     : `<p style="font-size:1.2rem; color:var(--muted); margin-bottom:6px;">尚未指導任何選手</p>`;
-                let availableForAssign = GS.roster.filter(w => w.coachId !== c.id);
-                let opts = `<option value="">-- 新增指導選手 --</option>` + availableForAssign.map((w) => `<option value="${w.id}">${w.name}${w.coachId?'（將轉移指派）':''}</option>`).join('');
                 let atLimit = assignedWrestlers.length >= MAX_STUDENTS;
                 let termHtml = c.isFormerWrestler ? `<p style="font-size:1.2rem; margin-bottom:10px; color:var(--steel);">🎓 前選手轉任・任期至第${c.coachTermEndYear}年（剩餘${Math.max(0, c.coachTermEndYear - GS.year)}年）</p>` : '';
-                return `<div class="card" style="border-color:var(--neon-pink);"><h3 style="color:var(--neon-pink); font-size:2.2rem; margin-bottom:10px;">${c.name} (我方)</h3>${levelHtml}${termHtml}<p style="font-size:1.4rem; margin-bottom:8px;">專長指導: <strong style="color:var(--gold);">${c.specialty}</strong></p><p style="font-size:1.3rem; margin-bottom:15px; color:var(--muted);">指導效果：每次訓練專長項目額外 +${bonusPerStat}${levelBonus>0?`（含等級加成+${levelBonus}）`:''}</p><p style="font-size:1.3rem; color:var(--neon-pink); margin-bottom:6px;">👥 指導中（${assignedWrestlers.length}/${MAX_STUDENTS}）：</p>${studentsHtml}<select style="font-size:1.4rem; padding:8px; width:100%; ${atLimit?'opacity:0.4;':''}" ${atLimit?'disabled':''} onchange="window.assignCoach(this.value, '${c.id}')">${atLimit?'<option>已達3人上限，請先移除才能新增</option>':opts}</select><button class="btn btn-danger" style="width:100%; margin-top:10px;" onclick="window.fireCoach('${c.id}')">解雇教練</button></div>`;
+                return `<div class="card" style="border-color:var(--neon-pink);"><h3 style="color:var(--neon-pink); font-size:2.2rem; margin-bottom:10px;">${c.name} (我方)</h3>${levelHtml}${termHtml}<p style="font-size:1.4rem; margin-bottom:8px;">專長指導: <strong style="color:var(--gold);">${c.specialty}</strong></p><p style="font-size:1.3rem; margin-bottom:15px; color:var(--muted);">指導效果：每次訓練專長項目額外 +${bonusPerStat}${levelBonus>0?`（含等級加成+${levelBonus}）`:''}</p><p style="font-size:1.3rem; color:var(--neon-pink); margin-bottom:6px;">👥 指導中（${assignedWrestlers.length}/${MAX_STUDENTS}）：</p>${studentsHtml}<button type="button" class="btn btn-sec" style="width:100%; font-size:1.4rem; padding:10px; ${atLimit?'opacity:0.4;':''}" ${atLimit?'disabled':''} onclick="window.openCoachStudentPicker('${c.id}')">${atLimit?'已達3人上限，請先移除才能新增':'-- 新增指導選手 --'}</button><button class="btn btn-danger" style="width:100%; margin-top:10px;" onclick="window.fireCoach('${c.id}')">解雇教練</button></div>`;
             } else if (!c.hired) {
                 return `<div class="card"><h3 style="color:var(--gold); font-size:2.2rem; margin-bottom:10px;">${c.name}</h3>${levelHtml}<p style="font-size:1.4rem; margin-bottom:8px;">專長指導: <strong style="color:var(--neon-blue);">${c.specialty}</strong></p><p style="font-size:1.3rem; margin-bottom:15px; color:var(--muted);">指導效果：每次訓練專長項目額外 +${bonusPerStat}</p><button class="btn" style="width:100%; font-size:1.6rem;" onclick="window.hireCoach('${c.id}')">聘用 ($${c.cost.toLocaleString()}萬)</button></div>`;
             } return "";
@@ -3143,6 +3153,29 @@ document.addEventListener('DOMContentLoaded', () => {
         window.saveGame();
     };
     // 教練指派：一位教練最多可同時指導3位選手(不再限制1對1)。指派時若該教練已達上限，會被擋下並提示
+    // 開啟「新增指導選手」彈窗(含頭像)：列出目前還沒被這位教練指導的所有選手，供教練分頁與旗下陣容分頁共用
+    window.openCoachStudentPicker = function(cId) {
+        let c = GS.coaches.find(c => c.id === cId);
+        if(!c) return;
+        const MAX_STUDENTS = 3;
+        let currentCount = GS.roster.filter(x => x.coachId === c.id).length;
+        if(currentCount >= MAX_STUDENTS) {
+            return window.showSysMsg("已達上限", `${c.name} 目前已同時指導 ${MAX_STUDENTS} 位選手，已達上限！請先移除其中一位才能新增指導對象。`, true);
+        }
+        let availableForAssign = GS.roster.filter(w => w.coachId !== c.id);
+        let listEl = document.getElementById('coach-student-picker-list');
+        if(availableForAssign.length === 0) {
+            listEl.innerHTML = '<div style="padding:10px; color:var(--text-muted); text-align:center;">目前沒有其他選手可指派</div>';
+        } else {
+            listEl.innerHTML = availableForAssign.map((w) => `<div class="wrestler-picker-row" onclick="window.assignCoach('${w.id}', '${c.id}'); window.closeModal('coach-student-picker-overlay');">
+                <img src="${window.escAttr(w.img)}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
+                <span class="wp-name">${window.escAttr(w.name)}</span>
+                ${w.coachId ? '<span class="wp-used-tag">將轉移指派</span>' : ''}
+            </div>`).join('');
+        }
+        document.getElementById('coach-student-picker-overlay').style.display = 'flex';
+    };
+
     window.assignCoach = function(wId, cId) {
         let c = GS.coaches.find(c => c.id === cId);
         if(!c) return;
@@ -4891,6 +4924,30 @@ function draftCompetitorCount(w) {
             let sel = document.getElementById(team+'-p'+i);
             if(sel && sel.value !== '') usedIndices.add(parseInt(sel.value));
         }
+        // 同時檢查本週賽事卡裡「已經排定的其他場次」用過哪些選手，避免玩家選到一半才在送出時被擋下、造成困惑
+        // (t1永遠對應我方GS.roster；t2則依目前的對戰模式對應到同一個池子，跟btnAddToCard送出時的驗證邏輯保持一致)
+        let bmNow = document.getElementById('booking-mode') ? document.getElementById('booking-mode').value : 'fa';
+        let targetFactionIdNow = null;
+        if(bmNow === 'faction_war') {
+            let facSel = document.getElementById('target-faction-select');
+            let fac = facSel ? GS.factions.find(f => f.id == facSel.value) : null;
+            if(fac) targetFactionIdNow = fac.id;
+        }
+        (window.MatchEngine && window.MatchEngine.cardQueue ? window.MatchEngine.cardQueue : []).forEach(m => {
+            if(team === 't1') {
+                m.t1Idx.forEach(v => usedIndices.add(parseInt(v)));
+                if(m.bm === 'faction_intra') m.t2Idx.forEach(v => usedIndices.add(parseInt(v)));
+            } else {
+                if(bmNow === 'faction_intra') {
+                    // 目前是隊內大亂鬥，t2池子也是GS.roster：任何場次只要用到GS.roster的選手都算(t1，以及bm同樣是隊內大亂鬥場次的t2)
+                    m.t1Idx.forEach(v => usedIndices.add(parseInt(v)));
+                    if(m.bm === 'faction_intra') m.t2Idx.forEach(v => usedIndices.add(parseInt(v)));
+                } else if(m.bm === bmNow && (bmNow !== 'faction_war' || m.targetFactionId === targetFactionIdNow)) {
+                    // 目前是對外比賽(faction_war/fa)，只跟同樣池子(同對手團隊、或同樣是自由市場)的場次比對
+                    m.t2Idx.forEach(v => usedIndices.add(parseInt(v)));
+                }
+            }
+        });
         let currentSel = document.getElementById(team+'-p'+idx);
         let currentVal = currentSel ? currentSel.value : '';
         let rows = pool.map((w,i) => {
