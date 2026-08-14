@@ -1936,6 +1936,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 GS.tagChampion = null;
             }
         }
+        // 生存大逃殺：若活動仍在本年度進行中，有參賽者已經不在任何隊伍陣容中(被解約/釋出)，
+        // 直接從自由市場抽一位還沒被本次替補用過的選手頂替上去，讓活動能以完整有效的參賽者繼續進行
+        if(GS.battleRoyal && GS.battleRoyal.active && GS.battleRoyal.year === GS.year) {
+            let br = GS.battleRoyal;
+            let usedFaIds = new Set(); // 避免同一場活動裡，不同槽位重複抽到同一位自由市場選手
+            br.participants.forEach(p => {
+                let isEliminated = br.eliminated.some(e => e.wrestler.id === p.wrestler.id);
+                if(isEliminated) return; // 已經被淘汰的不用管，反正也不會再上場
+                let stillActive = p.facId === 0
+                    ? (GS.roster||[]).some(w => w.id === p.wrestler.id)
+                    : ((GS.factions||[]).find(f => f.id === p.facId)||{roster:[]}).roster.some(w => w.id === p.wrestler.id);
+                if(stillActive) return;
+                let candidates = (GS.fa||[]).filter(w => !usedFaIds.has(w.id));
+                if(candidates.length === 0) return; // 自由市場沒人可用，保留原本快照(畫面仍會顯示已離隊標記)
+                let replacement = candidates[Math.floor(Math.random() * candidates.length)];
+                usedFaIds.add(replacement.id);
+                let oldName = p.wrestler.name;
+                p.wrestler = Object.assign({}, replacement, { name: replacement.name.replace('[FA] ', '') }); // 淺拷貝並去除[FA]前綴，顯示乾淨姓名
+                p.facId = -1; // 標記為自由選手，不屬於任何隊伍(不計入任何團隊的奪冠獎勵)
+                p.facName = '自由市場';
+                window.addNewsLog(`💥 生存大逃殺資料修復：${oldName} 已離隊，改由自由市場選手 ${replacement.name.replace('[FA] ', '')} 頂替參賽。`);
+            });
+        }
+        // 生存大逃殺：若活動仍標記進行中，但年份跟目前對不上(代表已經卡了至少一整年沒有正常推進到底)，
+        // 參賽名單早已過期(可能參賽者多半已離隊)，直接關閉讓下次跨年重新生成一批新的
+        if(GS.battleRoyal && GS.battleRoyal.active && GS.battleRoyal.year !== GS.year) {
+            window.addNewsLog(`💥 生存大逃殺資料修復：第${GS.battleRoyal.year}年的活動已過期未完成，已自動關閉。`);
+            GS.battleRoyal.active = false;
+        }
     };
 
     // ========== 團隊綜合評價排名系統 ==========
@@ -7137,15 +7166,27 @@ document.addEventListener('DOMContentLoaded', () => {
         let el = document.getElementById('battle-royal-content');
         if(!el) return;
 
+        // 判斷這位參賽者目前是否還在對應的來源陣容中(玩家自己或該AI團隊)：
+        // 生存大逃殺一旦開幕，參賽名單就是「活動當下」的快照，之後選手被解約/釋出不會跟著更新，
+        // 這是跟賽程表對手一樣的既有設計，但畫面上原本完全沒有提示，容易讓人誤以為資料壞掉，這裡加上清楚標示
+        let isStillActive = (p) => {
+            if(p.facId === -1) return (GS.fa||[]).some(w => w.id === p.wrestler.id); // 自由選手：檢查是否還在自由市場
+            if(p.facId === 0) return (GS.roster||[]).some(w => w.id === p.wrestler.id);
+            let fac = (GS.factions||[]).find(f => f.id === p.facId);
+            return fac ? (fac.roster||[]).some(w => w.id === p.wrestler.id) : false;
+        };
+
         let remaining = br.participants.filter(p => !br.eliminated.some(e => e.wrestler.id === p.wrestler.id));
         let html = `<p style="text-align:center; font-size:1.4rem; color:var(--muted); margin-bottom:15px;">第${br.year}年・生存大逃殺　剩餘 ${remaining.length}/${br.participants.length} 人</p>`;
 
         html += `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(90px, 1fr)); gap:10px; margin-bottom:20px;">`;
         br.participants.forEach(p => {
             let isEliminated = br.eliminated.some(e => e.wrestler.id === p.wrestler.id);
+            let stillActive = isStillActive(p);
             html += `<div style="text-align:center; opacity:${isEliminated?0.35:1};">
                 <img src="${window.escAttr(p.wrestler.img)}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(p.wrestler.name)}'" style="width:56px; height:56px; border-radius:50%; object-fit:cover; border:2px solid ${isEliminated?'var(--muted)':'var(--neon-pink)'}; ${isEliminated?'filter:grayscale(100%);':''}">
                 <p style="font-size:1rem; margin-top:4px; color:${p.facId===0?'var(--gold)':'var(--muted)'};">${window.escAttr(p.wrestler.name)}${isEliminated?' ☠️':''}</p>
+                ${(!stillActive && !isEliminated) ? '<p style="font-size:0.9rem; color:#888; margin-top:2px;">（已離隊，僅保留參賽紀錄）</p>' : ''}
             </div>`;
         });
         html += `</div>`;
