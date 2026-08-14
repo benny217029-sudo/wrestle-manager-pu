@@ -1870,20 +1870,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // 資料可能已經處於損毀狀態(對手團隊/目標選手早已不在了，但賽程表/目標清單還留著舊的名字快照)，
     // 單純讀檔不會主動修好這種髒資料，所以每次讀檔都主動掃一次、抓到就修。
     window.repairStaleReferences = function() {
-        // 賽程表：若排定的對手團隊已經不存在，重新抽一個還在的AI團隊替補
+        // 賽程表：若排定的對手團隊已經不存在，重新抽一個還在的AI團隊替補(優先選玩家自建的團隊，沒有的話才退回任選現存團隊)
         if(GS.schedule && GS.schedule.length > 0) {
             GS.schedule.forEach(entry => {
                 if(entry.result !== null) return; // 已經打過的場次，維持歷史紀錄不動
-                let stillExists = (GS.factions||[]).some(f => f.id === entry.opponentId);
-                if(!stillExists) {
-                    let candidates = (GS.factions||[]).slice(1).filter(c => c.roster && c.roster.length > 0);
-                    if(candidates.length > 0) {
-                        let replacement = candidates[Math.floor(Math.random() * candidates.length)];
+                let realOpponent = (GS.factions||[]).find(f => f.id === entry.opponentId);
+                if(!realOpponent) {
+                    let allCandidates = (GS.factions||[]).slice(1).filter(c => c.roster && c.roster.length > 0);
+                    let customCandidates = allCandidates.filter(c => c.isCustom);
+                    let pool = customCandidates.length > 0 ? customCandidates : allCandidates;
+                    if(pool.length > 0) {
+                        let replacement = pool[Math.floor(Math.random() * pool.length)];
                         let oldName = entry.opponentName;
                         entry.opponentId = replacement.id;
                         entry.opponentName = replacement.name;
                         window.addNewsLog(`📅 賽程表資料修復：原訂第${entry.week}週的對手「${oldName}」已不存在，改為安排 vs 「${replacement.name}」。`);
                     }
+                } else if(realOpponent.name !== entry.opponentName) {
+                    // 對手團隊還在，只是名字跟存進賽程表當下的快照不一致(例如玩家後來改過團隊名稱)，同步校正顯示名稱
+                    let oldName = entry.opponentName;
+                    entry.opponentName = realOpponent.name;
+                    window.addNewsLog(`📅 賽程表資料修復：第${entry.week}週對手名稱已從「${oldName}」更新為「${realOpponent.name}」。`);
                 }
             });
         }
@@ -1893,6 +1900,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if(staleGoals.length > 0) {
                 GS.seasonGoals = GS.seasonGoals.filter(g => !staleGoals.includes(g));
                 window.addNewsLog(`⚠️ 本季目標資料修復：「${staleGoals.map(g=>g.label).join('、')}」因選手已不在陣容中而失效，已移除。`);
+            }
+        }
+        // 王座：若標記為我方持有，但持有者已經不在我方陣容中(被釋出/退役但當初漏了懸缺處理)，讓王座正確懸缺
+        if(GS.champion && GS.champion.isPlayerOwned && !(GS.roster||[]).some(w => w.id === GS.champion.id)) {
+            window.addNewsLog(`👑 王座資料修復：原單打王者已不在我方陣容中，王座正式懸缺。`);
+            GS.champion = null;
+        }
+        if(GS.tagChampion && GS.tagChampion.isPlayerOwned) {
+            let stillHas1 = (GS.roster||[]).some(w => w.id === GS.tagChampion.id1);
+            let stillHas2 = (GS.roster||[]).some(w => w.id === GS.tagChampion.id2);
+            if(!stillHas1 || !stillHas2) {
+                window.addNewsLog(`🤝 雙打王座資料修復：原雙打王者其中一方已不在我方陣容中，雙打王座正式懸缺。`);
+                GS.tagChampion = null;
             }
         }
     };
@@ -2258,7 +2278,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         GS.factions.push({ id: 0, name: "玩家團隊", league: "East", pop: 10, roster: GS.roster, record: {w:0, l:0}, points: 0, streak: 0, emblem: window.pickUniqueEmblem() });
         for(let k=1; k<=15; k++) {
-            let fR = []; for(let r=0; r<6; r++) fR.push(genWrestler(false, 20));
+            let fR = []; for(let r=0; r<10; r++) fR.push(genWrestler(false, 20));
             GS.factions.push({ id: k, name: (FAC_NAMES[k-1] || "地方團隊 "+k), league: k%2===0?"East":"West", pop: 10, roster: fR, record: {w:0, l:0}, points: 0, streak: 0, emblem: window.pickUniqueEmblem() });
         }
         if(window.generateSeasonSchedule) window.generateSeasonSchedule(); // 開局第一季也要有賽程表(第4、8週的比賽對手)
@@ -2720,6 +2740,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // 共用：若指定選手id剛好是我方現任王座持有者，選手離隊後王座應正確懸缺，避免變成指向已不在陣容選手的幽靈紀錄
+    // (AI選手引退、解散團隊時都已經有這層保護，這裡補上玩家自己選手離隊時的同一種保護，避免這個路徑被漏掉)
+    window.invalidateChampionshipIfNeeded = function(id, wrestlerName) {
+        if(GS.champion && GS.champion.isPlayerOwned && GS.champion.id === id) {
+            window.addNewsLog(`👑 現任王者 ${wrestlerName} 已離隊，王座正式懸缺！`);
+            window.addHallOfFame(`👑 <strong style="color:var(--gold);">王座懸缺</strong>：現任王者 ${wrestlerName}（我方）已離隊`);
+            GS.champion = null;
+        }
+        if(GS.tagChampion && GS.tagChampion.isPlayerOwned && (GS.tagChampion.id1 === id || GS.tagChampion.id2 === id)) {
+            window.addNewsLog(`🤝 現任雙打王者之一 ${wrestlerName} 已離隊，雙打王座正式懸缺！`);
+            window.addHallOfFame(`🤝 <strong style="color:var(--gold);">雙打王座懸缺</strong>：現任王者 ${wrestlerName}（我方）已離隊`);
+            GS.tagChampion = null;
+        }
+    };
+
     window.fireWrestler = function(id) {
         let idx = GS.roster.findIndex(w => w.id === id);
         if(idx === -1) return;
@@ -2731,6 +2766,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if(!GS.yearTransactions) GS.yearTransactions = [];
             GS.yearTransactions.push(`📤 釋出：${w.name.replace('[FA] ','')}`);
             window.invalidateSeasonGoalForWrestler(id);
+            window.invalidateChampionshipIfNeeded(id, w.name.replace('[FA] ',''));
             updateUI();
             window.updateBookingSelects();
             window.saveGame();
@@ -3680,6 +3716,7 @@ function draftCompetitorCount(w) {
             GS.fa.push(rel);
             released.push(rel.name.replace('[FA] ', ''));
             if(window.invalidateSeasonGoalForWrestler) window.invalidateSeasonGoalForWrestler(rel.id);
+            if(window.invalidateChampionshipIfNeeded) window.invalidateChampionshipIfNeeded(rel.id, rel.name.replace('[FA] ',''));
         }
         return released;
     }
@@ -6563,6 +6600,10 @@ document.addEventListener('DOMContentLoaded', () => {
         newName = newName.trim();
         if(!newName) return window.showSysMsg("錯誤", "團隊名稱不可為空！", true);
         f.name = newName;
+        // 若這支團隊剛好是本季賽程表排定的對手，立即同步更新顯示名稱，不用等到下次讀檔才校正
+        if(window.GS.schedule) {
+            window.GS.schedule.forEach(entry => { if(entry.opponentId === facId) entry.opponentName = newName; });
+        }
         window.updateUI();
         window.saveGame();
         window.showSysMsg("改名成功", `團隊名稱已更新為「${newName}」！`, false);
