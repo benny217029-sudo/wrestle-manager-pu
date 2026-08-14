@@ -5106,10 +5106,10 @@ function draftCompetitorCount(w) {
         "限界などとうに超えている…！", "会場中が言葉を失っている！"
     ];
     // 依這位選手在比賽中實際交戰的次數(engagements)計算體力消耗：完全沒上場的候補選手只算待命消耗，
-    // 打越久消耗越多，打滿全場者的消耗量會落在接近原本固定值(40)的範圍，維持1v1情境下的既有平衡手感
+    // 打越久消耗越多。整體消耗幅度已放寬(約降低30%)，避免選手一週打個幾場就體力見底、被迫大量休養
     window.calcMatchStaminaLoss = function(engagements) {
-        if(!engagements || engagements <= 0) return 6; // 全程待命候補：僅算基礎待命消耗
-        return Math.min(48, Math.round(14 + engagements * 1.1));
+        if(!engagements || engagements <= 0) return 4; // 全程待命候補：僅算基礎待命消耗
+        return Math.min(35, Math.round(10 + engagements * 0.8));
     };
     // 補齊舊資料（無綁定絕招）的選手：陣容、自由市場、64隊AI團隊全部掃過一輪
     window.ensureSignatureMoves = function() {
