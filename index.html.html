@@ -3892,6 +3892,15 @@ function draftCompetitorCount(w) {
                     let w = f.roster[Math.floor(Math.random()*f.roster.length)];
                     w.pop = Math.min(100, (w.pop||30) + 20);
                 }
+                // 照顧體力：模擬玩家的「放假休息」，主動挑一位體力過低(<30)的選手恢復體力，避免選手體力見底卻沒人照顧
+                if(Math.random() < 0.6) {
+                    let tired = f.roster.filter(w => (w.stamina!==undefined?w.stamina:100) < 30);
+                    if(tired.length > 0) {
+                        let w = tired[Math.floor(Math.random()*tired.length)];
+                        w.stamina = Math.min(100, (w.stamina||0) + 40);
+                    }
+                }
+
                 // 特訓指導：模擬合宿+教練效果，直接小幅提升能力值(封頂100，跟玩家訓練規則一致)
                 // 訓練設施等級越高，觸發機率跟加成幅度都會提升，呼應玩家「訓練設施降低受傷/提升潛力加成」的效果方向
                 let trainingLv = window.getFacilityLevel ? window.getFacilityLevel('training', f.facilities) : 0;
@@ -4051,6 +4060,8 @@ function draftCompetitorCount(w) {
                 let winProb = p1 / (p1 + p2);
                 winProb = Math.min(0.9, Math.max(0.1, winProb)); // 夾在10%~90%，避免必勝/必敗
                 let rep1 = pickRepresentative(f1), rep2 = pickRepresentative(f2);
+                if(rep1) rep1.stamina = Math.max(0, (rep1.stamina!==undefined?rep1.stamina:100) - 10);
+                if(rep2) rep2.stamina = Math.max(0, (rep2.stamina!==undefined?rep2.stamina:100) - 10);
                 if(Math.random() < winProb) {
                     f1.record.w++; f1.points = (f1.points||0) + 2; f1.streak = (f1.streak||0) >= 0 ? (f1.streak||0)+1 : 1;
                     f1.pop = Math.min(100, (f1.pop||0) + 2);
@@ -4067,6 +4078,56 @@ function draftCompetitorCount(w) {
             }
         });
         }
+
+        // AI團隊內部對抗賽：每支AI團隊各自進行指定場次的隊內模擬對戰，每場隨機挑兩位不同選手互打，
+        // 只更新個人數值(勝敗紀錄/人氣/恩怨值/體力)，不影響聯盟戰績積分，維持跟玩家版隊內對抗賽一致的規則
+        function runAiInternalMatches(rounds) {
+            for(let r=0; r<rounds; r++) {
+                GS.factions.slice(1).forEach(f => {
+                    if(!f.roster || f.roster.length < 2) return;
+                    // 優先挑選體力還夠(>=20)的選手上場，避免體力見底的選手被迫不斷應戰；若全隊體力都不足才退回全體隨機挑選
+                    let available = f.roster.filter(w => (w.stamina!==undefined?w.stamina:100) >= 20);
+                    let pool = available.length >= 2 ? available : f.roster;
+                    let shuffled = pool.slice().sort(() => 0.5 - Math.random());
+                    let w1 = shuffled[0], w2 = shuffled[1];
+                    let power1 = (w1.str||0)+(w1.spd||0)+(w1.tech||0)+(w1.end||0)+(w1.mnt||0);
+                    let power2 = (w2.str||0)+(w2.spd||0)+(w2.tech||0)+(w2.end||0)+(w2.mnt||0);
+                    let winProb = Math.min(0.9, Math.max(0.1, power1 / (power1 + power2)));
+                    let winner = Math.random() < winProb ? w1 : w2;
+                    let loser = winner === w1 ? w2 : w1;
+
+                    winner.w = (winner.w||0) + 1;
+                    loser.l = (loser.l||0) + 1;
+                    if(!winner.recentMatches) winner.recentMatches = [];
+                    winner.recentMatches.unshift({ opponent: loser.name, result: 'win' });
+                    if(winner.recentMatches.length > 10) winner.recentMatches = winner.recentMatches.slice(0, 10);
+                    if(!loser.recentMatches) loser.recentMatches = [];
+                    loser.recentMatches.unshift({ opponent: winner.name, result: 'loss' });
+                    if(loser.recentMatches.length > 10) loser.recentMatches = loser.recentMatches.slice(0, 10);
+
+                    // 正反派定位：反派獲勝人氣增益打對折，反派輸給正派時反而激起人氣(邪不勝正的敘事張力)，跟玩家版對戰規則一致
+                    let basePopGain = 1 + Math.floor(Math.random()*2);
+                    let winnerPopGain = (winner.alignment === 'heel') ? Math.round(basePopGain * 0.5) : basePopGain;
+                    winner.pop = Math.min(100, (winner.pop||0) + winnerPopGain);
+                    if(loser.alignment === 'heel' && winner.alignment === 'face') {
+                        loser.pop = Math.min(100, (loser.pop||0) + (1 + Math.floor(Math.random()*2)));
+                    }
+
+                    // 比賽消耗體力：讓AI選手打比賽也會累，才會真的有「體力過低需要休息」的情境需要AI主動照顧
+                    // (消耗幅度比玩家真實對戰低，因為AI內部對抗賽是簡化模擬、一週可能跟隨玩家跑好幾場，避免消耗過快)
+                    winner.stamina = Math.max(0, (winner.stamina!==undefined?winner.stamina:100) - 8);
+                    loser.stamina = Math.max(0, (loser.stamina!==undefined?loser.stamina:100) - 12);
+
+                    if(window.bumpRivalry) window.bumpRivalry(w1, w2, 5); // 普通對戰的恩怨值累積幅度，比照玩家版一般大會對戰
+                });
+            }
+        }
+        // 跟隨玩家出賽場次：只要玩家這週真的有打比賽(不論單場或賽事卡多場)，AI團隊也依同樣場次數進行內部模擬對戰，
+        // 讓AI選手的個人戰績/人氣/恩怨值累積速度盡量貼近玩家選手，避免玩家一週打好幾場、AI選手卻遠遠跟不上出賽經歷
+        // (scrimmage週原本就有「至少1場官方隊內賽」的保底，這裡跟玩家實際出賽場次合併取較大值，避免兩者疊加變成打兩次)
+        let playerMatchCount = matchInfo ? (matchInfo.cardMatchDetails ? matchInfo.cardMatchDetails.length : 1) : 0;
+        let aiInternalRounds = Math.max(justFinishedWeekType === 'scrimmage' ? 1 : 0, playerMatchCount);
+        if(aiInternalRounds > 0) runAiInternalMatches(aiInternalRounds);
 
     // AI團隊人氣每週自然成長/浮動：不受「AI智慧經營」開關限制，每週都會執行，依戰績與陣容強度緩慢調整人氣，
     // 讓人氣能從開局的10分逐步成長，而不是只能靠一年僅有2次的賽程表對戰勝場+1分慢慢累積
@@ -4085,8 +4146,18 @@ function draftCompetitorCount(w) {
         });
     }
 
+    // AI選手每週基礎體力自然恢復：不受「AI智慧經營」開關限制，每週都會執行(全員都有，非機率性)，
+    // 模擬正常作息中本來就會有的休息時間。跟「跟隨玩家出賽場次」消耗體力的機制一樣不受開關限制，
+    // 避免關閉智慧經營時AI選手只消耗、沒有對應的基礎恢復，導致體力長期探底
+    function runAiStaminaRecovery() {
+        GS.factions.slice(1).forEach(f => {
+            (f.roster||[]).forEach(w => { w.stamina = Math.min(100, (w.stamina!==undefined?w.stamina:100) + 6); });
+        });
+    }
+
     runAiSmartManagement(); // AI團隊智慧經營（若GS.aiSmartManagement未開啟則內部直接return）
     runAiPopularityDrift(); // AI團隊人氣自然成長/浮動（不受開關限制，每週都會嘗試）
+    runAiStaminaRecovery(); // AI選手每週基礎體力自然恢復（不受開關限制，每週都會嘗試）
 
         // 器材緊急維修保護期每週遞減
         if(GS._equipmentTempFixWeeks > 0) GS._equipmentTempFixWeeks--;
