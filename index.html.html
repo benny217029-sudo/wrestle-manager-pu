@@ -805,6 +805,16 @@ body { overflow-x: hidden; }
             <button type="button" class="btn btn-sec" style="width:100%; margin-top:15px; font-size:1.5rem; padding:12px;" onclick="window.closeModal('tactical-switch-overlay')">取消</button>
         </div>
     </div>
+
+    <!-- 團隊綜合評價排名榜 -->
+    <div id="overall-rankings-overlay" class="overlay">
+        <div class="modal-box" style="max-width:600px; width:100%;">
+            <h2 style="text-align:center; color:var(--gold); font-size:2.4rem; margin-bottom:8px;">🏆 團隊綜合評價排名</h2>
+            <p style="text-align:center; font-size:1.2rem; color:var(--muted); margin-bottom:15px;">戰績(40) + 人氣(30) + 陣容實力(20) + 王座榮譽(10) = 滿分100</p>
+            <div id="overall-rankings-list" style="max-height:60vh; overflow-y:auto; margin-bottom:15px;"></div>
+            <button type="button" class="btn btn-sec" style="width:100%; font-size:1.5rem; padding:12px;" onclick="window.closeModal('overall-rankings-overlay')">關閉</button>
+        </div>
+    </div>
 </div>
 
 <!-- ================= 遊戲主介面 ================= -->
@@ -850,7 +860,8 @@ body { overflow-x: hidden; }
                     <p style="font-size:1.6rem; margin-bottom:8px;">資金餘額：<strong style="color:var(--neon-blue);">$<span id="dash-money"></span>萬</strong></p>
                     <p style="font-size:1.6rem; margin-bottom:8px;">本週預估支出：<strong id="dash-salary-forecast"></strong></p>
                     <p style="font-size:1.6rem; margin-bottom:8px;">旗下陣容：<strong style="color:var(--neon-pink);" id="dash-roster"></strong> / 20 人</p>
-                    <p style="font-size:1.6rem;">聘用教練：<strong style="color:var(--neon-blue);" id="dash-coach"></strong> / 10 人</p>
+                    <p style="font-size:1.6rem; margin-bottom:10px;">聘用教練：<strong style="color:var(--neon-blue);" id="dash-coach"></strong> / 10 人</p>
+                    <button class="btn btn-sec" style="width:100%; font-size:1.3rem; padding:10px;" onclick="window.showOverallRankings()">🏆 綜合評價排名</button>
                 </div>
                 <div class="card">
                     <h3 style="font-size:2.2rem; margin-bottom:10px;">📰 最新動態</h3>
@@ -1917,6 +1928,78 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // ========== 團隊綜合評價排名系統 ==========
+    // 綜合考量四個面向計算單一團隊的評價分數(滿分100)：
+    // 戰績勝率(0~40分，反映競技表現) + 人氣(0~30分，反映商業聲量) + 陣容實力(0~20分，反映選手平均能力值) + 王座榮譽(0~10分，持有單打/雙打王座各+5)
+    window.calcTeamOverallRating = function(f) {
+        let totalGames = (f.record.w||0) + (f.record.l||0);
+        let winRate = totalGames > 0 ? f.record.w / totalGames : 0.5; // 尚無比賽紀錄時給中性0.5，避免開局就變成0分墊底
+        let recordScore = winRate * 40;
+
+        let popScore = Math.min(100, f.pop||0) / 100 * 30;
+
+        let power = window.factionPower ? window.factionPower(f) : 150; // 陣容平均能力值，落點大致在100~350之間
+        let powerScore = Math.min(20, power / 350 * 20);
+
+        let roster = f.roster || [];
+        let titleScore = 0;
+        if(GS.champion && roster.some(r => r.id === GS.champion.id)) titleScore += 5;
+        if(GS.tagChampion && roster.some(r => r.id === GS.tagChampion.id1 || r.id === GS.tagChampion.id2)) titleScore += 5;
+
+        let total = Math.round(recordScore + popScore + powerScore + titleScore);
+        return {
+            total: Math.max(0, Math.min(100, total)),
+            recordScore: Math.round(recordScore), popScore: Math.round(popScore),
+            powerScore: Math.round(powerScore), titleScore, winRatePct: Math.round(winRate*100)
+        };
+    };
+
+    // 回傳所有團隊(含玩家)依綜合評價分數由高到低排序後的完整陣列，每筆含分項明細
+    window.getTeamOverallRankings = function() {
+        return GS.factions.map(f => Object.assign(
+            { facId: f.id, name: f.name, emblem: f.emblem, isPlayer: f.id === 0 },
+            window.calcTeamOverallRating(f)
+        )).sort((a,b) => b.total - a.total);
+    };
+
+    // 年終結算：把當年度的完整排名結果存進歷史紀錄，供未來查閱歷年排名走勢
+    // yearOverride: 呼叫時機若剛好在GS.year已經遞增到新年度之後，需要明確傳入「剛結束那一年」的年份，避免紀錄被誤標成新年度
+    window.finalizeYearEndRankings = function(yearOverride) {
+        let rankings = window.getTeamOverallRankings();
+        let recordYear = yearOverride !== undefined ? yearOverride : GS.year;
+        if(!GS.yearEndRankingHistory) GS.yearEndRankingHistory = [];
+        GS.yearEndRankingHistory.push({
+            year: recordYear,
+            rankings: rankings.map((r,i) => ({ rank: i+1, facId: r.facId, name: r.name, total: r.total, isPlayer: r.isPlayer }))
+        });
+        if(GS.yearEndRankingHistory.length > 30) GS.yearEndRankingHistory.shift(); // 上限保留30年份，避免存檔無限膨脹
+        let myRank = rankings.findIndex(r => r.isPlayer) + 1;
+        window.addHallOfFame(`🏆 <strong style="color:var(--gold);">第${recordYear}年度團隊綜合評價排名</strong>：我方位居第 ${myRank}/${rankings.length} 名（綜合評分 ${rankings.find(r=>r.isPlayer).total} 分）`);
+        return rankings;
+    };
+
+    // 顯示完整排名榜彈窗：全部團隊由高到低排列，含戰績/人氣/陣容實力/王座榮譽的分項明細
+    window.showOverallRankings = function() {
+        let rankings = window.getTeamOverallRankings();
+        let listEl = document.getElementById('overall-rankings-list');
+        listEl.innerHTML = rankings.map((r, i) => {
+            let rankIcon = i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : `${i+1}.`;
+            return `<div class="card" style="margin-bottom:10px; padding:12px; ${r.isPlayer ? 'border:2px solid var(--gold); background:rgba(251,191,36,0.08);' : ''}">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <h3 style="font-size:1.8rem; margin:0; color:${r.isPlayer?'var(--gold)':'var(--text-main)'};">${rankIcon} ${window.escAttr(r.name)}${r.isPlayer?' (我方)':''}</h3>
+                    <span style="font-size:2rem; font-weight:bold; color:var(--neon-pink);">${r.total}分</span>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:1.2rem; color:var(--muted);">
+                    <span>⚔️戰績:${r.recordScore}/40 (勝率${r.winRatePct}%)</span>
+                    <span>🌟人氣:${r.popScore}/30</span>
+                    <span>💪陣容:${r.powerScore}/20</span>
+                    <span>👑王座:${r.titleScore}/10</span>
+                </div>
+            </div>`;
+        }).join('');
+        document.getElementById('overall-rankings-overlay').style.display = 'flex';
+    };
+
     window.wrestlerLevel = function(w) {
         let sum = (w.str||0)+(w.spd||0)+(w.tech||0)+(w.end||0)+(w.mnt||0);
         return Math.round(Math.min(500, sum) / 500 * 110);
@@ -2376,6 +2459,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if(window.GS.seasonGoals === undefined) { window.GS.seasonGoals = []; if(window.generateSeasonGoals) window.generateSeasonGoals(); }
             if(window.GS.pendingSignings === undefined) window.GS.pendingSignings = [];
             if(window.GS.autoTacticalSwitch === undefined) window.GS.autoTacticalSwitch = false;
+            if(window.GS.yearEndRankingHistory === undefined) window.GS.yearEndRankingHistory = [];
             if(window.ensureSignatureMoves) window.ensureSignatureMoves(); // 舊存檔補齊絕招綁定
             if(window.repairStaleReferences) window.repairStaleReferences(); // 修復賽程表/季度目標裡指向已不存在團隊或選手的殘留資料
             document.getElementById('start-screen').style.display='none'; 
@@ -2490,8 +2574,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(popDispEl) popDispEl.innerText = myFactionTop ? (myFactionTop.pop||0) : 0;
         let rankDispEl = document.getElementById('rank-disp');
         if(rankDispEl) {
-            let ranked = GS.factions.slice().sort((a,b) => (b.points||0) - (a.points||0));
-            let myRank = ranked.findIndex(f => f.id === 0) + 1;
+            let ranked = window.getTeamOverallRankings ? window.getTeamOverallRankings() : GS.factions.slice().sort((a,b) => (b.points||0) - (a.points||0));
+            let myRank = ranked.findIndex(f => (f.isPlayer !== undefined ? f.isPlayer : f.id === 0)) + 1;
             rankDispEl.innerText = myRank > 0 ? `${myRank}/${ranked.length}` : '—';
         }
         let champWrap = document.getElementById('champion-disp-wrap');
@@ -3641,6 +3725,7 @@ function draftCompetitorCount(w) {
         let sum = f.roster.reduce((s,w)=> s + (w.str||0)+(w.spd||0)+(w.tech||0)+(w.end||0)+(w.mnt||0), 0);
         return sum / f.roster.length;
     }
+    window.factionPower = factionPower; // 暴露到全域，供團隊綜合評價排名系統等其他模組呼叫
 
     // 選手綜合評分：能力值 + 未來性(年齡越小潛力分數越高)，AI智慧經營的補強依此排序
     function scoutScore(w) {
@@ -3784,6 +3869,10 @@ function draftCompetitorCount(w) {
         // 重置聯盟積分/戰績/連勝前，先存一份快照供「選秀依戰績分配」與「年度總結排名」使用
         // (這兩個功能都在本次重置之後才會執行，若不先存快照，讀到的會是歸零後的0-0，排序失去意義)
         GS._lastSeasonStandings = GS.factions.map(f => ({ id: f.id, name: f.name, points: f.points||0, w: f.record.w||0, l: f.record.l||0 }));
+
+        // 團隊綜合評價排名系統：同樣要在戰績重置前結算，才能反映當年度的真實戰績表現
+        // 此時GS.year已經在跨年當下遞增過，剛結束的是GS.year-1，明確傳入避免紀錄被誤標成新年度
+        if(window.finalizeYearEndRankings) GS._lastOverallRankings = window.finalizeYearEndRankings(GS.year - 1);
 
         // 重置聯盟積分/戰績/連勝，準備下一年的例行賽
         GS.factions.forEach(f => { f.record = {w:0,l:0}; f.points = 0; f.streak = 0; });
@@ -8574,9 +8663,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 年度總結：排名/王者/簽約釋出/成長最快選手/收支
     window.showYearEndSummary = function(onDone) {
-        let ranking = (GS._lastSeasonStandings && GS._lastSeasonStandings.length > 0)
-            ? GS._lastSeasonStandings.slice().sort((a,b) => b.points - a.points).slice(0, 8)
-            : GS.factions.slice().sort((a,b) => (b.points||0) - (a.points||0)).slice(0, 8);
+        let overallRanking = (GS._lastOverallRankings && GS._lastOverallRankings.length > 0)
+            ? GS._lastOverallRankings.slice(0, 8)
+            : (window.getTeamOverallRankings ? window.getTeamOverallRankings().slice(0, 8) : []);
         let champText = (GS.playoffBracket && GS.playoffBracket.grandFinal && GS.playoffBracket.grandFinal.winner) ? GS.playoffBracket.grandFinal.winner.name : '本年度從缺';
 
         let growthLeaderName = '無資料', growthAmount = 0;
@@ -8592,11 +8681,12 @@ document.addEventListener('DOMContentLoaded', () => {
         let netChange = GS.money - netStart;
 
         document.getElementById('year-summary-content').innerHTML = `
-            <div class="ceremony-stat-row"><span class="label">🏢 團隊年度排名</span><span class="value">${ranking.map((f,i)=>`${i+1}.${f.name}`).join('　')}</span></div>
+            <div class="ceremony-stat-row"><span class="label">🏆 團隊綜合評價排名</span><span class="value">${overallRanking.map((f,i)=>`${i+1}.${f.name}${f.isPlayer?'⭐':''}(${f.total}分)`).join('　')}</span></div>
             <div class="ceremony-stat-row"><span class="label">👑 團隊年度王者</span><span class="value">${champText}</span></div>
             <div class="ceremony-stat-row"><span class="label">📈 成長幅度最高</span><span class="value">${growthLeaderName}（+${growthAmount}）</span></div>
             <div class="ceremony-stat-row"><span class="label">💰 票房+薪資淨額</span><span class="value">收 $${income.toLocaleString()}萬／支 $${expense.toLocaleString()}萬</span></div>
             <div class="ceremony-stat-row"><span class="label">📊 資金淨變動</span><span class="value" style="color:${netChange>=0?'#7CFC00':'#ff6b6b'};">${netChange>=0?'+':''}$${netChange.toLocaleString()}萬</span></div>
+            <p style="font-size:1.1rem; color:var(--muted); margin-top:6px;">💡 綜合評價 = 戰績(40) + 人氣(30) + 陣容實力(20) + 王座榮譽(10)，滿分100。點擊「營運總覽」的「🏆 綜合評價排名」可查看完整16隊排名與分項明細。</p>
             <div style="margin-top:15px;">
                 <p class="label" style="font-size:1.4rem; color:var(--muted); margin-bottom:8px;">📋 選手簽約/釋出紀錄</p>
                 ${(GS.yearTransactions && GS.yearTransactions.length>0) ? GS.yearTransactions.map(t=>`<p style="font-size:1.3rem; margin-bottom:4px;">${t}</p>`).join('') : '<p style="font-size:1.3rem; color:var(--muted);">本年度無異動</p>'}
@@ -9866,6 +9956,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(imported.seasonGoals === undefined) imported.seasonGoals = [];
                     if(imported.pendingSignings === undefined) imported.pendingSignings = [];
                     if(imported.autoTacticalSwitch === undefined) imported.autoTacticalSwitch = false;
+                    if(imported.yearEndRankingHistory === undefined) imported.yearEndRankingHistory = [];
                     imported.currentSlot = (window.GS && window.GS.currentSlot) || 1;
 
                     window.GS = imported;
