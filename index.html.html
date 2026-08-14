@@ -5963,6 +5963,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
             <button class="btn" style="width:100%; padding:20px; font-size:2rem; letter-spacing:4px;" id="btn-create-w-full">✨ 建立並簽約</button>
+
+            <div style="margin-top:25px; padding-top:20px; border-top:2px solid rgba(212,175,55,0.3);">
+                <h3 style="color:var(--gold); font-size:1.8rem; margin-bottom:8px;">🎲 批次新增至自由市場</h3>
+                <p style="font-size:1.2rem; color:var(--muted); margin-bottom:12px;">一次隨機生成多位新秀選手，直接投入自由市場，姓名/能力值/頭像全部自動隨機產生，不影響上方的單一建立表單。</p>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <label style="color:var(--text-main); font-size:1.4rem; flex-shrink:0;">數量</label>
+                    <select id="c-batch-count" style="font-size:1.4rem; padding:10px; flex:1;">
+                        <option value="5">5 位</option>
+                        <option value="10" selected>10 位</option>
+                        <option value="15">15 位</option>
+                        <option value="20">20 位</option>
+                    </select>
+                </div>
+                <button class="btn btn-sec" style="width:100%; padding:16px; font-size:1.6rem; margin-top:12px;" id="btn-batch-create-fa">🎲 批次生成並投入自由市場</button>
+            </div>
         </div>
         `;
     }
@@ -6117,6 +6132,39 @@ document.addEventListener('DOMContentLoaded', () => {
             if(warnElAfterReset) warnElAfterReset.style.display = 'none';
             window._createStatsPreview = window.randomReasonableStats();
             window.refreshCreateStatsDisplay();
+        });
+    }
+
+    // 批次新增選手至自由市場：一次隨機生成多位新秀，姓名/能力值/頭像全部自動產生，避免逐一手動建立太繁瑣
+    let batchCreateBtn = document.getElementById('btn-batch-create-fa');
+    if(batchCreateBtn) {
+        batchCreateBtn.addEventListener('click', () => {
+            let count = parseInt(document.getElementById('c-batch-count').value) || 10;
+            let created = [];
+            for(let k=0; k<count; k++) {
+                let name = window.getUniqueWrestlerName ? window.getUniqueWrestlerName() : `新秀選手${Date.now()}${k}`;
+                let stats = window.randomReasonableStats();
+                let pop = window.calcPopFromStats ? window.calcPopFromStats(stats) : 10;
+                let w = {
+                    id: Date.now() + Math.floor(Math.random() * 1000000) + k, // 加上k避免同一批次時間戳過於接近導致id碰撞
+                    name: "[FA] " + name,
+                    age: 17 + Math.floor(Math.random() * 4),
+                    stamina: 100,
+                    str: stats.str, spd: stats.spd, tech: stats.tech,
+                    mnt: stats.mnt, end: stats.end, pop: pop,
+                    loyalty: 80, salary: Math.floor(40 + (stats.str + stats.spd + stats.tech) * 0.1),
+                    img: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}${Math.random()}`,
+                    w: 0, l: 0, coachId: null, boost: 0, injuryWeeks: 0, retirementCountdown: null, readyForRetirementMatch: false, condition: '普通', vacationWeeks: 0,
+                    potential: window.rollPotential ? window.rollPotential() : 'B', scouted: true, traits: window.rollTraits ? window.rollTraits() : [],
+                    signatureMove: window.randomSignatureMove ? window.randomSignatureMove() : null
+                };
+                window.GS.fa.push(w);
+                created.push(name);
+            }
+            window.updateUI();
+            if(window.updateBookingSelects) window.updateBookingSelects();
+            window.saveGame();
+            window.showSysMsg("批次新增成功", `已生成 ${created.length} 位新秀選手並投入自由市場：\n${created.join('、')}`, false);
         });
     }
 });
