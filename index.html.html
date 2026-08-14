@@ -1225,7 +1225,7 @@ body { overflow-x: hidden; }
             <div class="card" style="max-width:600px; margin-top:25px; border-color:var(--gold);">
                 <h3 style="font-size:2rem; margin-bottom:10px; color:var(--gold);">🤖 AI團隊智慧經營</h3>
                 <p style="color:var(--muted); font-size:1.3rem; margin-bottom:8px;">📌 <strong>無論是否開啟，AI選手都會</strong>比照玩家陣容每年自然老化、28歲後能力衰退，並在32歲以上有機率引退離隊（進引退歸檔，3年後一樣可能在選秀池復出）——這是基礎世界模擬，不受此開關影響。</p>
-                <p style="color:var(--muted); font-size:1.3rem; margin-bottom:15px;">開啟本開關後，AI團隊還會額外主動經營：①依「未來性＋能力值」評分自動從自由市場補強陣容不足（8人以下）的隊伍，戰績越差補強機率越高；②淘汰33歲以上且資質吊車尾的選手；③模擬自主辦理慰勞會/宣傳/特訓指導，隨機小幅提升自家選手的體力、忠誠、人氣與能力值；④人氣達70以上的團隊視同有贊助加持，人氣成長更快；⑤經營優異（戰績前1/3）的團隊年末有機會栽培出資質更強的選手；⑥雙打王座開放週，AI團隊之間也會互相角逐雙打王座（但不會偷偷從玩家手中奪走，玩家的雙打王座只透過玩家主動應戰才會易主）。關閉則AI團隊維持這些主動經營行為全部停止，僅剩基礎的老化/引退與選秀成長。</p>
+                <p style="color:var(--muted); font-size:1.3rem; margin-bottom:15px;">開啟本開關後，AI團隊還會額外主動經營：①依「未來性＋能力值」評分自動從自由市場補強陣容不足（10人以下）的隊伍，戰績越差補強機率越高；②淘汰33歲以上且資質吊車尾的選手；③模擬自主辦理慰勞會/宣傳/特訓指導，隨機小幅提升自家選手的體力、忠誠、人氣與能力值（訓練設施等級越高，特訓效果越好）；④比照「安排休假」，主動照顧忠誠度過低的選手；⑤比照「怪博士實驗」，隨機縮短傷病選手的恢復時間（醫療設施等級越高，縮短幅度越大）；⑥自主投入資源升級團隊設施（訓練/醫療/球探），戰績與人氣越好的團隊升級機率越高；⑦人氣達45以上的團隊視同有贊助加持，人氣成長更快；⑧雙打王座開放週，AI團隊之間也會互相角逐雙打王座（但不會偷偷從玩家手中奪走，玩家的雙打王座只透過玩家主動應戰才會易主）。關閉則AI團隊維持這些主動經營行為全部停止，僅剩基礎的老化/引退與選秀成長。</p>
                 <label style="display:flex; align-items:center; gap:12px; cursor:pointer; font-size:1.6rem;">
                     <input type="checkbox" id="chk-ai-smart-mgmt" style="width:24px; height:24px; cursor:pointer;">
                     啟用 AI 智慧經營
@@ -1420,24 +1420,25 @@ document.addEventListener('DOMContentLoaded', () => {
         medical:  { name: '醫療室', descs: ['傷病天數縮短15%', '傷病天數縮短30%', '傷病天數縮短45%'] },
         scouting: { name: '球探網路', descs: ['選秀情報偵查費用-30%', '偵查費用-60%', '偵查完全免費，且選秀開始時自動偵查1名候選人'] },
     };
-    window.getFacilityLevel = function(key) {
+    window.getFacilityLevel = function(key, facilitiesObj) {
+        if(facilitiesObj) return facilitiesObj[key] || 0;
         if(!window.GS.facilities) window.GS.facilities = { training: 0, medical: 0, scouting: 0 };
         return window.GS.facilities[key] || 0;
     };
-    window.getInjuryChanceMult = function() {
-        let lv = window.getFacilityLevel('training');
+    window.getInjuryChanceMult = function(facilitiesObj) {
+        let lv = window.getFacilityLevel('training', facilitiesObj);
         return 1 - (lv * 0.1); // 0級=1.0, 1級=0.9, 2級=0.8, 3級=0.7
     };
-    window.getPotentialBonusExtra = function() {
-        let lv = window.getFacilityLevel('training');
+    window.getPotentialBonusExtra = function(facilitiesObj) {
+        let lv = window.getFacilityLevel('training', facilitiesObj);
         return lv >= 2 ? (lv === 2 ? 0.03 : 0.06) : 0;
     };
-    window.getInjuryDurationMult = function() {
-        let lv = window.getFacilityLevel('medical');
+    window.getInjuryDurationMult = function(facilitiesObj) {
+        let lv = window.getFacilityLevel('medical', facilitiesObj);
         return 1 - (lv * 0.15); // 0級=1.0, 1級=0.85, 2級=0.7, 3級=0.55
     };
-    window.getScoutCostMult = function() {
-        let lv = window.getFacilityLevel('scouting');
+    window.getScoutCostMult = function(facilitiesObj) {
+        let lv = window.getFacilityLevel('scouting', facilitiesObj);
         if(lv >= 3) return 0;
         return 1 - (lv * 0.3); // 0級=1.0, 1級=0.7, 2級=0.4
     };
@@ -1911,6 +1912,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 資料可能已經處於損毀狀態(對手團隊/目標選手早已不在了，但賽程表/目標清單還留著舊的名字快照)，
     // 單純讀檔不會主動修好這種髒資料，所以每次讀檔都主動掃一次、抓到就修。
     window.repairStaleReferences = function() {
+        // AI團隊設施欄位補齊(舊存檔沒有這個欄位)，確保設施系統跟AI智慧經營都能正常運作
+        (GS.factions||[]).forEach(f => { if(f.id !== 0 && !f.facilities) f.facilities = { training: 0, medical: 0, scouting: 0 }; });
         // 賽程表：若排定的對手團隊已經不存在，重新抽一個還在的AI團隊替補(優先選玩家自建的團隊，沒有的話才退回任選現存團隊)
         if(GS.schedule && GS.schedule.length > 0) {
             GS.schedule.forEach(entry => {
@@ -2431,7 +2434,7 @@ document.addEventListener('DOMContentLoaded', () => {
         GS.factions.push({ id: 0, name: "玩家團隊", league: "East", pop: 10, roster: GS.roster, record: {w:0, l:0}, points: 0, streak: 0, emblem: window.pickUniqueEmblem() });
         for(let k=1; k<=15; k++) {
             let fR = []; for(let r=0; r<10; r++) fR.push(genWrestler(false, 20));
-            GS.factions.push({ id: k, name: (FAC_NAMES[k-1] || "地方團隊 "+k), league: k%2===0?"East":"West", pop: 10, roster: fR, record: {w:0, l:0}, points: 0, streak: 0, emblem: window.pickUniqueEmblem() });
+            GS.factions.push({ id: k, name: (FAC_NAMES[k-1] || "地方團隊 "+k), league: k%2===0?"East":"West", pop: 10, roster: fR, record: {w:0, l:0}, points: 0, streak: 0, emblem: window.pickUniqueEmblem(), facilities: {training:0, medical:0, scouting:0} });
         }
         if(window.generateSeasonSchedule) window.generateSeasonSchedule(); // 開局第一季也要有賽程表(第4、8週的比賽對手)
         if(window.generateSeasonGoals) window.generateSeasonGoals(); // 開局第一季也要有賽季目標
@@ -3838,6 +3841,7 @@ function draftCompetitorCount(w) {
     function runAiSmartManagement() {
         if(!GS.aiSmartManagement) return;
         GS.factions.slice(1).forEach(f => {
+            if(!f.facilities) f.facilities = { training: 0, medical: 0, scouting: 0 }; // 舊存檔補齊欄位
             let totalGames = f.record.w + f.record.l;
             let rawWinRate = totalGames > 0 ? f.record.w / totalGames : 0.5;
             // 樣本量修正：新賽程節奏下AI團隊間正式對戰一年只剩8場(原本52場)，樣本太少時勝率容易在0%/50%/100%間劇烈跳動
@@ -3888,11 +3892,48 @@ function draftCompetitorCount(w) {
                     let w = f.roster[Math.floor(Math.random()*f.roster.length)];
                     w.pop = Math.min(100, (w.pop||30) + 20);
                 }
-                if(Math.random() < 0.10) { // 特訓指導：模擬合宿+教練效果，直接小幅提升能力值(封頂100，跟玩家訓練規則一致)
+                // 特訓指導：模擬合宿+教練效果，直接小幅提升能力值(封頂100，跟玩家訓練規則一致)
+                // 訓練設施等級越高，觸發機率跟加成幅度都會提升，呼應玩家「訓練設施降低受傷/提升潛力加成」的效果方向
+                let trainingLv = window.getFacilityLevel ? window.getFacilityLevel('training', f.facilities) : 0;
+                if(Math.random() < 0.10 + trainingLv * 0.03) {
                     let w = f.roster[Math.floor(Math.random()*f.roster.length)];
-                    w.str = Math.min(100, w.str + 2); w.spd = Math.min(100, w.spd + 2); w.tech = Math.min(100, w.tech + 2);
+                    let gain = 2 + Math.floor(trainingLv / 2); // 設施等級越高，主屬性加成越多(2~3點)
+                    w.str = Math.min(100, w.str + gain); w.spd = Math.min(100, w.spd + gain); w.tech = Math.min(100, w.tech + gain);
                     if(Math.random() < 0.5) w.end = Math.min(100, (w.end||30) + 1);
                     if(Math.random() < 0.5) w.mnt = Math.min(100, (w.mnt||30) + 1);
+                }
+
+                // 安排休假：模擬玩家的「安排休假」，挑一位忠誠度較低(<50)的選手直接套用休假結束效果，避免忠誠長期探底
+                if(Math.random() < 0.12) {
+                    let lowLoyalty = f.roster.filter(w => (w.loyalty||60) < 50);
+                    if(lowLoyalty.length > 0) {
+                        let w = lowLoyalty[Math.floor(Math.random()*lowLoyalty.length)];
+                        w.loyalty = Math.min(100, (w.loyalty||60) + 25);
+                        w.stamina = 100;
+                        w.condition = '好調';
+                    }
+                }
+
+                // 怪博士的秘密實驗(AI版)：挑一位傷病中的選手縮短傷病天數，幅度依醫療設施等級微調(比照玩家版1~3週基礎)
+                let medicalLv = window.getFacilityLevel ? window.getFacilityLevel('medical', f.facilities) : 0;
+                if(Math.random() < 0.10) {
+                    let injured = f.roster.filter(w => (w.injuryWeeks||0) > 0);
+                    if(injured.length > 0) {
+                        let w = injured[Math.floor(Math.random()*injured.length)];
+                        let reduction = 1 + Math.floor(Math.random()*3) + Math.floor(medicalLv / 2);
+                        w.injuryWeeks = Math.max(0, w.injuryWeeks - reduction);
+                    }
+                }
+            }
+
+            // 團隊設施升級：模擬「花資源投入建設」，不動用金錢概念(AI團隊沒有money資源)，戰績/人氣越好的團隊機率越高，象徵營運資源較充裕
+            // 三項設施等機率隨機挑一項嘗試升級，已達最高等級(3級)則跳過該次機會
+            let facilityUpgradeChance = 0.06 + Math.max(0, winRate - 0.5) * 0.1 + Math.min(0.05, (f.pop||0) / 1000);
+            if(Math.random() < facilityUpgradeChance) {
+                let keys = ['training', 'medical', 'scouting'];
+                let key = keys[Math.floor(Math.random()*keys.length)];
+                if((f.facilities[key]||0) < 3) {
+                    f.facilities[key] = (f.facilities[key]||0) + 1;
                 }
             }
 
@@ -6832,7 +6873,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 newRoster.push(w);
             }
 
-            window.GS.factions.push({ id: newId, name, league, pop, roster: newRoster, record: {w:0,l:0}, points: 0, streak: 0, isCustom: true, emblem: window.pickUniqueEmblem() });
+            window.GS.factions.push({ id: newId, name, league, pop, roster: newRoster, record: {w:0,l:0}, points: 0, streak: 0, isCustom: true, emblem: window.pickUniqueEmblem(), facilities: {training:0, medical:0, scouting:0} });
             window.closeModal('action-overlay');
             window.updateUI();
             window.saveGame();
