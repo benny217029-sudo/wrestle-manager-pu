@@ -2040,7 +2040,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 賽程表渲染：顯示本季兩場賽程表比賽的對手與結果
-    // 旗下陣容分頁的已聘用教練摘要：方便玩家在管理選手的同時，也能一併看到教練陣容與各自指導的選手，不用額外切到教練分頁
+    // 旗下陣容分頁的已聘用教練摘要：方便玩家在管理選手的同時，也能一併看到教練陣容、各自指導的選手(含頭像)，並直接在這裡指派/移除，不用額外切到教練分頁
     window.renderRosterCoachesSummary = function() {
         let el = document.getElementById('roster-coaches-summary');
         if(!el) return;
@@ -2052,17 +2052,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const MAX_STUDENTS = 3;
         let html = `<div class="card" style="border-color:var(--neon-blue); padding:15px;">
             <h3 style="color:var(--neon-blue); font-size:1.8rem; margin-bottom:12px;">👨‍🏫 已聘用教練（${hiredCoaches.length}位）</h3>
-            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:10px;">`;
+            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap:10px;">`;
         hiredCoaches.forEach(c => {
             let students = GS.roster.filter(w => w.coachId === c.id);
-            let studentNames = students.length > 0 ? students.map(w => window.escAttr(w.name)).join('、') : '尚未指導任何選手';
-            html += `<div style="background:rgba(0,0,0,0.3); border-radius:8px; padding:10px; cursor:pointer;" onclick="window.switchTab('coaches')">
+            let atLimit = students.length >= MAX_STUDENTS;
+            let studentsHtml = students.length > 0
+                ? students.map(w => `<div style="display:flex; align-items:center; gap:8px; background:rgba(0,0,0,0.3); padding:5px 8px; border-radius:6px; margin-bottom:5px;">
+                    <img src="${window.escAttr(w.img)}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'" style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:2px solid var(--neon-pink); flex-shrink:0;">
+                    <span style="font-size:1.2rem; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escAttr(w.name)}</span>
+                    <button class="btn btn-danger" style="width:auto; padding:3px 8px; font-size:1rem; flex-shrink:0;" onclick="window.removeCoachAssignment(${w.id})">移除</button>
+                </div>`).join('')
+                : `<p style="font-size:1.1rem; color:var(--muted); margin-bottom:5px;">尚未指導任何選手</p>`;
+            let availableForAssign = GS.roster.filter(w => w.coachId !== c.id);
+            let opts = `<option value="">-- 新增指導選手 --</option>` + availableForAssign.map((w) => `<option value="${w.id}">${window.escAttr(w.name)}${w.coachId?'（將轉移指派）':''}</option>`).join('');
+            html += `<div style="background:rgba(0,0,0,0.3); border-radius:8px; padding:10px;">
                 <p style="font-size:1.3rem; color:var(--gold); font-weight:bold; margin-bottom:4px;">${window.escAttr(c.name)}　⭐Lv.${c.coachLevel||1}</p>
-                <p style="font-size:1.1rem; color:var(--muted); margin-bottom:4px;">專長：${window.escAttr(c.specialty)}</p>
-                <p style="font-size:1.1rem; color:var(--neon-pink);">👥 指導中（${students.length}/${MAX_STUDENTS}）：${studentNames}</p>
+                <p style="font-size:1.1rem; color:var(--muted); margin-bottom:6px;">專長：${window.escAttr(c.specialty)}</p>
+                <p style="font-size:1.1rem; color:var(--neon-pink); margin-bottom:4px;">👥 指導中（${students.length}/${MAX_STUDENTS}）：</p>
+                ${studentsHtml}
+                <select style="font-size:1.2rem; padding:6px; width:100%; margin-top:4px; ${atLimit?'opacity:0.4;':''}" ${atLimit?'disabled':''} onchange="window.assignCoach(this.value, '${c.id}')">${atLimit?'<option>已達3人上限，請先移除才能新增</option>':opts}</select>
             </div>`;
         });
-        html += `</div><p style="font-size:1.1rem; color:var(--muted); margin-top:10px;">💡 點擊教練卡片可前往「專屬教練」分頁調整指導名單</p></div>`;
+        html += `</div><p style="font-size:1.1rem; color:var(--muted); margin-top:10px;">💡 可在此直接指派/移除指導選手，或點擊「專屬教練」分頁做更完整的教練管理（解雇等）</p></div>`;
         el.innerHTML = html;
     };
 
@@ -3650,9 +3661,11 @@ function draftCompetitorCount(w) {
             let winRate = rawWinRate * sampleWeight + 0.5 * (1 - sampleWeight);
             let reinforceChance = Math.min(0.5, Math.max(0.2, 0.5 - winRate * 0.3)); // 勝率越低機率越高
 
-            // 補強：陣容 < 8人 → 依評分挑自由市場最佳選手簽入(套用跟玩家一致的人氣門檻限制，只能簽到自己團隊人氣範圍內的選手)
-            if(f.roster.length < 8 && GS.fa.length > 0 && Math.random() < reinforceChance) {
-                let affordable = GS.fa.filter(w => !window.calcFaRequiredPop || (f.pop||0) >= window.calcFaRequiredPop(w));
+            // 補強：陣容 < 10人 → 依評分挑自由市場最佳選手簽入(套用打折後的人氣門檻限制，比玩家自己簽約寬鬆，
+            // 避免AI團隊在賽季初期人氣還低時完全簽不起任何像樣的選手、導致補強機制形同虛設)
+            // 門檻對齊開局的10人陣容基準：低於這個水位時才會觸發補強(退休/受傷過多導致人數下滑時)，維持團隊人數合理下限
+            if(f.roster.length < 10 && GS.fa.length > 0 && Math.random() < reinforceChance) {
+                let affordable = GS.fa.filter(w => !window.calcFaRequiredPop || (f.pop||0) >= window.calcFaRequiredPop(w) * 0.5);
                 if(affordable.length > 0) {
                     let best = affordable.slice().sort((a,b) => scoutScore(b) - scoutScore(a))[0];
                     let idx = GS.fa.findIndex(w => w.id === best.id);
@@ -3698,9 +3711,9 @@ function draftCompetitorCount(w) {
                 }
             }
 
-            // 模擬長期贊助效果：人氣達70以上的AI團隊，視同有贊助商加持，每週團隊人氣額外+1(不需要金錢概念，直接反映在人氣成長速度上)
-            if((f.pop||0) >= 70) {
-                f.pop = Math.min(100, (f.pop||0) + 1);
+            // 模擬長期贊助效果：人氣達45以上的AI團隊，視同有贊助商加持，每週團隊人氣額外+2(不需要金錢概念，直接反映在人氣成長速度上)
+            if((f.pop||0) >= 45) {
+                f.pop = Math.min(100, (f.pop||0) + 2);
             }
         });
     }
@@ -3810,13 +3823,13 @@ function draftCompetitorCount(w) {
                 let rep1 = pickRepresentative(f1), rep2 = pickRepresentative(f2);
                 if(Math.random() < winProb) {
                     f1.record.w++; f1.points = (f1.points||0) + 2; f1.streak = (f1.streak||0) >= 0 ? (f1.streak||0)+1 : 1;
-                    f1.pop = Math.min(100, (f1.pop||0) + 1);
+                    f1.pop = Math.min(100, (f1.pop||0) + 2);
                     f2.record.l++; f2.streak = (f2.streak||0) <= 0 ? (f2.streak||0)-1 : -1;
                     aiMatchResults.push({ text: `${f1.name} 擊敗 ${f2.name}`, winnerName: rep1?rep1.name:f1.name, winnerImg: rep1?rep1.img:null, loserName: rep2?rep2.name:f2.name, loserImg: rep2?rep2.img:null });
                     if(window.pushRecentMatch) window.pushRecentMatch({ winnerName: rep1?rep1.name:f1.name, winnerImg: rep1?rep1.img:null, loserName: rep2?rep2.name:f2.name, loserImg: rep2?rep2.img:null });
                 } else {
                     f2.record.w++; f2.points = (f2.points||0) + 2; f2.streak = (f2.streak||0) >= 0 ? (f2.streak||0)+1 : 1;
-                    f2.pop = Math.min(100, (f2.pop||0) + 1);
+                    f2.pop = Math.min(100, (f2.pop||0) + 2);
                     f1.record.l++; f1.streak = (f1.streak||0) <= 0 ? (f1.streak||0)-1 : -1;
                     aiMatchResults.push({ text: `${f2.name} 擊敗 ${f1.name}`, winnerName: rep2?rep2.name:f2.name, winnerImg: rep2?rep2.img:null, loserName: rep1?rep1.name:f1.name, loserImg: rep1?rep1.img:null });
                     if(window.pushRecentMatch) window.pushRecentMatch({ winnerName: rep2?rep2.name:f2.name, winnerImg: rep2?rep2.img:null, loserName: rep1?rep1.name:f1.name, loserImg: rep1?rep1.img:null });
@@ -3825,7 +3838,25 @@ function draftCompetitorCount(w) {
         });
         }
 
-        runAiSmartManagement(); // AI團隊智慧經營（若GS.aiSmartManagement未開啟則內部直接return）
+    // AI團隊人氣每週自然成長/浮動：不受「AI智慧經營」開關限制，每週都會執行，依戰績與陣容強度緩慢調整人氣，
+    // 讓人氣能從開局的10分逐步成長，而不是只能靠一年僅有2次的賽程表對戰勝場+1分慢慢累積
+    function runAiPopularityDrift() {
+        GS.factions.slice(1).forEach(f => {
+            if(Math.random() >= 0.4) return; // 不是每週都變動，維持自然的隨機波動感，不會每隊每週都在跳動
+            let totalGames = f.record.w + f.record.l;
+            let winRate = totalGames > 0 ? f.record.w / totalGames : 0.5;
+            let strength = factionPower(f); // 陣容平均能力值，約略落在100~350之間
+            // 戰績與陣容強度都換算成 -1~+1 的偏向係數，越強越容易正成長，越弱越容易負成長(但不會單靠隨機就暴衝)
+            let recordBias = (winRate - 0.5) * 2;
+            let strengthBias = Math.max(-1, Math.min(1, (strength - 200) / 150));
+            let bias = (recordBias + strengthBias) / 2;
+            let delta = Math.round(bias + (Math.random()*2 - 1)); // 疊加隨機波動，範圍大致在 -2 ~ +2
+            if(delta !== 0) f.pop = Math.max(5, Math.min(100, (f.pop||10) + delta));
+        });
+    }
+
+    runAiSmartManagement(); // AI團隊智慧經營（若GS.aiSmartManagement未開啟則內部直接return）
+    runAiPopularityDrift(); // AI團隊人氣自然成長/浮動（不受開關限制，每週都會嘗試）
 
         // 器材緊急維修保護期每週遞減
         if(GS._equipmentTempFixWeeks > 0) GS._equipmentTempFixWeeks--;
