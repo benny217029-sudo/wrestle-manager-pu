@@ -74,6 +74,15 @@ nav {
     border-right: 2px solid var(--gold);
     box-shadow: inset -8px 0 20px -10px rgba(0,0,0,0.8), 2px 0 15px rgba(212,175,55,0.08);
 }
+/* 手機版橫向捲動導覽列的「還有更多」提示遮罩：右側淡出漸層+箭頭，捲到底時自動隱藏(JS控制opacity) */
+#nav-scroll-hint {
+    display: none; position: absolute; right: 0; top: 0; bottom: 0; width: 44px; z-index: 5;
+    background: linear-gradient(90deg, transparent, rgba(5,4,3,0.95) 70%);
+    align-items: center; justify-content: flex-end; padding-right: 6px;
+    pointer-events: none; transition: opacity 0.25s;
+    color: var(--gold); font-size: 1.8rem;
+}
+#btn-nav-more { display: none; } /* 桌面版側邊欄空間充足，不需要收納選單，維持隱藏 */
 nav::before {
     content:''; position:absolute; inset:0; opacity:0.06; mix-blend-mode:overlay; pointer-events:none; z-index:0;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -90,6 +99,11 @@ main { flex: 1; padding: 30px; overflow-y: auto; position: relative; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 /* 情報中心次分頁樣式 */
 .info-subtab-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+/* 比賽週步驟式標題：每個設定區塊前方加上編號圓圈，讓賽制/對手/場館/選人的操作順序更清楚 */
+.booking-step { padding-top:22px; margin-top:22px; border-top:1px dashed var(--border); }
+.booking-step:first-child { padding-top:0; margin-top:0; border-top:none; }
+.booking-step-label { color:var(--gold); font-weight:bold; font-size:1.6rem; margin-bottom:12px; display:flex; align-items:center; gap:10px; }
+.booking-step-label .step-num { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:var(--neon-pink); color:#fff; font-size:1.3rem; flex-shrink:0; box-shadow:0 0 8px rgba(196,30,58,0.5); }
 .info-subtab-btn { background: rgba(0,0,0,0.4); border: 1px solid var(--border); color: var(--text-muted); padding: 10px 18px; border-radius: 6px 6px 0 0; cursor: pointer; font-size: 1.4rem; transition: 0.2s; }
 .info-subtab-btn:hover { color: var(--text-main); }
 .info-subtab-btn.active { background: rgba(212,175,55,0.15); border-color: var(--gold); color: var(--gold-light); }
@@ -178,7 +192,13 @@ select:focus, input:focus {
 }
 select:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 .stat-row { display: flex; justify-content: space-between; font-size: 1.2rem; margin-bottom: 6px; border-bottom: 1px dashed rgba(212,175,55,0.2); padding-bottom: 3px; color: var(--text-main); }
-.wrestler-img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 4px 14px 4px 4px; background: #000; margin-bottom: 15px; border: 2px solid var(--border); }
+.wrestler-img {
+    width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 4px 14px 4px 4px;
+    background: linear-gradient(135deg, #1a0f0c, #2a1810, #1a0f0c);
+    background-size: 200% 200%; animation: imgSkeletonPulse 2.2s ease-in-out infinite;
+    margin-bottom: 15px; border: 2px solid var(--border);
+}
+@keyframes imgSkeletonPulse { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
 .badge { padding: 3px 8px; border-radius: 3px; font-size: 1rem; font-weight: bold; margin-left: 8px; color: #000; }
 
 /* 彈窗系統：海報質感 */
@@ -339,6 +359,9 @@ body { overflow-x: hidden; }
     .main-container { flex-direction: column; }
     nav { width: 100%; flex-direction: row; overflow-x: auto; overflow-y: hidden; white-space: nowrap; border-right: none; border-bottom: 1px solid var(--border); padding: 4px; gap: 4px; -webkit-overflow-scrolling: touch; }
     nav .nav-btn { flex: 0 0 auto; }
+    #nav-scroll-hint { display: flex; }
+    .nav-btn-secondary { display: none !important; } /* 較次要的分頁收進「更多」選單，精簡手機版導覽列的橫向捲動長度 */
+    #btn-nav-more { display: flex; align-items: center; }
     main { padding: 14px; }
     header { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
     .stats-bar { display: flex; gap: 12px; flex-wrap: wrap; font-size: 1.2rem; }
@@ -807,6 +830,19 @@ body { overflow-x: hidden; }
         </div>
     </div>
 
+    <!-- 手機版導覽列「更多」選單：收納創作中心/情報中心/系統與存檔，精簡主導覽列的橫向捲動長度 -->
+    <div id="more-menu-overlay" class="overlay">
+        <div class="modal-box" style="max-width:340px;">
+            <h2 style="text-align:center; color:var(--gold); font-size:2rem; margin-bottom:15px;">⋯ 更多功能</h2>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <button type="button" class="btn btn-sec" style="font-size:1.5rem; padding:16px; text-align:left;" onclick="window.switchTab('create'); window.closeModal('more-menu-overlay');">🎨 創作中心</button>
+                <button type="button" class="btn btn-sec" style="font-size:1.5rem; padding:16px; text-align:left;" onclick="window.switchTab('info'); window.closeModal('more-menu-overlay');">📖 情報中心</button>
+                <button type="button" class="btn btn-sec" style="font-size:1.5rem; padding:16px; text-align:left;" onclick="window.switchTab('system'); window.closeModal('more-menu-overlay');">💾 系統與存檔</button>
+            </div>
+            <button type="button" class="btn btn-sec" style="width:100%; margin-top:15px; font-size:1.5rem; padding:12px;" onclick="window.closeModal('more-menu-overlay')">取消</button>
+        </div>
+    </div>
+
     <!-- 選手選擇彈窗(共用)：固定顯示在畫面中央，不受頁面捲動/巢狀容器影響，取代原本容易跟賽事卡列表重疊的絕對定位清單 -->
     <div id="wrestler-picker-overlay" class="overlay" style="z-index:100001;">
         <div class="modal-box" style="max-width:420px;">
@@ -849,7 +885,7 @@ body { overflow-x: hidden; }
 </header>
 
 <div id="main-container" class="main-container" style="display:none;">
-    <nav>
+    <nav id="main-nav">
         <button class="nav-btn active" data-tab="dashboard">🏢 營運總覽</button>
         <button class="nav-btn" data-tab="schedule">📅 賽季行事曆</button>
         <button class="nav-btn" data-tab="president">🏛️ 社長室</button>
@@ -858,9 +894,11 @@ body { overflow-x: hidden; }
         <button class="nav-btn" data-tab="roster">📋 旗下陣容</button>
         <button class="nav-btn" data-tab="market">🛒 自由市場</button>
         <button class="nav-btn" data-tab="coaches">👨‍🏫 專屬教練</button>
-        <button class="nav-btn" data-tab="create">🎨 創作中心</button>
-        <button class="nav-btn" data-tab="info">📖 情報中心</button>
-        <button class="nav-btn" data-tab="system" style="margin-top:auto;">💾 系統與存檔</button>
+        <button class="nav-btn nav-btn-secondary" data-tab="create">🎨 創作中心</button>
+        <button class="nav-btn nav-btn-secondary" data-tab="info">📖 情報中心</button>
+        <button class="nav-btn nav-btn-secondary" data-tab="system" style="margin-top:auto;">💾 系統與存檔</button>
+        <button class="nav-btn" id="btn-nav-more" type="button">⋯ 更多</button>
+        <div id="nav-scroll-hint">▶</div>
     </nav>
     <main>
         <!-- 營運總覽 -->
@@ -1050,27 +1088,30 @@ body { overflow-x: hidden; }
             <h2 style="font-size:3.4rem; color:var(--gold);">🤼‍♀️ 比賽週 ATB 實況安排</h2>
             <div id="booking-phase-banner" style="padding:15px 20px; border-radius:10px; margin-bottom:20px; font-size:1.6rem; font-weight:bold; text-align:center; max-width:900px;"></div>
             <div class="card" style="max-width:900px; border-color:var(--neon-blue); padding:30px; background:rgba(0,0,0,0.6);">
-                <div style="display:flex; gap:15px; margin-bottom:25px; flex-wrap:wrap;">
-                    <select id="booking-mode" style="width:auto; font-weight:bold; font-size:1.5rem; margin:0;">
-                        <option value="faction_war">🏢 跨聯盟團體對抗戰</option>
-                        <option value="faction_intra">⚔️ 我方隊內大亂鬥</option>
-                    </select>
-                    <select id="match-format" style="width:auto; font-size:1.5rem; margin:0;">
-                        <option value="1">1 vs 1 (單打決戰)</option>
-                        <option value="2">2 vs 2 (雙人組隊)</option>
-                        <option value="3">3 vs 3 (換手淘汰賽)</option>
-                        <option value="5">5 vs 5 (全面戰爭)</option>
-                    </select>
-                    <button class="btn btn-sec" style="font-size:1.5rem; padding:12px 25px;" id="btn-random-match">🎲 隨機自動配置</button>
+                <div class="booking-step">
+                    <p class="booking-step-label"><span class="step-num">1</span>選擇對戰賽制</p>
+                    <div style="display:flex; gap:15px; margin-bottom:0; flex-wrap:wrap;">
+                        <select id="booking-mode" style="width:auto; font-weight:bold; font-size:1.5rem; margin:0;">
+                            <option value="faction_war">🏢 跨聯盟團體對抗戰</option>
+                            <option value="faction_intra">⚔️ 我方隊內大亂鬥</option>
+                        </select>
+                        <select id="match-format" style="width:auto; font-size:1.5rem; margin:0;">
+                            <option value="1">1 vs 1 (單打決戰)</option>
+                            <option value="2">2 vs 2 (雙人組隊)</option>
+                            <option value="3">3 vs 3 (換手淘汰賽)</option>
+                            <option value="5">5 vs 5 (全面戰爭)</option>
+                        </select>
+                        <button class="btn btn-sec" style="font-size:1.5rem; padding:12px 25px;" id="btn-random-match">🎲 隨機自動配置</button>
+                    </div>
                 </div>
-                
-                <div id="faction-select-container" style="display:none; margin-bottom:25px;">
-                    <label style="color:var(--gold); font-weight:bold; font-size:1.6rem; margin-bottom:10px; display:block;">🏢 選擇對戰敵方團隊：</label>
+
+                <div id="faction-select-container" class="booking-step" style="display:none;">
+                    <p class="booking-step-label"><span class="step-num">2</span>選擇對戰敵方團隊</p>
                     <select id="target-faction-select" style="font-size:1.5rem; padding:15px;"></select>
                 </div>
 
-                <div style="margin-bottom:25px;">
-                    <label style="color:var(--gold); font-weight:bold; font-size:1.6rem; margin-bottom:10px; display:block;">🏟️ 選擇比賽場館：</label>
+                <div class="booking-step">
+                    <p class="booking-step-label"><span class="step-num">3</span>選擇比賽場館</p>
                     <select id="venue-select" style="font-size:1.5rem; padding:15px; width:100%; margin-bottom:15px;"></select>
                     <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:center; background:rgba(0,0,0,0.4); border-radius:10px; padding:12px; border:1px solid var(--border);">
                         <img id="venue-preview-img" style="width:220px; height:135px; object-fit:cover; border-radius:8px; border:2px solid var(--gold); flex-shrink:0;">
@@ -1083,7 +1124,9 @@ body { overflow-x: hidden; }
                     </div>
                 </div>
 
-                <div id="vs-booking-panel" style="display:flex; justify-content:space-between; gap:20px; background: rgba(0,0,0,0.5); padding: 25px; border-radius: 12px; border:1px solid rgba(255,255,255,0.1);">
+                <div class="booking-step">
+                    <p class="booking-step-label"><span class="step-num">4</span>安排出賽選手</p>
+                    <div id="vs-booking-panel" style="display:flex; justify-content:space-between; gap:20px; background: rgba(0,0,0,0.5); padding: 25px; border-radius: 12px; border:1px solid rgba(255,255,255,0.1);">
                     <div style="flex:1; min-width:0;">
                         <h4 style="color:var(--neon-pink); margin-bottom:15px; font-size:2rem; text-align:center; word-break:break-word;">主場隊伍 (我方陣容)</h4>
                         <div id="team1-slots"></div>
@@ -1094,6 +1137,7 @@ body { overflow-x: hidden; }
                         <div id="team2-slots"></div>
                     </div>
                 </div>
+                </div>
 
                 <div style="margin-top:20px;">
                     <button class="btn btn-sec" style="width:100%; padding:16px; font-size:1.6rem;" id="btn-add-to-card">➕ 加入本場對戰</button>
@@ -1102,7 +1146,7 @@ body { overflow-x: hidden; }
                 <div style="margin-top:20px; background:rgba(0,0,0,0.4); border:1px solid var(--gold); border-radius:4px 16px 4px 16px; padding:20px;">
                     <h4 style="color:var(--gold); font-size:1.8rem; margin-bottom:12px;">📋 本週賽事卡（<span id="match-card-count">0</span>/<span id="match-card-max">5</span> 場）</h4>
                     <div id="match-card-list"><p id="match-card-empty-hint" style="color:var(--muted); font-size:1.3rem;">尚未安排任何比賽，請設定好上方的對戰組合後按「➕ 加入本場對戰」。可安排場次上限依場館等級而定，只安排1場就等於單場比賽。</p></div>
-                    <p style="font-size:1.2rem; color:var(--muted); margin:12px 0;">🏟️ 場館租金只會在開打時扣款一次（共用同一場地），每場比賽各自計算票房收入。</p>
+                    <p style="font-size:1.2rem; color:var(--muted); margin:12px 0;">🏟️ 場館租金：首場收全額，之後每加一場多收半價（5折），共用同一場地、每場比賽各自計算票房收入。<span id="match-card-venue-cost-preview" style="color:var(--gold); font-weight:bold;"></span></p>
                     <button class="btn btn-danger" style="width:100%; padding:22px; font-size:2.4rem; letter-spacing:3px; font-weight:900; box-shadow:0 0 20px rgba(196,30,58,0.5);" id="btn-start-match-card">🔥 開始本週比賽！</button>
                 </div>
                 <button class="btn btn-sec" style="width:100%; padding: 15px; margin-top: 12px; font-size:1.6rem; display:none;" id="btn-skip-match-week">⏭️ 略過本週比賽，直接進入下個營運週</button>
@@ -2400,13 +2444,37 @@ document.addEventListener('DOMContentLoaded', () => {
         let targetTab = document.getElementById('tab-' + id);
         if(targetTab) targetTab.classList.add('active');
         let navBtn = document.querySelector(`nav button[data-tab="${id}"]`);
-        if(navBtn) navBtn.classList.add('active');
+        if(navBtn) {
+            navBtn.classList.add('active');
+            if(navBtn.scrollIntoView && navBtn.offsetParent !== null) navBtn.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+        }
+        if(window.updateNavScrollHint) window.updateNavScrollHint();
         if(window.updateUI) window.updateUI();
     };
 
     document.querySelectorAll('nav button[data-tab]').forEach(btn => {
         btn.addEventListener('click', function() { switchTab(this.getAttribute('data-tab')); });
     });
+    let btnNavMore = document.getElementById('btn-nav-more');
+    if(btnNavMore) btnNavMore.addEventListener('click', () => { document.getElementById('more-menu-overlay').style.display = 'flex'; });
+
+    // 導覽列橫向捲動提示：手機版導覽列項目較多時會超出螢幕寬度、需要橫向滑動才能看到全部分頁，
+    // 但原本沒有任何視覺提示告訴玩家「還可以往右滑」，容易被誤以為版面跑掉。這裡加上動態的滑動提示：
+    // 只要導覽列還沒捲到最右邊，就顯示一個淡出漸層+箭頭；捲到底或本來就不需要捲動時自動隱藏
+    (function setupNavScrollHint() {
+        let navEl = document.getElementById('main-nav');
+        let hintEl = document.getElementById('nav-scroll-hint');
+        if(!navEl || !hintEl) return;
+        function updateHint() {
+            let needsScroll = navEl.scrollWidth > navEl.clientWidth + 2;
+            let atEnd = navEl.scrollLeft + navEl.clientWidth >= navEl.scrollWidth - 2;
+            hintEl.style.opacity = (needsScroll && !atEnd) ? '1' : '0';
+        }
+        navEl.addEventListener('scroll', updateHint);
+        window.addEventListener('resize', updateHint);
+        window.updateNavScrollHint = updateHint; // 暴露出去，讓main-container從隱藏變顯示的當下(開新遊戲/讀檔成功)能主動觸發重新量測
+        setTimeout(updateHint, 300);
+    })();
 
     // 情報中心次分頁切換：不影響任何內部渲染邏輯，內部所有元素id維持不變
     window.switchInfoSubTab = function(subTabName) {
@@ -2425,6 +2493,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('main-header').style.display = 'flex';
         document.getElementById('main-container').style.display = 'flex';
+        if(window.updateNavScrollHint) setTimeout(window.updateNavScrollHint, 50);
         
         let startMoney = 3000 + Math.floor(Math.random()*2001); window.GS = { money: startMoney, year: 1, month: 1, week: 1, roster: [], fa: [], factions: [], coaches: [], draft: [], currentSlot: 1, weekPhase: 'management', newsLog: [], bankruptcyCount: 0, champion: null, tagChampion: null, playoffBracket: null, aiSmartManagement: false, presidentEnergy: 6, hallOfFame: [], domeUnlocked: false, energyRegenCounter: 0, yearTransactions: [], yearIncome: 0, yearExpense: 0, yearTournamentChampions: [], retiredArchive: [], _yearStartMoney: startMoney, sponsorship: null, tvDeal: null, presidentXp: 0, presidentLevel: 1, popMilestonesAwarded: [], facilities: { training: 0, medical: 0, scouting: 0 } };
         for(let i=0; i<8; i++) GS.roster.push(genWrestler(false));
@@ -4545,7 +4614,7 @@ function draftCompetitorCount(w) {
             let discEnergy = window.applyEnergyDiscount ? window.applyEnergyDiscount(energyCost) : energyCost;
             if(GS.roster.length === 0) return showSysMsg("錯誤", "目前沒有任何選手！", true);
             if((GS.presidentEnergy||0) < discEnergy) return showSysMsg("能量不足", `此行動需要 ${discEnergy} 點社長能量，目前剩餘 ${GS.presidentEnergy||0} 點，請等下次恢復！`, true);
-            let h = GS.roster.map((w,i) => (w.injuryWeeks>0 || w.vacationWeeks>0) ? '' : `<label style="display:block; margin-bottom:8px; font-size:1.6rem; cursor:pointer;"><input type="checkbox" class="act-chk" value="${i}" onchange="window.updateActionCostPreview(${price})"> ${w.name} (${statLabelFn(w)})</label>`).join('');
+            let h = GS.roster.map((w,i) => (w.injuryWeeks>0 || w.vacationWeeks>0 || w.boost>0) ? '' : `<label style="display:block; margin-bottom:8px; font-size:1.6rem; cursor:pointer;"><input type="checkbox" class="act-chk" value="${i}" onchange="window.updateActionCostPreview(${price})"> ${w.name} (${statLabelFn(w)})</label>`).join('');
             if(!h) return showSysMsg("錯誤", "目前沒有健康且非休假中的選手可以參加！", true);
             document.getElementById('act-title').innerText = title;
             document.getElementById('act-desc').innerText = `${desc}（消耗 ${discEnergy} 點社長能量，剩餘：${GS.presidentEnergy||0}點）`;
@@ -4643,14 +4712,14 @@ function draftCompetitorCount(w) {
     if(btnVacation) btnVacation.addEventListener('click', () => {
         if(GS.roster.length === 0) return showSysMsg("錯誤", "目前沒有任何選手！", true);
         if((GS.presidentEnergy||0) < VAC_ENERGY) return showSysMsg("能量不足", `此行動需要 ${VAC_ENERGY} 點社長能量，目前剩餘 ${GS.presidentEnergy||0} 點！`, true);
-        let eligible = GS.roster.filter(w => !(w.injuryWeeks>0) && !(w.vacationWeeks>0));
+        let eligible = GS.roster.filter(w => !(w.injuryWeeks>0) && !(w.vacationWeeks>0)).slice().sort((a,b) => a.stamina - b.stamina); // 依體力由低到高排序，最疲勞的排最前面
         if(eligible.length === 0) return showSysMsg("錯誤", "目前沒有可以安排休假的選手！", true);
         document.getElementById('act-title').innerText = '🏖️ 安排休假';
         document.getElementById('act-desc').innerText = `一週只能安排1位選手休假，費用＝週薪×週數+10萬，消耗 ${VAC_ENERGY} 點能量。`;
         document.getElementById('act-content').innerHTML = `
             <label style="display:block; margin-bottom:12px; font-size:1.5rem;">選擇選手：
                 <select id="vac-wrestler-select" style="font-size:1.5rem; padding:8px; width:100%; margin-top:6px;">
-                    ${eligible.map(w => `<option value="${GS.roster.indexOf(w)}">${w.name}（週薪 $${w.salary}萬）</option>`).join('')}
+                    ${eligible.map(w => `<option value="${GS.roster.indexOf(w)}">${w.name}（週薪 $${w.salary}萬・體力 ${w.stamina}/100）</option>`).join('')}
                 </select>
             </label>
             <label style="display:block; margin-bottom:12px; font-size:1.5rem;">休假週數：
@@ -5919,6 +5988,18 @@ function draftCompetitorCount(w) {
                 `).join('');
             }
         }
+        // 即時場租預估：依目前已排場次數，套用「首場全額+後續每場5折」公式，讓玩家排場次的過程中就能看到成本變化
+        let costPreviewEl = document.getElementById('match-card-venue-cost-preview');
+        if(costPreviewEl) {
+            let venueSel = document.getElementById('venue-select');
+            let venue = (window.VENUES && venueSel) ? window.VENUES[parseInt(venueSel.value) || 0] : null;
+            if(venue && queue.length > 0) {
+                let estCost = Math.round(venue.cost * (1 + Math.max(0, queue.length - 1) * 0.5));
+                costPreviewEl.innerText = `目前${queue.length}場預估場租：$${estCost.toLocaleString()}萬`;
+            } else {
+                costPreviewEl.innerText = '';
+            }
+        }
     }
 
     window.removeFromMatchCard = function(idx) {
@@ -6075,10 +6156,12 @@ function draftCompetitorCount(w) {
         let wins = this.cardResults.filter(r => r).length;
         let losses = this.cardResults.length - wins;
         let totalRevenue = this.cardTotalRevenue || 0;
-        let venueCost = this.venue ? this.venue.cost : 0;
+        let matchCount = this.cardResults.length;
+        // 場租：首場收全額，後續每加一場多收半價(50%)，保留一點包場優惠，但不會再出現「打5場只扣1場租金」的失衡情況
+        let venueCost = this.venue ? Math.round(this.venue.cost * (1 + Math.max(0, matchCount - 1) * 0.5)) : 0;
         let net = totalRevenue - venueCost;
         let netText = net >= 0 ? `盈餘 $${net.toLocaleString()}萬` : `虧損 $${Math.abs(net).toLocaleString()}萬`;
-        showSysMsg("賽事卡結算", `本週賽事卡全部結束！共 ${this.cardResults.length} 場，${wins}勝${losses}敗。總票房收入 $${totalRevenue.toLocaleString()}萬，扣除場租 $${venueCost.toLocaleString()}萬後，本場整體${netText}。實際上場選手依出戰程度消耗體力，久戰者消耗較多。已進入下個營運週。`, false);
+        showSysMsg("賽事卡結算", `本週賽事卡全部結束！共 ${this.cardResults.length} 場，${wins}勝${losses}敗。總票房收入 $${totalRevenue.toLocaleString()}萬，扣除場租 $${venueCost.toLocaleString()}萬（首場全額+後續每場5折）後，本場整體${netText}。實際上場選手依出戰程度消耗體力，久戰者消耗較多。已進入下個營運週。`, false);
         this.cardQueue = [];
         this.cardTotalRevenue = 0;
         renderMatchCardPanel();
