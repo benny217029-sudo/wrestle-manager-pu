@@ -510,7 +510,7 @@ body { overflow-x: hidden; }
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                 <div><label>姓名</label><div style="display:flex; gap:8px;"><input type="text" id="e-name" style="flex:1;"><button type="button" class="btn btn-sec" id="btn-random-ename" style="padding:8px 12px; font-size:1.3rem; flex-shrink:0;">🎲</button></div></div>
                 <div><label>年齡</label><input type="number" id="e-age" disabled></div>
-                <div style="grid-column: 1 / 3;"><label>大頭照網址</label><div style="display:flex; gap:8px;"><input type="text" id="e-img" style="flex:1;"><button type="button" class="btn btn-sec" id="btn-random-eimg" style="padding:8px 12px; font-size:1.3rem; flex-shrink:0;">🎲</button></div></div>
+                <div style="grid-column: 1 / 3;"><label>大頭照網址</label><div style="display:flex; gap:8px;"><input type="text" id="e-img" style="flex:1;"><button type="button" class="btn btn-sec" id="btn-random-eimg" style="padding:8px 12px; font-size:1.3rem; flex-shrink:0;">🎲</button></div><p id="e-img-dup-warning" style="display:none; color:#ffb84d; font-size:1.2rem; margin-top:6px;"></p></div>
                 <div style="grid-column: 1 / 3; background:rgba(0,0,0,0.3); border-radius:8px; padding:12px;">
                     <p style="font-size:1.3rem; color:var(--muted); margin-bottom:10px;">🖼️ 頭像顯示位置與縮放調整（圖片主體沒有置中或裁切太緊時可以調整）：</p>
                     <div style="display:flex; gap:15px; align-items:center;">
@@ -827,6 +827,21 @@ body { overflow-x: hidden; }
             <h2 style="text-align:center; color:var(--gold); font-size:2.2rem; margin-bottom:15px;">⚔️ 選擇換人上場</h2>
             <div id="tactical-switch-list" style="display:flex; flex-direction:column; gap:10px; max-height:50vh; overflow-y:auto;"></div>
             <button type="button" class="btn btn-sec" style="width:100%; margin-top:15px; font-size:1.5rem; padding:12px;" onclick="window.closeModal('tactical-switch-overlay')">取消</button>
+        </div>
+    </div>
+
+    <!-- 重新命名團隊彈窗：取代原本的原生prompt()，加上隨機生成日文風格團體名稱按鈕 -->
+    <div id="rename-faction-overlay" class="overlay">
+        <div class="modal-box" style="max-width:400px;">
+            <h2 style="text-align:center; color:var(--gold); font-size:2rem; margin-bottom:15px;">✏️ 重新命名團隊</h2>
+            <div style="display:flex; gap:8px; margin-bottom:20px;">
+                <input type="text" id="rename-faction-input" style="flex:1; padding:12px; font-size:1.6rem;">
+                <button type="button" class="btn btn-sec" id="btn-random-rename-facname" style="flex-shrink:0; padding:0 16px; font-size:1.3rem;">🎲 隨機</button>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button type="button" class="btn btn-sec" style="flex:1; font-size:1.5rem; padding:14px;" onclick="window.closeModal('rename-faction-overlay')">取消</button>
+                <button type="button" class="btn" style="flex:1; font-size:1.5rem; padding:14px;" id="btn-confirm-rename-faction">確認</button>
+            </div>
         </div>
     </div>
 
@@ -1290,6 +1305,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const L_NAMES = ["佐藤","鈴木","高橋","田中","神崎","白鳥","伊達","九條","星野","結城","天王寺","藤原","黑澤","五十嵐","綾小路","渡邊","中村","小林","加藤","吉田","山本","松本","井上","木村","林","清水","山崎","森","池田","橋本","阿部","石川","前田","藤田","岡田","長谷川","村上","近藤","石井","坂本","遠藤","青木","福田","太田","西村","金子","中島","竹内","三浦","原田"];
     const F_NAMES = ["葵","美咲","結愛","凛","麗華","亞里沙","千代","未來","沙耶","初音","瑪麗","明日香","莉莉絲","櫻","雪乃","陽菜","結衣","愛莉","心愛","美月","真央","咲良","琴音","彩花","日向","綾音","杏奈","柚希","千夏","美羽","莉子","朱里","茉莉","紗英","瑠璃","詩織","栞","楓","瞳","菜々子","優奈","彩音","碧","伶奈","小夜子","雫","綺羅","泉美","紅葉","蘭"];
     const FAC_NAMES = ["暗黑之星","百合女王","東京女子","猛毒之牙","星光閃耀","爆裂紅唇","超凡女帝","銀河戰線","關西烈火","九州神鳴"];
+
+    // 團體名字隨機生成：意象形容詞前綴 + 團體性質後綴組合，貼近日本職業摔角團體常見的命名風格(如新日本プロレス、大日本プロレス的漢字系，
+    // 或スターダム、アイスリボン的假名系)，混合漢字與片假名詞根，確保生成結果不跟目前現存的團隊重名
+    const FAC_NAME_PREFIXES = ["暗黒","深紅","蒼き","烈火","氷結","聖なる","漆黒","黄金","疾風","雷鳴","紅蓮","白銀","極彩","幻影","不死鳥","紫電","翠嵐","朱雀","白虎","青龍","真紅","蒼白","黒薔薇","紅薔薇","メガ","ハイパー","ダーク","クリムゾン","シルバー"];
+    const FAC_NAME_SUFFIXES = ["軍団","聖戦","乙女","姫","戦線","旅団","帝国","連合","闘會","女子部","隊","団","館","一族","結社","プロレス","ファイターズ","クイーンズ","エンジェルス","ヴァルキリー"];
+    window.generateRandomFactionName = function() {
+        let existingNames = (window.GS.factions||[]).map(f => f.name);
+        let name, attempts = 0;
+        do {
+            let prefix = FAC_NAME_PREFIXES[Math.floor(Math.random()*FAC_NAME_PREFIXES.length)];
+            let suffix = FAC_NAME_SUFFIXES[Math.floor(Math.random()*FAC_NAME_SUFFIXES.length)];
+            name = prefix + suffix;
+            attempts++;
+        } while(existingNames.includes(name) && attempts < 30);
+        return name;
+    };
 
     // 團體徽章系統：圖示+底色組成的徽章池，每個團隊分配到的徽章保證不重複
     window.FACTION_EMBLEMS = [
@@ -2457,6 +2488,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     let btnNavMore = document.getElementById('btn-nav-more');
     if(btnNavMore) btnNavMore.addEventListener('click', () => { document.getElementById('more-menu-overlay').style.display = 'flex'; });
+
+    // 重新命名團隊彈窗：確認按鈕呼叫confirmRenameFaction，隨機按鈕填入日文風格生成的團體名稱
+    let btnConfirmRenameFaction = document.getElementById('btn-confirm-rename-faction');
+    if(btnConfirmRenameFaction) btnConfirmRenameFaction.addEventListener('click', () => window.confirmRenameFaction());
+    let btnRandomRenameFacName = document.getElementById('btn-random-rename-facname');
+    if(btnRandomRenameFacName) btnRandomRenameFacName.addEventListener('click', () => {
+        document.getElementById('rename-faction-input').value = window.generateRandomFactionName();
+    });
 
     // 導覽列橫向捲動提示：手機版導覽列項目較多時會超出螢幕寬度、需要橫向滑動才能看到全部分頁，
     // 但原本沒有任何視覺提示告訴玩家「還可以往右滑」，容易被誤以為版面跑掉。這裡加上動態的滑動提示：
@@ -6265,13 +6304,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // 填充絕招下拉選單（隨機分配為預設選項）
     // 隨機姓名按鈕：跟隨機絕招一樣，從不重複姓名池抽一個填入姓名欄位
     // 掃描全聯盟(我方陣容+自由市場+所有AI團隊)，找出目前有哪些選手正在使用同一張照片網址，用來提醒玩家避免重複套用
-    window.findWrestlersUsingImage = function(imgUrl) {
+    // excludeId: 編輯現有選手時傳入該選手自己的id，排除掉「自己跟自己比對」這種必然相符、不該被當成警告的情況
+    window.findWrestlersUsingImage = function(imgUrl, excludeId) {
         if(!imgUrl || !imgUrl.trim()) return [];
         let url = imgUrl.trim();
         let all = [].concat(window.GS.roster||[], window.GS.fa||[]);
         // GS.factions[0]是玩家自己的團隊，其roster跟GS.roster是同一份陣列參考，這裡要排除掉，否則會把同一位選手算兩次
         (window.GS.factions||[]).filter(f => f.id !== 0).forEach(f => { all = all.concat(f.roster||[]); });
-        return all.filter(w => w && w.img === url).map(w => w.name);
+        return all.filter(w => w && w.img === url && (excludeId === undefined || String(w.id) !== String(excludeId))).map(w => w.name);
     };
 
     // 創作中心頭像即時預覽：依目前輸入的網址更新預覽圖，載入失敗時退回姓名作seed的隨機替代圖案
@@ -6652,6 +6692,20 @@ document.addEventListener('DOMContentLoaded', () => {
         preview.style.objectPosition = `${posX}% ${posY}%`;
         preview.style.transform = `scale(${scalePercent/100})`;
         preview.onerror = function(){ this.onerror=null; this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(document.getElementById('e-name').value||'?')}`; };
+
+        // 即時檢查這張照片是否已被其他選手使用(排除自己)，若有則顯示警告(僅提醒，不阻擋儲存，尊重玩家自行決定)
+        // 涵蓋所有選手池，包含修改AI團隊選手照片時也會一併檢查
+        let warnEl = document.getElementById('e-img-dup-warning');
+        if(warnEl) {
+            let excludeId = window._editTarget ? window._editTarget.id : undefined;
+            let dupNames = window.findWrestlersUsingImage(imgUrl, excludeId);
+            if(dupNames.length > 0) {
+                warnEl.style.display = 'block';
+                warnEl.innerText = `⚠️ 這張照片目前已被「${dupNames.slice(0,3).join('、')}」等${dupNames.length}位選手使用，建議換一張避免撞臉`;
+            } else {
+                warnEl.style.display = 'none';
+            }
+        }
     };
 
     let editImgInput = document.getElementById('e-img');
@@ -6695,9 +6749,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btnRandomEimg.addEventListener('click', () => {
             let gallery = window.GS && window.GS.gallery || [];
             let currentImg = document.getElementById('e-img').value.trim();
-            // 優先從玩家的自建圖庫隨機抽取(風格才會跟遊戲裡其他選手一致)，盡量避免抽到跟目前一樣的圖(圖庫只有1張時無可避免會抽到同一張)
+            let excludeId = window._editTarget ? window._editTarget.id : undefined;
+            // 分層次挑選，由嚴格到寬鬆：①未使用且非目前這張(讓玩家點擊時真的看到變化) ②未使用(即使跟目前一樣，也還是安全的選擇)
+            // ③至少非目前這張 ④完全不限制。用「未使用」獨立計算(不依賴currentImg)，避免currentImg變動導致清單不穩定
+            let unused = gallery.filter(url => window.findWrestlersUsingImage(url, excludeId).length === 0);
+            let unusedExcCurrent = unused.filter(url => url !== currentImg);
             let candidates = gallery.filter(url => url !== currentImg);
-            let pool = candidates.length > 0 ? candidates : gallery;
+            let pool = unusedExcCurrent.length > 0 ? unusedExcCurrent : (unused.length > 0 ? unused : (candidates.length > 0 ? candidates : gallery));
             if(pool.length > 0) {
                 document.getElementById('e-img').value = pool[Math.floor(Math.random() * pool.length)];
             } else {
@@ -6992,7 +7050,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('act-title').innerText = "🏗️ 建立新團隊";
         document.getElementById('act-desc').innerText = `為新團隊命名並選擇加入的聯盟（初始人氣固定為10，目前已自建 ${customCount}/32 隊）。`;
         document.getElementById('act-content').innerHTML = `
-            <div style="margin-bottom:15px;"><label style="display:block; margin-bottom:6px; font-size:1.4rem;">團隊名稱</label><input type="text" id="nf-name" style="width:100%; padding:12px; font-size:1.6rem;" placeholder="例如：漆黑玫瑰"></div>
+            <div style="margin-bottom:15px;"><label style="display:block; margin-bottom:6px; font-size:1.4rem;">團隊名稱</label><div style="display:flex; gap:8px;"><input type="text" id="nf-name" style="flex:1; padding:12px; font-size:1.6rem;" placeholder="例如：漆黑玫瑰"><button type="button" class="btn btn-sec" id="btn-random-facname" style="flex-shrink:0; padding:0 16px; font-size:1.3rem;">🎲 隨機</button></div></div>
             <div><label style="display:block; margin-bottom:6px; font-size:1.4rem;">加入聯盟</label>
                 <select id="nf-league" style="width:100%; padding:12px; font-size:1.6rem;">
                     <option value="East">🔵 東聯盟</option>
@@ -7000,6 +7058,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </select>
             </div>
         `;
+        let btnRandomFacName = document.getElementById('btn-random-facname');
+        if(btnRandomFacName) btnRandomFacName.onclick = () => { document.getElementById('nf-name').value = window.generateRandomFactionName(); };
         document.getElementById('btn-act-cancel').style.display = 'block';
         document.getElementById('btn-act-cancel').onclick = () => { window.closeModal('action-overlay'); };
         document.getElementById('btn-act-confirm').onclick = () => {
@@ -7088,15 +7148,23 @@ document.addEventListener('DOMContentLoaded', () => {
     window.openRenameFaction = function(facId) {
         let f = window.GS.factions.find(x => x.id === facId);
         if(!f) return;
-        let newName = prompt("請輸入新的團隊名稱：", f.name);
-        if(newName === null) return; // 使用者取消
-        newName = newName.trim();
+        window._renameFactionTargetId = facId;
+        document.getElementById('rename-faction-input').value = f.name;
+        document.getElementById('rename-faction-overlay').style.display = 'flex';
+    };
+
+    window.confirmRenameFaction = function() {
+        let facId = window._renameFactionTargetId;
+        let f = window.GS.factions.find(x => x.id === facId);
+        if(!f) return;
+        let newName = document.getElementById('rename-faction-input').value.trim();
         if(!newName) return window.showSysMsg("錯誤", "團隊名稱不可為空！", true);
         f.name = newName;
         // 若這支團隊剛好是本季賽程表排定的對手，立即同步更新顯示名稱，不用等到下次讀檔才校正
         if(window.GS.schedule) {
             window.GS.schedule.forEach(entry => { if(entry.opponentId === facId) entry.opponentName = newName; });
         }
+        window.closeModal('rename-faction-overlay');
         window.updateUI();
         window.saveGame();
         window.showSysMsg("改名成功", `團隊名稱已更新為「${newName}」！`, false);
