@@ -4606,7 +4606,7 @@ function draftCompetitorCount(w) {
         let tickerParts = [`💰 本週支付選手薪資 $${(GS._lastWeekSalarySum||0).toLocaleString()}萬`];
         if(aiMatchResults.length > 0) {
             let shuffled = aiMatchResults.slice().sort(() => 0.5 - Math.random());
-            shuffled.slice(0, 2).forEach(r => tickerParts.push(`📰 ${r}`));
+            shuffled.slice(0, 2).forEach(r => tickerParts.push(`📰 ${r.text}`));
         }
         if(matchInfo) tickerParts.push(matchInfo.win ? '🏆 我方本週比賽獲勝！' : '📉 我方本週比賽落敗');
         let tickerEl = document.getElementById('news-ticker-text');
