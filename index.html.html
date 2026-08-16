@@ -1360,11 +1360,30 @@ document.addEventListener('DOMContentLoaded', () => {
         if(!pool || pool.length === 0) return window.showSysMsg("沒有選手", "目前這個名單是空的，沒有選手可以套用頭像！", true);
 
         let poolLabel = poolType === 'roster' ? '旗下陣容' : '自由市場';
-        if(!confirm(`確定要把圖庫裡的 ${gallery.length} 張圖片，依序不重複分配給「${poolLabel}」目前的 ${pool.length} 位選手嗎？\n\n這會覆蓋這些選手目前的頭像設定（含個別調整過的位置/縮放），且無法復原。`)) return;
+        if(!confirm(`確定要把圖庫裡的圖片分配給「${poolLabel}」目前的 ${pool.length} 位選手嗎？系統會優先挑選還沒被其他選手（旗下陣容/自由市場/AI團隊）使用過的圖片，盡量避免撞臉。\n\n這會覆蓋這些選手目前的頭像設定（含個別調整過的位置/縮放），且無法復原。`)) return;
 
-        let shuffled = gallery.slice().sort(() => 0.5 - Math.random());
+        // 收集「這次要被分配的池子以外」所有選手目前正在使用的圖片網址，分配時優先避開這些圖，
+        // 才不會出現「自由市場套用後跟旗下陣容撞臉」這種跨池子重複的情況(原本的實作只在單一池子內部打亂，完全沒考慮到其他池子)
+        let poolIdSet = new Set(pool.map(w => w.id));
+        let allOtherWrestlers = [].concat(window.GS.roster||[], window.GS.fa||[]);
+        (window.GS.factions||[]).filter(f => f.id !== 0).forEach(f => { allOtherWrestlers = allOtherWrestlers.concat(f.roster||[]); });
+        let usedImagesOutsidePool = new Set(allOtherWrestlers.filter(w => w && !poolIdSet.has(w.id)).map(w => w.img));
+
+        let shuffledUnused = gallery.filter(url => !usedImagesOutsidePool.has(url)).sort(() => 0.5 - Math.random());
+        let shuffledAll = gallery.slice().sort(() => 0.5 - Math.random());
+        let usedInThisBatch = new Set(); // 這次分配過程中也盡量避免同一池子內部自己先重複(圖庫張數足夠時可以完全不重複)
+
         pool.forEach((w, i) => {
-            w.img = shuffled[i % shuffled.length];
+            let candidate;
+            if(i < shuffledUnused.length) {
+                candidate = shuffledUnused[i]; // 優先分配「完全沒被其他人用過」的圖，且依序取用不重複
+            } else {
+                // 未使用的圖不夠分配給所有選手，才退回整個圖庫(含已使用)，盡量避開這次批次中自己已經用過的
+                let remaining = shuffledAll.filter(url => !usedInThisBatch.has(url));
+                candidate = remaining.length > 0 ? remaining[0] : shuffledAll[i % shuffledAll.length];
+            }
+            usedInThisBatch.add(candidate);
+            w.img = candidate;
             w.imgPosX = 50; w.imgPosY = 50; w.imgScale = 1; // 換了新圖片，舊的位置/縮放調整不再適用，重置為預設置中
         });
 
