@@ -1353,13 +1353,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // 從徽章池中挑一個「其他團隊還沒用過」的徽章；若全部用完(理論上不會，池子夠大)則允許重複
     // factionsList參數可選：不傳入時預設用window.GS.factions判斷唯一性；批次處理一份「尚未賦值成window.GS」的陣列時(例如匯入JSON流程)，需要明確傳入該陣列本身，否則會誤判成跟舊遊戲比對
     // 一鍵套用圖庫頭像：洗牌後依序分配給整個選手池，圖庫充足時完全不重複，不足時均勻分散重複使用
-    window.bulkApplyGalleryImages = function(poolType) {
+    window.bulkApplyGalleryImages = function(poolType, facId) {
         let gallery = (window.GS.gallery || []).slice();
         if(gallery.length === 0) return window.showSysMsg("圖庫是空的", "請先到「情報中心」或創作中心上傳圖片到自建圖庫，才能使用一鍵套用功能！", true);
-        let pool = poolType === 'roster' ? window.GS.roster : window.GS.fa;
+        let pool, poolLabel;
+        if(poolType === 'roster') { pool = window.GS.roster; poolLabel = '旗下陣容'; }
+        else if(poolType === 'fa') { pool = window.GS.fa; poolLabel = '自由市場'; }
+        else if(poolType === 'faction') {
+            let f = window.GS.factions.find(x => x.id === facId);
+            pool = f ? f.roster : [];
+            poolLabel = f ? f.name : '該團隊';
+        } else { pool = []; poolLabel = ''; }
         if(!pool || pool.length === 0) return window.showSysMsg("沒有選手", "目前這個名單是空的，沒有選手可以套用頭像！", true);
 
-        let poolLabel = poolType === 'roster' ? '旗下陣容' : '自由市場';
         if(!confirm(`確定要把圖庫裡的圖片分配給「${poolLabel}」目前的 ${pool.length} 位選手嗎？系統會優先挑選還沒被其他選手（旗下陣容/自由市場/AI團隊）使用過的圖片，盡量避免撞臉。\n\n這會覆蓋這些選手目前的頭像設定（含個別調整過的位置/縮放），且無法復原。`)) return;
 
         // 收集「這次要被分配的池子以外」所有選手目前正在使用的圖片網址，分配時優先避開這些圖，
@@ -1389,6 +1395,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.addNewsLog(`🖼️ 已將圖庫頭像一鍵套用給「${poolLabel}」的 ${pool.length} 位選手。`);
         window.updateUI();
+        if(poolType === 'faction' && document.getElementById('npc-roster-overlay').style.display === 'flex') window.showNpcRoster(facId);
         window.saveGame();
         window.showSysMsg("套用完成", `已成功為「${poolLabel}」的 ${pool.length} 位選手套用圖庫頭像！`, false);
     };
@@ -6924,6 +6931,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="btn btn-sec" style="flex:1; font-size:1.3rem;" onclick="window.rerollFactionEmblem(${f.id}); window.showNpcRoster(${f.id});">🔄 換徽章</button>
                 <button class="btn btn-sec" style="flex:1; font-size:1.3rem;" onclick="window.openRenameFaction(${f.id})">✏️ 改名</button>
                 <button class="btn btn-sec" style="flex:1; font-size:1.3rem;" onclick="window.openSignToFaction(${f.id})">✍️ 簽約新選手</button>
+                <button class="btn btn-sec" style="flex:1; font-size:1.3rem;" onclick="window.bulkApplyGalleryImages('faction', ${f.id})">🖼️ 一鍵套用圖庫頭像</button>
                 ${f.id !== 0 ? `<button class="btn btn-danger" style="flex:1; font-size:1.3rem;" onclick="window.deleteFaction(${f.id})">🗑️ 解散此團隊</button>` : ''}
             `;
         }
