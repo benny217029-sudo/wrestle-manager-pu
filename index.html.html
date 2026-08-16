@@ -6928,11 +6928,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let actionsBar = document.getElementById('npc-r-actions');
         if(actionsBar) {
             actionsBar.innerHTML = `
-                <button class="btn btn-sec" style="flex:1; font-size:1.3rem;" onclick="window.rerollFactionEmblem(${f.id}); window.showNpcRoster(${f.id});">🔄 換徽章</button>
-                <button class="btn btn-sec" style="flex:1; font-size:1.3rem;" onclick="window.openRenameFaction(${f.id})">✏️ 改名</button>
-                <button class="btn btn-sec" style="flex:1; font-size:1.3rem;" onclick="window.openSignToFaction(${f.id})">✍️ 簽約新選手</button>
-                <button class="btn btn-sec" style="flex:1; font-size:1.3rem;" onclick="window.bulkApplyGalleryImages('faction', ${f.id})">🖼️ 一鍵套用圖庫頭像</button>
-                ${f.id !== 0 ? `<button class="btn btn-danger" style="flex:1; font-size:1.3rem;" onclick="window.deleteFaction(${f.id})">🗑️ 解散此團隊</button>` : ''}
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                    <button class="btn btn-sec" style="flex:1 1 calc(50% - 4px); font-size:1.15rem; padding:10px 6px; white-space:nowrap;" onclick="window.rerollFactionEmblem(${f.id}); window.showNpcRoster(${f.id});">🔄 換徽章</button>
+                    <button class="btn btn-sec" style="flex:1 1 calc(50% - 4px); font-size:1.15rem; padding:10px 6px; white-space:nowrap;" onclick="window.openRenameFaction(${f.id})">✏️ 改名</button>
+                    <button class="btn btn-sec" style="flex:1 1 calc(50% - 4px); font-size:1.15rem; padding:10px 6px; white-space:nowrap;" onclick="window.openSignToFaction(${f.id})">✍️ 簽約新選手</button>
+                    <button class="btn btn-sec" style="flex:1 1 calc(50% - 4px); font-size:1.15rem; padding:10px 6px; white-space:nowrap;" onclick="window.bulkApplyGalleryImages('faction', ${f.id})">🖼️ 套用圖庫頭像</button>
+                    ${f.id !== 0 ? `<button class="btn btn-danger" style="flex:1 1 100%; font-size:1.15rem; padding:10px 6px;" onclick="window.deleteFaction(${f.id})">🗑️ 解散此團隊</button>` : ''}
+                </div>
             `;
         }
 
