@@ -222,8 +222,8 @@ select:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ATB 實況戰鬥 UI */
 #match-overlay .modal-box { max-width: 1200px; width: 95vw; height: 95vh; max-height: 95vh; display: flex; flex-direction: column; border-color: var(--neon-blue); overflow-y: auto; overflow-x: hidden; }
-.team-preview { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 15px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; border: 1px solid var(--border); flex: 0 0 auto; }
-.mini-fighter { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; transition: 0.3s; }
+.team-preview { display: flex; justify-content: flex-start; align-items: center; gap: 8px; margin-bottom: 15px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; border: 1px solid var(--border); flex: 0 0 auto; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.mini-fighter { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; transition: 0.3s; flex-shrink: 0; }
 .mini-fighter.defeated { filter: grayscale(100%); opacity: 0.4; border-color: #555; }
 .mini-fighter.active-fighter { box-shadow: 0 0 10px 2px currentColor; transform: scale(1.12); }
 
@@ -653,6 +653,7 @@ body { overflow-x: hidden; }
         <div class="modal-box" style="max-width:95vw; width:100%; background:rgba(15,8,20,0.95);">
             <h2 id="b-title" style="color:var(--gold); font-size:3.5rem;">📋 大賽樹狀圖</h2>
             <p style="color:var(--neon-blue); font-size:1.4rem; margin-bottom:15px;">🏟️ 会場：ドーム（大賽固定在最大場館舉行）</p>
+            <div id="bracket-battle-royal-info" style="margin-bottom:15px;"></div>
             <div id="bracket-content" class="bracket-container" style="margin-bottom:25px;"></div>
             <div style="display:flex; gap:20px;">
                 <button class="btn btn-sec" style="flex:1; font-size:1.6rem; padding:18px;" id="btn-bracket-cancel">返回</button>
@@ -697,11 +698,11 @@ body { overflow-x: hidden; }
         </div>
     </div>
 
-    <!-- 生存大逃殺(Battle Royal)：每年開春例行活動賽，8人混戰輪次淘汰 -->
+    <!-- 生存大逃殺(Battle Royal)：每年仲夏例行活動賽，全聯盟每個團體各派一位選手參賽、輪次淘汰 -->
     <div id="battle-royal-overlay" class="overlay">
         <div class="modal-box" style="max-width:700px; width:100%; background:radial-gradient(ellipse at top, rgba(139,20,30,0.3), rgba(10,6,5,0.97)); border-color:var(--neon-pink);">
             <h2 style="text-align:center; color:var(--neon-pink); font-size:3rem; letter-spacing:3px; text-shadow:0 0 20px rgba(196,30,58,0.6);">💥 生存大逃殺 💥</h2>
-            <p style="text-align:center; color:var(--muted); font-size:1.3rem; margin-bottom:20px;">開春例行活動賽・8人混戰，最後留在場上的人獲勝！</p>
+            <p style="text-align:center; color:var(--muted); font-size:1.3rem; margin-bottom:20px;">仲夏例行活動賽・全聯盟每個團體各派一位代表選手參賽，最後留在場上的人獲勝！</p>
             <div id="battle-royal-content" style="max-height:55vh; overflow-y:auto; margin-bottom:20px;"></div>
             <div style="display:flex; gap:20px;">
                 <button class="btn btn-sec" style="flex:1; font-size:1.6rem; padding:18px;" onclick="window.closeModal('battle-royal-overlay')">返回</button>
@@ -903,12 +904,11 @@ body { overflow-x: hidden; }
 
 <div id="main-container" class="main-container" style="display:none;">
     <nav id="main-nav">
-        <button class="nav-btn active" data-tab="dashboard">🏢 營運總覽</button>
+        <button class="nav-btn active" data-tab="dashboard">🏢 營運總覽與陣容</button>
         <button class="nav-btn" data-tab="schedule">📅 賽季行事曆</button>
         <button class="nav-btn" data-tab="president">🏛️ 社長室</button>
         <button class="nav-btn" data-tab="faction">🏢 雙聯盟</button>
         <button class="nav-btn" data-tab="booking">🤼‍♀️ 比賽週</button>
-        <button class="nav-btn" data-tab="roster">📋 旗下陣容</button>
         <button class="nav-btn" data-tab="market">🛒 自由市場</button>
         <button class="nav-btn" data-tab="coaches">👨‍🏫 專屬教練</button>
         <button class="nav-btn nav-btn-secondary" data-tab="create">🎨 創作中心</button>
@@ -920,7 +920,7 @@ body { overflow-x: hidden; }
     <main>
         <!-- 營運總覽 -->
         <section id="tab-dashboard" class="tab active">
-            <h2>🏢 營運總覽與行動排程</h2>
+            <h2>🏢 營運總覽與陣容管理</h2>
             <div class="news-ticker-bar">
                 <span class="news-ticker-label">📰 LIVE</span>
                 <div class="news-ticker-track"><span id="news-ticker-text">歡迎回到團隊經營，本週尚無重大新聞。</span></div>
@@ -945,16 +945,19 @@ body { overflow-x: hidden; }
 
             <div id="week-phase-banner" style="padding:15px 20px; border-radius:10px; margin-bottom:20px; font-size:1.6rem; font-weight:bold; text-align:center;"></div>
 
-            <button class="btn" id="btn-advance-time" style="width:100%; padding:20px; font-size:2rem; font-weight:bold; letter-spacing:4px; box-shadow:0 10px 25px rgba(236,72,153,0.5);">✅ 確認本週排班，前往比賽週</button>
+            <div id="roster-coaches-summary" style="margin-bottom:20px;"></div>
 
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:25px; border-bottom:2px solid rgba(236,72,153,0.3); padding-bottom:10px;">
-                <h3 style="color:var(--neon-pink); margin:0;">📋 旗下選手本週排班</h3>
-                <div style="display:flex; gap:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-bottom:2px solid rgba(236,72,153,0.3); padding-bottom:10px; flex-wrap:wrap; gap:10px;">
+                <h3 style="color:var(--neon-pink); margin:0;">📋 旗下陣容管理 (上限 20 人)</h3>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
                     <button class="btn btn-sec" id="btn-set-all-train" style="font-size:1.3rem; padding:8px 16px;">🏋️ 全部訓練</button>
                     <button class="btn btn-sec" id="btn-set-all-rest" style="font-size:1.3rem; padding:8px 16px;">🛌 全部休息</button>
                 </div>
             </div>
-            <div class="grid" id="dashboard-roster-list" style="margin-top: 15px;"></div>
+            <button class="btn btn-sec" style="margin:15px 0; font-size:1.3rem; padding:10px 20px;" onclick="window.bulkApplyGalleryImages('roster')">🖼️ 一鍵套用圖庫頭像（依序不重複分配給全部選手）</button>
+            <div class="grid" id="dashboard-roster-list" style="margin-top: 15px; margin-bottom:25px;"></div>
+
+            <button class="btn" id="btn-advance-time" style="width:100%; padding:20px; font-size:2rem; font-weight:bold; letter-spacing:4px; box-shadow:0 10px 25px rgba(236,72,153,0.5);">✅ 確認本週排班，前往比賽週</button>
         </section>
 
         <!-- 行事曆 -->
@@ -963,7 +966,7 @@ body { overflow-x: hidden; }
 
             <div class="card" style="max-width:900px; margin-bottom:20px; border-color:var(--neon-blue);">
                 <h3 style="font-size:2.2rem; color:var(--neon-blue); margin-bottom:10px;">📅 本季賽程表</h3>
-                <p style="font-size:1.3rem; color:var(--muted); margin-bottom:12px;">每季固定在第4、8週對戰排定好的對手，第2、10週則是團體內對抗賽（不影響聯盟戰績，但選手個人數值正常計算）。</p>
+                <p style="font-size:1.3rem; color:var(--muted); margin-bottom:12px;">固定每4週對戰排定好的對手（第4、8週；第12週因遇上大賽，提前至第11週進行），第2、10週則是團體內對抗賽（不影響聯盟戰績，但選手個人數值正常計算）。</p>
                 <div id="season-schedule-content"></div>
             </div>
 
@@ -974,7 +977,7 @@ body { overflow-x: hidden; }
 
             <div id="battle-royal-entry-card" class="card" style="max-width:900px; margin-bottom:20px; border-color:var(--neon-pink); display:none;">
                 <h3 style="font-size:2.2rem; color:var(--neon-pink); margin-bottom:10px;">💥 生存大逃殺</h3>
-                <p style="font-size:1.3rem; color:var(--muted); margin-bottom:12px;">開春例行活動賽正在進行中，前往查看戰況！</p>
+                <p style="font-size:1.3rem; color:var(--muted); margin-bottom:12px;">仲夏例行活動賽正在進行中，前往查看戰況！</p>
                 <button class="btn" style="width:100%; font-size:1.6rem; padding:14px; background:linear-gradient(135deg, var(--neon-pink), var(--crimson-dark));" onclick="window.renderBattleRoyal(); document.getElementById('battle-royal-overlay').style.display='flex';">☠️ 進入生存大逃殺</button>
             </div>
 
@@ -1018,7 +1021,7 @@ body { overflow-x: hidden; }
                 <div class="card" style="border-color:var(--gold); max-width:500px; flex:1; min-width:280px; margin-bottom:0;">
                     <h3 style="font-size:1.8rem; color:var(--gold); margin-bottom:8px;">⚡ 社長能量</h3>
                     <p style="font-size:2rem; font-weight:bold;" id="president-energy-display">6 / 6</p>
-                    <p style="color:var(--muted); font-size:1.2rem; margin-top:5px;">每次執行社長室功能都會消耗能量，每4週回復4點。</p>
+                    <p style="color:var(--muted); font-size:1.2rem; margin-top:5px;">每次執行社長室功能都會消耗能量，每4週回復2點。</p>
                 </div>
                 <div class="card" style="border-color:var(--copper); max-width:500px; flex:1; min-width:280px; margin-bottom:0;">
                     <h3 style="font-size:1.8rem; color:var(--copper); margin-bottom:8px;">🌟 社長等級</h3>
@@ -1031,7 +1034,7 @@ body { overflow-x: hidden; }
             <div class="grid">
                 <div class="card">
                     <h3 style="font-size:2.2rem; margin-bottom:10px;">🎉 慰勞與宣傳</h3>
-                    <p style="color:var(--muted); font-size:1.3rem; margin-bottom:15px;">舉辦慰勞會全員自動參加($3萬/人，消耗2點能量，提升忠誠+回復體力)。大眾宣傳一週限選1人($30萬，消耗1點能量)。傷病/休假中選手無法參加。</p>
+                    <p style="color:var(--muted); font-size:1.3rem; margin-bottom:15px;">舉辦慰勞會全員自動參加($6萬/人，消耗2點能量，提升忠誠+回復體力)。大眾宣傳一週限選1人($60萬，消耗1點能量)。傷病/休假中選手無法參加。</p>
                     <div style="display:flex; gap:10px;">
                         <button class="btn" style="flex:1; padding:15px; font-size:1.5rem;" id="btn-party">舉辦慰勞會</button>
                         <button class="btn" style="flex:1; padding:15px; font-size:1.5rem; background:var(--neon-blue); color:#000;" id="btn-promo">大眾宣傳</button>
@@ -1039,12 +1042,12 @@ body { overflow-x: hidden; }
                 </div>
                 <div class="card">
                     <h3 style="font-size:2.2rem; margin-bottom:10px;">🏕️ 舉辦大合宿</h3>
-                    <p style="color:var(--muted); font-size:1.3rem; margin-bottom:15px;">強制特定選手前往深山合宿。花費 $8萬/人，消耗3點能量，為期 2 週，期間內訓練效果加倍（所有屬性上升）。傷病/休假中選手無法參加。</p>
+                    <p style="color:var(--muted); font-size:1.3rem; margin-bottom:15px;">強制特定選手前往深山合宿。花費 $16萬/人，消耗3點能量，為期 2 週，期間內訓練效果加倍（所有屬性上升）。傷病/休假中選手無法參加。</p>
                     <button class="btn btn-sec" style="width:100%; padding:15px; font-size:1.5rem;" id="btn-camp">選擇合宿名單</button>
                 </div>
                 <div class="card" style="border-color:var(--steel);">
                     <h3 style="font-size:2.2rem; margin-bottom:10px; color:var(--steel);">🏖️ 安排休假</h3>
-                    <p style="color:var(--muted); font-size:1.3rem; margin-bottom:15px;">一週只能安排1位選手休假，可選1~4週。費用＝週薪×週數+10萬，消耗1點能量。休假結束後大幅回復忠誠、體力與狀態。</p>
+                    <p style="color:var(--muted); font-size:1.3rem; margin-bottom:15px;">一週只能安排1位選手休假，可選1~4週。費用＝週薪×週數×4+40萬，消耗1點能量。休假結束後大幅回復忠誠、體力與狀態。</p>
                     <button class="btn" style="width:100%; padding:15px; font-size:1.5rem; background:var(--steel); color:#000;" id="btn-vacation">安排休假</button>
                 </div>
                 <div class="card" style="border-color:#a855f7;">
@@ -1170,13 +1173,6 @@ body { overflow-x: hidden; }
             </div>
         </section>
 
-        <!-- 旗下陣容 -->
-        <section id="tab-roster" class="tab">
-            <h2>📋 旗下陣容管理 (上限 20 人)</h2>
-            <div id="roster-coaches-summary" style="margin-bottom:20px;"></div>
-            <button class="btn btn-sec" style="margin-bottom:15px; font-size:1.3rem; padding:10px 20px;" onclick="window.bulkApplyGalleryImages('roster')">🖼️ 一鍵套用圖庫頭像（依序不重複分配給全部選手）</button>
-            <div class="grid" id="roster-grid"></div>
-        </section>
 
         <!-- 自由市場 -->
         <section id="tab-market" class="tab">
@@ -1237,6 +1233,10 @@ body { overflow-x: hidden; }
                     <div class="card" style="grid-column: 1 / -1; border-color:var(--gold);">
                         <h3 style="color:var(--gold); font-size:2.6rem; margin-bottom:15px;">🏆 名人堂紀錄</h3>
                         <p style="font-size:1.4rem; color:var(--muted); margin-bottom:15px;">永久記錄大賽冠軍、年度聯盟總冠軍、王座異動等重大事件（最新在最上方）。</p>
+                        <label style="display:flex; align-items:center; gap:8px; font-size:1.3rem; cursor:pointer; margin-bottom:15px;">
+                            <input type="checkbox" id="hof-ai-only-filter" onchange="window.renderHallOfFame()" style="width:20px; height:20px;">
+                            🤖 只看電腦團體相關紀錄
+                        </label>
                         <div id="hof-list" style="max-height:55vh; overflow-y:auto; padding-right:10px;"></div>
                     </div>
                 </div>
@@ -1246,6 +1246,10 @@ body { overflow-x: hidden; }
                 <div class="card" style="border-color:var(--neon-pink); margin-bottom:20px;">
                     <p style="font-size:1.3rem; color:var(--muted); margin-bottom:12px;">依分類篩選過往新聞動態（最新在最上方，最多保留200則）。</p>
                     <div id="news-category-filters" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+                    <label style="display:flex; align-items:center; gap:8px; font-size:1.3rem; cursor:pointer; margin-top:12px;">
+                        <input type="checkbox" id="news-ai-only-filter" onchange="window.renderNewsOverview()" style="width:20px; height:20px;">
+                        🤖 只看電腦團體相關新聞
+                    </label>
                 </div>
                 <div id="news-overview-list" style="max-height:60vh; overflow-y:auto; padding-right:10px;"></div>
             </div>
@@ -1260,6 +1264,11 @@ body { overflow-x: hidden; }
                         <h3 style="color:var(--gold); font-size:2.2rem; margin-bottom:10px;">📋 本週節目表</h3>
                         <p style="font-size:1.3rem; color:var(--muted); margin-bottom:12px;">團隊人氣達50以上時，本週賽事會被安排轉播，收視率依對戰話題性(人氣、恩怨值)估算。</p>
                         <div id="tv-schedule-content" style="font-size:1.5rem;"></div>
+                    </div>
+                    <div class="card" style="grid-column: 1 / -1; border-color:var(--neon-blue);">
+                        <h3 style="color:var(--neon-blue); font-size:2.2rem; margin-bottom:10px;">📺 聯盟收視動態</h3>
+                        <p style="font-size:1.3rem; color:var(--muted); margin-bottom:12px;">其他頻道也在轉播各團體的賽事，這是目前全聯盟的人氣排行（收視率的主要指標）。</p>
+                        <div id="tv-league-ranking-content" style="font-size:1.4rem;"></div>
                     </div>
                 </div>
             </div>
@@ -1306,7 +1315,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const L_NAMES = ["佐藤","鈴木","高橋","田中","神崎","白鳥","伊達","九條","星野","結城","天王寺","藤原","黑澤","五十嵐","綾小路","渡邊","中村","小林","加藤","吉田","山本","松本","井上","木村","林","清水","山崎","森","池田","橋本","阿部","石川","前田","藤田","岡田","長谷川","村上","近藤","石井","坂本","遠藤","青木","福田","太田","西村","金子","中島","竹内","三浦","原田"];
     const F_NAMES = ["葵","美咲","結愛","凛","麗華","亞里沙","千代","未來","沙耶","初音","瑪麗","明日香","莉莉絲","櫻","雪乃","陽菜","結衣","愛莉","心愛","美月","真央","咲良","琴音","彩花","日向","綾音","杏奈","柚希","千夏","美羽","莉子","朱里","茉莉","紗英","瑠璃","詩織","栞","楓","瞳","菜々子","優奈","彩音","碧","伶奈","小夜子","雫","綺羅","泉美","紅葉","蘭"];
-    const FAC_NAMES = ["暗黑之星","百合女王","東京女子","猛毒之牙","星光閃耀","爆裂紅唇","超凡女帝","銀河戰線","關西烈火","九州神鳴"];
+    const FAC_NAMES = ["暗黒軍団","紅蓮乙女","白銀の聖戦","疾風戦線","黄金クイーンズ","紫電一族","不死鳥ヴァルキリー","蒼き乙女","朱雀結社","氷結帝国","極彩女子部","幻影闘會","翠嵐旅団","シルバーエンジェルス","ダーク姫"];
 
     // 團體名字隨機生成：意象形容詞前綴 + 團體性質後綴組合，貼近日本職業摔角團體常見的命名風格(如新日本プロレス、大日本プロレス的漢字系，
     // 或スターダム、アイスリボン的假名系)，混合漢字與片假名詞根，確保生成結果不跟目前現存的團隊重名
@@ -1517,7 +1526,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 設施升級系統：訓練設施/醫療室/球探網路，各0~3級，等級越高效果越強
-    const FACILITY_COSTS = { training: [800, 1600, 3000], medical: [800, 1600, 3000], scouting: [600, 1200, 2400] };
+    const FACILITY_COSTS = { training: [3200, 6400, 12000], medical: [3200, 6400, 12000], scouting: [2400, 4800, 9600] };
     const FACILITY_INFO = {
         training: { name: '訓練設施', descs: ['降低訓練意外受傷機率10%', '降低受傷機率20%，潛力加成觸發率+3%', '降低受傷機率30%，潛力加成觸發率+6%'] },
         medical:  { name: '醫療室', descs: ['傷病天數縮短15%', '傷病天數縮短30%', '傷病天數縮短45%'] },
@@ -1610,13 +1619,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function genWrestler(isFA, ageLimit=18) {
-        let base = 30 + R(40);
+        let base = 30 + R(40); // 僅保留給薪水計算使用，不再影響能力值範圍
         return {
             id: Date.now() + R(100000), name: (isFA ? "[FA] " : "") + window.getUniqueWrestlerName(),
             age: 17 + R(4), stamina: 100, // 選手生成年齡統一改成17~20歲隨機產生
             declineStartAge: 25 + R(8), // 成長衰退系統：每位選手隨機從25~32歲之間某個年齡開始衰退，取代原本全員固定28歲
             imgPosX: 50, imgPosY: 50, imgScale: 1, // 頭像顯示位置與縮放(預設置中、不縮放)，可在編輯選手資料時調整
-            str: base+R(20), spd: base+R(20), tech: base+R(20), mnt: base+R(20), end: base+R(20),
+            str: 40+R(21), spd: 40+R(21), tech: 40+R(21), mnt: 40+R(21), end: 40+R(21), // 初始能力固定40~60隨機範圍(含AI團隊/自由市場選手)，不可直接編輯只能重新隨機
             pop: 30+R(40), loyalty: 60+R(40), salary: Math.floor(base*0.3)+R(20),
             img: `https://api.dicebear.com/7.x/avataaars/svg?seed=${Math.random()}`,
             w: 0, l: 0, coachId: null, boost: 0, injuryWeeks: 0, retirementCountdown: null, readyForRetirementMatch: false, condition: '普通', vacationWeeks: 0,
@@ -1921,13 +1930,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if(week === 6) return 'championship';      // 單打王座決定賽(固定錨點)
         if(week === 9 && month === 7) return 'ironman'; // 極限連戰(僅秋季，固定錨點)
         if(week === 12) return 'tournament';        // 大賽(固定錨點)
+        if(week === 11) return 'schedule';          // 賽程表比賽固定每4週一次(4,8,12...)，第12週被大賽佔用，故提前一週在第11週進行
         let mod = week % 4;
         if(mod === 2) return 'scrimmage';   // 團體內對抗賽
-        if(mod === 0) return 'schedule';    // 賽程表比賽(對抗AI團隊)
+        if(mod === 0) return 'schedule';    // 賽程表比賽(對抗AI團隊)：第4、8週
         return 'management';                // mod===1 或 mod===3，一般營運週
     };
 
-    // 賽季賽程表：每季第1週自動安排「賽程表比賽」週(第4、8週)的對手，讓玩家在那兩週不能自由選對手、只能打排定好的比賽
+    // 賽季賽程表：每季第1週自動安排「賽程表比賽」週(第4、8、11週)的對手，讓玩家在那幾週不能自由選對手、只能打排定好的比賽
     // 賽季目標系統：每季開始隨機生成1-2個具體目標，達成即時發放獎勵
     window.generateSeasonGoals = function() {
         let pool = [];
@@ -1994,14 +2004,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         let remaining = candidates.filter(f => !opponents.some(o => o.id === f.id));
         let shuffled = remaining.slice().sort(() => 0.5 - Math.random());
-        while(opponents.length < 2 && shuffled.length > 0) opponents.push(shuffled.shift());
-        while(opponents.length < 2 && candidates.length > 0) opponents.push(candidates[0]); // 極端邊界(只剩1支AI團隊)保底：兩場都對上同一隊
+        while(opponents.length < 3 && shuffled.length > 0) opponents.push(shuffled.shift());
+        while(opponents.length < 3 && candidates.length > 0) opponents.push(candidates[opponents.length % candidates.length]); // 極端邊界(候選團隊不足3支)保底：循環使用現存團隊
 
         GS.schedule = [
             { week: 4, opponentId: opponents[0].id, opponentName: opponents[0].name, result: null, myScore: null, oppScore: null },
             { week: 8, opponentId: opponents[1].id, opponentName: opponents[1].name, result: null, myScore: null, oppScore: null },
+            { week: 11, opponentId: opponents[2].id, opponentName: opponents[2].name, result: null, myScore: null, oppScore: null },
         ];
-        window.addNewsLog(`📅 本季賽程表已排定：第4週 vs ${opponents[0].name}，第8週 vs ${opponents[1].name}`);
+        window.addNewsLog(`📅 本季賽程表已排定：第4週 vs ${opponents[0].name}，第8週 vs ${opponents[1].name}，第11週 vs ${opponents[2].name}`);
     };
 
     // 取得指定週次的賽程表項目(若當週不是賽程表週，回傳null)
@@ -2171,41 +2182,113 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     // 合理範圍隨機能力值(不會出現極端值)：基準30~69，各項再+0~19
     window.randomReasonableStats = function() {
-        let base = 30 + Math.floor(Math.random()*40);
         return {
-            str: base + Math.floor(Math.random()*20),
-            spd: base + Math.floor(Math.random()*20),
-            tech: base + Math.floor(Math.random()*20),
-            end: base + Math.floor(Math.random()*20),
-            mnt: base + Math.floor(Math.random()*20)
+            str: 40 + Math.floor(Math.random()*21),
+            spd: 40 + Math.floor(Math.random()*21),
+            tech: 40 + Math.floor(Math.random()*21),
+            end: 40 + Math.floor(Math.random()*21),
+            mnt: 40 + Math.floor(Math.random()*21)
         };
     };
 
     // 歷代數據排行榜：在關鍵時刻主動記錄巔峰紀錄，即使選手日後引退/王座易主，紀錄依然保留
     // 成就系統／獎盃牆：達成後永久記錄，不會因為狀態改變(例如王座易主)而消失
     window.ACHIEVEMENTS = [
-        { id: 'first_champion', icon: '🏆', name: '初次登基', desc: '我方選手首次奪得單打王座', check: () => GS.champion && GS.champion.isPlayerOwned },
-        { id: 'first_tag_champion', icon: '🤝', name: '雙打稱霸', desc: '我方選手首次奪得雙打王座', check: () => GS.tagChampion && GS.tagChampion.isPlayerOwned },
-        { id: 'double_champion', icon: '👑', name: '雙料制霸', desc: '同時持有單打與雙打王座', check: () => GS.champion && GS.champion.isPlayerOwned && GS.tagChampion && GS.tagChampion.isPlayerOwned },
+        { id: 'first_champion', icon: '🏆', name: '初次登基', desc: '我方選手首次奪得單打王座', check: () => GS.champion && GS.champion.isPlayerOwned, getSubject: () => GS.champion ? GS.champion.name : '' },
+        { id: 'first_tag_champion', icon: '🤝', name: '雙打稱霸', desc: '我方選手首次奪得雙打王座', check: () => GS.tagChampion && GS.tagChampion.isPlayerOwned, getSubject: () => GS.tagChampion ? `${GS.tagChampion.name1}＆${GS.tagChampion.name2}` : '' },
+        { id: 'double_champion', icon: '👑', name: '雙料制霸', desc: '同時持有單打與雙打王座', check: () => GS.champion && GS.champion.isPlayerOwned && GS.tagChampion && GS.tagChampion.isPlayerOwned, getSubject: () => GS.champion ? GS.champion.name : '' },
         { id: 'money_100m', icon: '💰', name: '資金破億', desc: '團隊資金達到1億萬以上', check: () => (GS.money||0) >= 10000 },
-        { id: 'five_star_roster', icon: '💎', name: '五星球團', desc: '旗下同時擁有5位S級潛力選手', check: () => GS.roster.filter(w => w.potential==='S').length >= 5 },
-        { id: 'superstar', icon: '🌟', name: '超級巨星', desc: '旗下有選手人氣達到100', check: () => GS.roster.some(w => (w.pop||0) >= 100) },
-        { id: 'legend_100wins', icon: '🏅', name: '傳奇選手', desc: '旗下有選手達成生涯100勝里程碑', check: () => GS.roster.some(w => (w.w||0) >= 100) },
-        { id: 'dynasty', icon: '🛡️', name: '常勝王朝', desc: '單打王座連續防衛達10次', check: () => GS.champion && GS.champion.isPlayerOwned && (GS.champion.defenses||0) >= 10 },
-        { id: 'tournament_champion', icon: '🏆', name: '大賽制霸', desc: '首次奪得大賽（季末大型賽事）冠軍', check: () => (GS.yearTournamentChampions||[]).some(t => t.facId === 0) },
+        { id: 'five_star_roster', icon: '💎', name: '五星球團', desc: '旗下同時擁有5位S級潛力選手', check: () => GS.roster.filter(w => w.potential==='S').length >= 5, getSubject: () => GS.roster.filter(w => w.potential==='S').map(w=>w.name).join('、') },
+        { id: 'superstar', icon: '🌟', name: '超級巨星', desc: '旗下有選手人氣達到100', check: () => GS.roster.some(w => (w.pop||0) >= 100), getSubject: () => { let w = GS.roster.find(w=>(w.pop||0)>=100); return w ? w.name : ''; } },
+        { id: 'legend_100wins', icon: '🏅', name: '傳奇選手', desc: '旗下有選手達成生涯100勝里程碑', check: () => GS.roster.some(w => (w.w||0) >= 100), getSubject: () => { let w = GS.roster.find(w=>(w.w||0)>=100); return w ? w.name : ''; } },
+        { id: 'dynasty', icon: '🛡️', name: '常勝王朝', desc: '單打王座連續防衛達10次', check: () => GS.champion && GS.champion.isPlayerOwned && (GS.champion.defenses||0) >= 10, getSubject: () => GS.champion ? GS.champion.name : '' },
+        { id: 'tournament_champion', icon: '🏆', name: '大賽制霸', desc: '首次奪得大賽（季末大型賽事）冠軍', check: () => (GS.yearTournamentChampions||[]).some(t => t.facId === 0), getSubject: () => { let t = (GS.yearTournamentChampions||[]).find(t=>t.facId===0); return t ? t.name : ''; } },
         { id: 'centennial', icon: '📜', name: '百年基業', desc: '球團經營邁入第10年', check: () => (GS.year||1) >= 10 },
     ];
 
+    // 特殊紀錄播報：成就達成、選手個人里程碑(生涯50/100/200勝、人氣達50/80/100)、連勝/連敗、全聯盟等級最高選手易主，都會發新聞並附上達成選手的照片
+    // (照片顯示靠上面已有的renderMentionAvatars文字比對機制，只要新聞文字裡包含選手姓名就會自動附圖，這裡的重點是確保文字裡真的有寫出是哪位選手)
+    const MILESTONE_WIN_THRESHOLDS = [50, 100, 200];
+    const MILESTONE_POP_THRESHOLDS = [50, 80, 100];
+    const WIN_STREAK_THRESHOLDS = [3, 5, 10];
+    const LOSS_STREAK_THRESHOLDS = [3, 5];
+    window.checkPersonalMilestones = function() {
+        if(!GS.milestonesAwarded) GS.milestonesAwarded = {};
+        // 追蹤範圍涵蓋旗下陣容+全部AI團隊選手(不含自由市場，市場選手還沒真正上場比賽，紀錄意義不大)，
+        // 讓電腦團體選手也會有生涯里程碑/連勝連敗這些特殊紀錄新聞，玩家可用「只看電腦團體」篩選開關單獨查看
+        let trackedWrestlers = [].concat(GS.roster||[]);
+        (GS.factions||[]).filter(f => f.id !== 0).forEach(f => { trackedWrestlers = trackedWrestlers.concat(f.roster||[]); });
+        trackedWrestlers.forEach(w => {
+            if(!GS.milestonesAwarded[w.id]) GS.milestonesAwarded[w.id] = { wins: [], pop: [], winStreak: [], lossStreak: [] };
+            let rec = GS.milestonesAwarded[w.id];
+            MILESTONE_WIN_THRESHOLDS.forEach(t => {
+                if((w.w||0) >= t && !rec.wins.includes(t)) {
+                    rec.wins.push(t);
+                    if(window.addNewsLog) window.addNewsLog(`🎖️ 特殊紀錄：${w.name} 生涯達成第 ${t} 勝里程碑！`);
+                }
+            });
+            MILESTONE_POP_THRESHOLDS.forEach(t => {
+                if((w.pop||0) >= t && !rec.pop.includes(t)) {
+                    rec.pop.push(t);
+                    if(window.addNewsLog) window.addNewsLog(`🎖️ 特殊紀錄：${w.name} 人氣突破 ${t} 點！`);
+                }
+            });
+            // 連勝/連敗：從recentMatches(最新在陣列開頭)算出目前連續同結果的場次數，只在「剛達到門檻」時播報一次，
+            // 轉換方向(連勝變連敗、或反之)時清空對側的已播報清單，讓下一輪連勝/連敗重新有資格觸發播報
+            let recent = w.recentMatches || [];
+            if(recent.length > 0) {
+                let streakType = recent[0].result;
+                let streakCount = 0;
+                for(let m of recent) { if(m.result === streakType) streakCount++; else break; }
+                if(streakType === 'win') {
+                    rec.lossStreak = [];
+                    WIN_STREAK_THRESHOLDS.forEach(t => {
+                        if(streakCount >= t && !rec.winStreak.includes(t)) {
+                            rec.winStreak.push(t);
+                            if(window.addNewsLog) window.addNewsLog(`🔥 特殊紀錄：${w.name} 豪取${t}連勝！氣勢如虹！`);
+                        }
+                    });
+                } else {
+                    rec.winStreak = [];
+                    LOSS_STREAK_THRESHOLDS.forEach(t => {
+                        if(streakCount >= t && !rec.lossStreak.includes(t)) {
+                            rec.lossStreak.push(t);
+                            if(window.addNewsLog) window.addNewsLog(`📉 特殊紀錄：${w.name} 遭遇${t}連敗低潮，急需調整狀態...`);
+                        }
+                    });
+                }
+            }
+        });
+
+        // 全聯盟等級最高選手易主播報(涵蓋旗下陣容+全部AI團隊，不含自由市場)：第一次執行靜默初始化不發新聞，之後換人才播報
+        let allWrestlers = [].concat(GS.roster||[]);
+        (GS.factions||[]).filter(f => f.id !== 0).forEach(f => { allWrestlers = allWrestlers.concat(f.roster||[]); });
+        if(allWrestlers.length > 0) {
+            let topW = allWrestlers.reduce((best, w) => window.wrestlerLevel(w) > window.wrestlerLevel(best) ? w : best, allWrestlers[0]);
+            let topLv = window.wrestlerLevel(topW);
+            if(!GS.topLevelHolderId) {
+                GS.topLevelHolderId = topW.id;
+            } else if(GS.topLevelHolderId !== topW.id) {
+                GS.topLevelHolderId = topW.id;
+                if(window.addNewsLog) window.addNewsLog(`⭐ 特殊紀錄：${topW.name} 以綜合等級 ${topLv}，登上全聯盟最強選手寶座！`);
+            }
+        }
+    };
+
     window.checkAchievements = function() {
         if(!GS.achievements) GS.achievements = [];
+        if(window.checkPersonalMilestones) window.checkPersonalMilestones();
         window.ACHIEVEMENTS.forEach(a => {
             if(GS.achievements.some(x => x.id === a.id)) return; // 已達成過，不重複觸發
             let achieved = false;
             try { achieved = a.check(); } catch(e) { achieved = false; }
             if(achieved) {
                 GS.achievements.push({ id: a.id, year: GS.year, month: GS.month, week: GS.week });
-                if(window.addNewsLog) window.addNewsLog(`🏆 成就達成：${a.icon} ${a.name}！`);
-                if(window.addHallOfFame) window.addHallOfFame(`🏆 <strong style="color:var(--gold);">成就達成</strong>：${a.icon} ${a.name}（${a.desc}）`);
+                let subject = '';
+                try { subject = a.getSubject ? a.getSubject() : ''; } catch(e) { subject = ''; }
+                let subjectText = subject ? `${subject}　` : '';
+                if(window.addNewsLog) window.addNewsLog(`🏆 特殊紀錄達成：${subjectText}${a.icon} ${a.name}！`);
+                if(window.addHallOfFame) window.addHallOfFame(`🏆 <strong style="color:var(--gold);">成就達成</strong>：${subjectText}${a.icon} ${a.name}（${a.desc}）`);
                 if(window.renderTrophyWall) window.renderTrophyWall();
                 if(window.showBigEvent) window.showBigEvent('🏆 成就達成', `${a.icon} ${a.name}`, a.desc);
             }
@@ -2234,14 +2317,18 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
         let rec = window.GS.allTimeRecords;
+        const RECORD_LABELS = { mostWins: '歷代生涯勝場最多', mostDefenses: '歷代王座連續防衛最多', youngestChampion: '歷代最年輕登基' };
         if(category === 'wins' && data.value > (rec.mostWins.value||0)) {
             rec.mostWins = { name: data.name, value: data.value, facName: data.facName, year: window.GS.year };
+            if(window.addNewsLog) window.addNewsLog(`🔥 新紀錄誕生！${data.name}（${data.facName}）以生涯 ${data.value} 勝，刷新「${RECORD_LABELS.mostWins}」紀錄！`);
         }
         if(category === 'defenses' && data.value > (rec.mostDefenses.value||0)) {
             rec.mostDefenses = { name: data.name, value: data.value, facName: data.facName, year: window.GS.year };
+            if(window.addNewsLog) window.addNewsLog(`🔥 新紀錄誕生！${data.name}（${data.facName}）以連續防衛 ${data.value} 次，刷新「${RECORD_LABELS.mostDefenses}」紀錄！`);
         }
         if(category === 'youngestChampion' && data.value < (rec.youngestChampion.value||999)) {
             rec.youngestChampion = { name: data.name, value: data.value, facName: data.facName, year: window.GS.year };
+            if(window.addNewsLog) window.addNewsLog(`🔥 新紀錄誕生！${data.name}（${data.facName}）以 ${data.value} 歲之姿登基，刷新「${RECORD_LABELS.youngestChampion}」紀錄！`);
         }
     };
     // 通用SVG折線圖繪製工具：純CSS/SVG手刻，不需要外部圖表套件
@@ -2328,11 +2415,23 @@ document.addEventListener('DOMContentLoaded', () => {
         let el = document.getElementById('season-schedule-content');
         if(!el) return;
         let schedule = GS.schedule || [];
-        if(schedule.length === 0) {
+        let items = [];
+
+        // 生存大逃殺：仲夏例行活動賽，跟第4/8週的賽程表對手並列顯示，只在活動所屬的當年度、且還在夏季(4~6月)時顯示
+        let br = GS.battleRoyal;
+        if(br && br.year === GS.year && GS.month >= 4 && GS.month <= 6) {
+            let statusHtml;
+            if(br.champion) statusHtml = `<span style="color:#7CFC00; font-weight:bold;">🏆 已產生最後生還者</span>`;
+            else if(br.active) statusHtml = `<span style="color:var(--gold); font-weight:bold;">⏳ 進行中</span>`;
+            else statusHtml = `<span style="color:var(--muted);">已結束</span>`;
+            items.push(`<div class="card" style="margin-bottom:10px; padding:14px; border-color:#ff6b6b;"><p style="font-size:1.5rem;">💥 仲夏例行活動賽　<strong style="color:var(--gold);">生存大逃殺</strong>　${statusHtml}</p></div>`);
+        }
+
+        if(schedule.length === 0 && items.length === 0) {
             el.innerHTML = `<p style="color:var(--muted); font-size:1.4rem;">尚未排定本季賽程。</p>`;
             return;
         }
-        el.innerHTML = schedule.map(s => {
+        items = items.concat(schedule.map(s => {
             let statusHtml;
             if(s.result === null) {
                 statusHtml = (GS.week === s.week) ? `<span style="color:var(--gold); font-weight:bold;">⏳ 本週待戰！</span>` : `<span style="color:var(--muted);">尚未開打</span>`;
@@ -2340,7 +2439,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 statusHtml = s.result === 'win' ? `<span style="color:#7CFC00; font-weight:bold;">🏆 獲勝</span>` : `<span style="color:#ff6b6b; font-weight:bold;">📉 落敗</span>`;
             }
             return `<div class="card" style="margin-bottom:10px; padding:14px;"><p style="font-size:1.5rem;">第${s.week}週　vs <strong style="color:var(--gold);">${s.opponentName}</strong>　${statusHtml}</p></div>`;
-        }).join('');
+        }));
+        el.innerHTML = items.join('');
     };
 
     // 選手個人賽事紀錄查詢：從roster全體選手的recentMatches彙整
@@ -2397,8 +2497,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.checkCareerMilestone = function(w) {
         if(!w.milestonesAwarded) w.milestonesAwarded = [];
         let isPlayerOwned = window.GS.roster.some(rw => rw.id === w.id); // 只有玩家旗下選手的里程碑才會發放獎金/經驗值給玩家
+        let facName = isPlayerOwned ? '我方' : (window.GS.factions.find(f => (f.roster||[]).some(rw => rw.id === w.id)) || {}).name || '';
         if(window.checkAllTimeRecord) {
-            let facName = isPlayerOwned ? '我方' : (window.GS.factions.find(f => (f.roster||[]).some(rw => rw.id === w.id)) || {}).name || '';
             window.checkAllTimeRecord('wins', { name: w.name, value: w.w||0, facName });
         }
         CAREER_MILESTONES.forEach(m => {
@@ -2414,6 +2514,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(window.addHallOfFame) window.addHallOfFame(`🏅 <strong style="color:var(--gold);">${w.name}</strong> 生涯達成 <strong>${m}勝</strong> 里程碑！`);
                     w._milestoneMerchAvailable = m; // 標記可製作紀念商品的機會，玩家可在選手資料彈窗自行決定是否製作
                     if(m >= 50 && window.showBigEvent) window.showBigEvent('🏅 生涯里程碑', `${w.name} 達成生涯${m}勝！`, `人氣+${Math.round(m/2)}，獎金 $${reward.toLocaleString()}萬！`, w.img);
+                } else {
+                    // 電腦團體選手的里程碑：一樣要播出新聞讓玩家知道聯盟動態(附選手照片，由新聞總覽的提及照片機制自動處理)，
+                    // 但不發獎金/經驗值給玩家(那些是玩家自己經營成果的獎勵，不該套用在AI選手身上)
+                    if(window.addNewsLog) window.addNewsLog(`🏅 ${w.name}（${facName}）生涯累積達成 ${m} 勝里程碑！`);
+                    if(m >= 50 && window.addHallOfFame) window.addHallOfFame(`🏅 <strong style="color:var(--neon-blue);">${w.name}</strong>（${facName}）生涯達成 <strong>${m}勝</strong> 里程碑！`);
                 }
             }
         });
@@ -2570,11 +2675,11 @@ document.addEventListener('DOMContentLoaded', () => {
         GS.factions.push({ id: 0, name: "玩家團隊", league: "East", pop: 10, roster: GS.roster, record: {w:0, l:0}, points: 0, streak: 0, emblem: window.pickUniqueEmblem() });
         for(let k=1; k<=15; k++) {
             let fR = []; for(let r=0; r<10; r++) fR.push(genWrestler(false, 20));
-            GS.factions.push({ id: k, name: (FAC_NAMES[k-1] || "地方團隊 "+k), league: k%2===0?"East":"West", pop: 10, roster: fR, record: {w:0, l:0}, points: 0, streak: 0, emblem: window.pickUniqueEmblem(), facilities: {training:0, medical:0, scouting:0} });
+            GS.factions.push({ id: k, name: window.generateRandomFactionName(), league: k%2===0?"East":"West", pop: 10, roster: fR, record: {w:0, l:0}, points: 0, streak: 0, emblem: window.pickUniqueEmblem(), facilities: {training:0, medical:0, scouting:0} });
         }
-        if(window.generateSeasonSchedule) window.generateSeasonSchedule(); // 開局第一季也要有賽程表(第4、8週的比賽對手)
+        if(window.generateSeasonSchedule) window.generateSeasonSchedule(); // 開局第一季也要有賽程表(第4、8、11週的比賽對手)
         if(window.generateSeasonGoals) window.generateSeasonGoals(); // 開局第一季也要有賽季目標
-        if(window.startBattleRoyal) window.startBattleRoyal(); // 開局第一年也要有生存大逃殺活動
+        // 生存大逃殺固定在每年夏季第一週開幕(不再於開局立即觸發)，統一由finishWeek裡的enteringSummer判斷處理
         switchTab('dashboard');
         if(window.updateBookingSelects) window.updateBookingSelects();
     });
@@ -2656,6 +2761,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if(window.GS.seasonGoals === undefined) { window.GS.seasonGoals = []; if(window.generateSeasonGoals) window.generateSeasonGoals(); }
             if(window.GS.pendingSignings === undefined) window.GS.pendingSignings = [];
             if(window.GS.autoTacticalSwitch === undefined) window.GS.autoTacticalSwitch = false;
+            if(window.GS.milestonesAwarded === undefined) window.GS.milestonesAwarded = {};
+            if(window.GS.topLevelHolderId === undefined) window.GS.topLevelHolderId = null;
             if(window.GS.yearEndRankingHistory === undefined) window.GS.yearEndRankingHistory = [];
             if(window.ensureSignatureMoves) window.ensureSignatureMoves(); // 舊存檔補齊絕招綁定
             if(window.repairStaleReferences) window.repairStaleReferences(); // 修復賽程表/季度目標裡指向已不存在團隊或選手的殘留資料
@@ -2828,50 +2935,53 @@ document.addEventListener('DOMContentLoaded', () => {
             let lowHp = w.stamina < 30;
             let injured = (w.injuryWeeks || 0) > 0;
             return `
-            <div class="card" style="${injured ? 'border-color:#ff6b6b;' : (lowHp ? 'border-color:#ff4d4d;' : '')}">
-                <h4 style="color:var(--neon-pink); font-size:2.2rem; margin:0 0 10px 0; display:flex; align-items:center; gap:10px;">
-                    <img src="${window.escAttr(w.img)}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'" style="width:42px; height:42px; border-radius:50%; object-fit:cover; border:2px solid var(--neon-pink); flex-shrink:0;">
-                    <span>${lowHp?'⚠️ ':''}<span style="cursor:pointer; text-decoration:underline dotted;" onclick="window.showWrestlerProfile('${w.id}')" title="查看選手詳細資料">${w.name} 📇</span> ${w.coachId?'<span class="badge" style="background:var(--neon-blue); color:#fff; font-size:1.2rem;">👨‍🏫 指導中</span>':''} ${w.boost>0?'<span class="badge" style="background:var(--gold); color:#000; font-size:1.2rem;">🔥 合宿中</span>':''} ${injured?`<span class="badge" style="background:#ff6b6b; color:#fff; font-size:1.2rem;">🤕 傷病中(剩${w.injuryWeeks}週)</span>`:''}</span>
-                </h4>
-                <div class="stat-row"><span style="${lowHp?'color:#ff4d4d;font-weight:bold;':''}">體力: ${w.stamina}/100</span><span>士氣: ${w.loyalty}</span></div>
-                <select id="da-${i}" onchange="window.setPendingAction(${i}, this.value)" ${injured?'disabled':''}>
-                    <option value="train" ${w.pendingAction==='train'?'selected':''}>🏋️ 嚴格訓練 (扣20體${w.boost>0?', 🔥合宿中屬性雙倍成長!':', 提升屬性'}, 有機率受傷)</option>
-                    <option value="rest" ${w.pendingAction==='rest'?'selected':''}>🛌 放假休息 (恢復40體)</option>
-                </select>
-                <select id="focus-${i}" onchange="window.setTrainFocus(${i}, this.value)" style="margin-top:8px; ${w.pendingAction==='train' && !injured ? '' : 'display:none;'}">
-                    <option value="balanced" ${(!w.trainFocus || w.trainFocus==='balanced')?'selected':''}>⚖️ 均衡發展（維持原本訓練方式）</option>
-                    <option value="str" ${w.trainFocus==='str'?'selected':''}>💪 主攻力量（力量雙倍成長，其他項目成長機率減半）</option>
-                    <option value="spd" ${w.trainFocus==='spd'?'selected':''}>⚡ 主攻速度（速度雙倍成長，其他項目成長機率減半）</option>
-                    <option value="tech" ${w.trainFocus==='tech'?'selected':''}>🎯 主攻技巧（技巧雙倍成長，其他項目成長機率減半）</option>
-                    <option value="end" ${w.trainFocus==='end'?'selected':''}>🛡️ 主攻耐力（耐力雙倍成長，其他項目成長機率減半）</option>
-                    <option value="mnt" ${w.trainFocus==='mnt'?'selected':''}>🧠 主攻精神（精神雙倍成長，其他項目成長機率減半）</option>
-                </select>
-                ${injured ? `<p style="color:#ff6b6b; font-size:1.2rem; margin-top:6px;">🤕 傷病中，本週將強制休息靜養，${w.injuryWeeks}週後可恢復訓練。</p>` : ''}
-                <p id="warn-${i}" style="color:#ff4d4d; font-size:1.2rem; margin-top:6px; display:${(lowHp && w.pendingAction==='train' && !injured)?'block':'none'};">⚠️ 體力過低，訓練後可能歸零！</p>
+            <div class="card" style="${injured ? 'border-color:#ff6b6b;' : (lowHp ? 'border-color:#ff4d4d;' : (w.readyForRetirementMatch ? 'border-color:var(--gold);' : ''))}">
+                <div style="display:flex; gap:12px; margin-bottom:10px;">
+                    <img src="${window.escAttr(w.img)}" class="wrestler-img" style="width:90px; height:auto; flex-shrink:0; margin-bottom:0; object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
+                    <div style="flex:1; min-width:0;">
+                        <h3 style="color:var(--neon-pink); font-size:2rem; margin-bottom:2px;">${lowHp?'⚠️ ':''}<span style="cursor:pointer; text-decoration:underline dotted;" onclick="window.showWrestlerProfile('${w.id}')" title="查看選手詳細資料">${w.name}</span> <span style="font-size:1.6rem; color:var(--gold); font-weight:900;">${window.wrestlerLevel(w)}</span></h3>
+                        <p style="font-size:1.2rem; color:var(--muted); margin-bottom:4px;">${w.age}歲${window.getWrestlerTitle && window.getWrestlerTitle(w) ? `　「${window.getWrestlerTitle(w)}」` : ''}</p>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                            ${w.coachId?'<span class="badge" style="background:var(--neon-blue); color:#fff; font-size:1.1rem;">👨‍🏫 指導中</span>':''}
+                            ${w.boost>0?'<span class="badge" style="background:var(--gold); color:#000; font-size:1.1rem;">🔥 合宿中</span>':''}
+                            ${injured?`<span class="badge" style="background:#ff6b6b; color:#fff; font-size:1.1rem;">🤕 傷病${w.injuryWeeks}週</span>`:''}
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-row"><span style="${lowHp?'color:#ff4d4d;font-weight:bold;':''}">❤️ 體力: ${w.stamina}</span><span>💬 士氣: ${w.loyalty}</span><span style="color:${w.condition==='好調'?'#7CFC00':(w.condition==='不好調'?'#ff6b6b':'var(--muted)')};">${w.condition==='好調'?'📈':(w.condition==='不好調'?'📉':'➖')} ${w.condition||'普通'}</span></div>
+                <div class="stat-row"><span>💪 力:${w.str}</span><span>⚡ 速:${w.spd}</span><span>🎯 技:${w.tech}</span><span>🛡️ 耐:${w.end}</span><span>🧠 精:${w.mnt}</span></div>
+                <div class="stat-row"><span style="color:var(--neon-blue);">👨‍🏫 教練: ${cN(w.coachId)}</span><span style="color:var(--gold);">💰 月薪: $${w.salary.toLocaleString()}萬</span></div>
+                <div class="stat-row"><span style="color:#ff6b81;">💥 絕招: ${w.signatureMove ? w.signatureMove.move : '未綁定'}</span><span>🏅 戰績: ${w.w||0}勝${w.l||0}敗</span></div>
+
+                <div style="margin-top:12px; padding-top:12px; border-top:1px dashed rgba(255,255,255,0.15);">
+                    <p style="font-size:1.3rem; color:var(--gold); font-weight:bold; margin-bottom:6px;">📋 本週排班</p>
+                    <select id="da-${i}" onchange="window.setPendingAction(${i}, this.value)" ${injured?'disabled':''}>
+                        <option value="train" ${w.pendingAction==='train'?'selected':''}>🏋️ 嚴格訓練 (扣20體${w.boost>0?', 🔥合宿中屬性雙倍成長!':', 提升屬性'}, 有機率受傷)</option>
+                        <option value="rest" ${w.pendingAction==='rest'?'selected':''}>🛌 放假休息 (恢復40體)</option>
+                    </select>
+                    <select id="focus-${i}" onchange="window.setTrainFocus(${i}, this.value)" style="margin-top:8px; ${w.pendingAction==='train' && !injured ? '' : 'display:none;'}">
+                        <option value="balanced" ${(!w.trainFocus || w.trainFocus==='balanced')?'selected':''}>⚖️ 均衡發展（維持原本訓練方式）</option>
+                        <option value="str" ${w.trainFocus==='str'?'selected':''}>💪 主攻力量（力量雙倍成長，其他項目成長機率減半）</option>
+                        <option value="spd" ${w.trainFocus==='spd'?'selected':''}>⚡ 主攻速度（速度雙倍成長，其他項目成長機率減半）</option>
+                        <option value="tech" ${w.trainFocus==='tech'?'selected':''}>🎯 主攻技巧（技巧雙倍成長，其他項目成長機率減半）</option>
+                        <option value="end" ${w.trainFocus==='end'?'selected':''}>🛡️ 主攻耐力（耐力雙倍成長，其他項目成長機率減半）</option>
+                        <option value="mnt" ${w.trainFocus==='mnt'?'selected':''}>🧠 主攻精神（精神雙倍成長，其他項目成長機率減半）</option>
+                    </select>
+                    ${injured ? `<p style="color:#ff6b6b; font-size:1.2rem; margin-top:6px;">🤕 傷病中，本週將強制休息靜養，${w.injuryWeeks}週後可恢復訓練。</p>` : ''}
+                    <p id="warn-${i}" style="color:#ff4d4d; font-size:1.2rem; margin-top:6px; display:${(lowHp && w.pendingAction==='train' && !injured)?'block':'none'};">⚠️ 體力過低，訓練後可能歸零！</p>
+                </div>
+
+                ${w.retirementCountdown !== null && !w.readyForRetirementMatch ? `<p style="color:var(--gold); font-size:1.2rem; margin-top:8px;">🎗️ 引退試合倒數：${w.retirementCountdown}週</p>` : ''}
+                ${w.vacationWeeks > 0 ? `<p style="color:var(--steel); font-size:1.2rem; margin-top:8px;">🏖️ 休假中，剩餘 ${w.vacationWeeks} 週</p>` : ''}
+                <div style="display:flex; gap:8px; margin-top:12px;">
+                    <button class="btn btn-sec" style="flex:1; font-size:1.3rem;" onclick="window.openEditWrestler('roster', ${w.id})">✏️ 編輯</button>
+                    <button class="btn btn-danger" style="flex:1; font-size:1.3rem;" onclick="window.fireWrestler(${w.id})">解約釋出</button>
+                </div>
+                ${w.readyForRetirementMatch ? `<button class="btn" style="width:100%; margin-top:8px; font-size:1.4rem; background:linear-gradient(135deg, var(--gold), #ff8c00); color:#000;" onclick="window.startRetirementMatch(${w.id})">🎗️ 開始引退試合</button>`
+                    : (w.age >= 30 && w.retirementCountdown === null ? `<button class="btn btn-sec" style="width:100%; margin-top:8px; font-size:1.3rem;" onclick="window.askRetirement(${w.id})">🎗️ 詢問退休意願</button>` : '')}
             </div>`;
         }).join('');
         document.getElementById('dashboard-roster-list').innerHTML = dashHTML || "<p style='font-size:1.6rem; color:var(--muted);'>目前沒有任何選手，請至市場招募。</p>";
-
-        let rosterHTML = GS.roster.map((w) => `
-            <div class="card" style="${w.readyForRetirementMatch ? 'border-color:var(--gold);' : ''}">
-                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
-                <h3 style="color:var(--neon-pink); font-size:2.4rem; margin-bottom:2px;">${w.name} <span style="font-size:1.8rem; color:var(--gold); font-weight:900;">${window.wrestlerLevel(w)}</span> <span style="font-size:1.4rem; color:var(--muted);">(${w.age}歲)</span></h3>
-                ${window.getWrestlerTitle && window.getWrestlerTitle(w) ? `<p style="color:var(--gold); font-size:1.2rem; font-weight:bold; margin-bottom:8px;">「${window.getWrestlerTitle(w)}」</p>` : '<div style="margin-bottom:10px;"></div>'}
-                <div class="stat-row"><span>❤️ 體力: ${w.stamina}</span><span>🌟 人氣: ${w.pop}</span><span style="color:${w.condition==='好調'?'#7CFC00':(w.condition==='不好調'?'#ff6b6b':'var(--muted)')};">${w.condition==='好調'?'📈':(w.condition==='不好調'?'📉':'➖')} ${w.condition||'普通'}</span></div>
-                <div class="stat-row"><span>💪 力:${w.str}</span><span>⚡ 速:${w.spd}</span><span>🎯 技:${w.tech}</span></div>
-                <div class="stat-row"><span style="color:var(--neon-blue);">👨‍🏫 教練: ${cN(w.coachId)}</span><span style="color:var(--gold);">💰 月薪: $${w.salary.toLocaleString()}萬</span></div>
-                <div class="stat-row"><span style="color:#ff6b81;">💥 絕招: ${w.signatureMove ? w.signatureMove.move : '未綁定'}</span><span>🏅 戰績: ${w.w||0}勝${w.l||0}敗</span></div>
-                ${w.retirementCountdown !== null && !w.readyForRetirementMatch ? `<p style="color:var(--gold); font-size:1.2rem; margin-top:6px;">🎗️ 引退試合倒數：${w.retirementCountdown}週</p>` : ''}
-                ${w.vacationWeeks > 0 ? `<p style="color:var(--steel); font-size:1.2rem; margin-top:6px;">🏖️ 休假中，剩餘 ${w.vacationWeeks} 週</p>` : ''}
-                <div style="display:flex; gap:8px; margin-top:15px;">
-                    <button class="btn btn-sec" style="flex:1; font-size:1.4rem;" onclick="window.showWrestlerProfile('${w.id}')">📇 詳細資料</button>
-                    <button class="btn btn-sec" style="flex:1; font-size:1.4rem;" onclick="window.openEditWrestler('roster', ${w.id})">✏️ 編輯資料</button>
-                    <button class="btn btn-danger" style="flex:1; font-size:1.4rem;" onclick="window.fireWrestler(${w.id})">解約釋出</button>
-                </div>
-                ${w.readyForRetirementMatch ? `<button class="btn" style="width:100%; margin-top:8px; font-size:1.4rem; background:linear-gradient(135deg, var(--gold), #ff8c00); color:#000;" onclick="window.startRetirementMatch(${w.id})">🎗️ 開始引退試合</button>`
-                    : (w.age >= 30 && w.retirementCountdown === null ? `<button class="btn btn-sec" style="width:100%; margin-top:8px; font-size:1.4rem;" onclick="window.askRetirement(${w.id})">🎗️ 詢問退休意願</button>` : '')}
-            </div>`).join('');
-        document.getElementById('roster-grid').innerHTML = rosterHTML || "<p style='font-size:1.6rem;'>尚無選手</p>";
 
         window.renderMarketGrid();
 
@@ -3542,6 +3652,44 @@ function draftCompetitorCount(w) {
         return '📋 其他動態';
     };
 
+    // 判斷一則新聞/名人堂文字內容，是否牽涉到任何電腦團體(AI團隊本身或其旗下選手)，供「只看電腦團體」篩選使用
+    // (用文字比對而非事件來源標記，好處是不需要修改上百處既有的addNewsLog/addHallOfFame呼叫點；
+    // 缺點是團隊/選手改名後，改名前的舊紀錄可能比對不到，但這是可接受的邊界情況，歷史紀錄本來就是時間點快照)
+    window.isNewsAboutAiTeam = function(text) {
+        let plain = String(text).replace(/<[^>]+>/g, '');
+        let aiFactions = (GS.factions||[]).filter(f => f.id !== 0);
+        return aiFactions.some(f => {
+            if(plain.includes(f.name)) return true;
+            return (f.roster||[]).some(w => w && plain.includes(w.name));
+        });
+    };
+
+    // 掃描文字內容，找出裡面提到的選手(全聯盟：旗下陣容/自由市場/所有AI團隊)，回傳對應的選手物件陣列供顯示頭像用
+    // (同樣用文字比對，不需要修改上百處既有的addNewsLog/addHallOfFame呼叫點；最多回傳4位，避免一則新聞提及太多人時頭像列過長)
+    window.extractWrestlerMentions = function(text) {
+        let plain = String(text).replace(/<[^>]+>/g, '');
+        let allWrestlers = [].concat(GS.roster||[], GS.fa||[]);
+        (GS.factions||[]).filter(f => f.id !== 0).forEach(f => { allWrestlers = allWrestlers.concat(f.roster||[]); });
+        let matched = [];
+        let seenNames = new Set();
+        allWrestlers.forEach(w => {
+            if(!w || !w.name) return;
+            let cleanName = w.name.replace('[FA] ', '');
+            if(!seenNames.has(cleanName) && cleanName.length >= 2 && plain.includes(cleanName)) {
+                seenNames.add(cleanName);
+                matched.push(w);
+            }
+        });
+        return matched.slice(0, 4);
+    };
+
+    // 產生選手頭像列的HTML片段，供名人堂/新聞總覽在紀錄旁顯示提及的選手照片
+    window.renderMentionAvatars = function(text) {
+        let mentioned = window.extractWrestlerMentions(text);
+        if(mentioned.length === 0) return '';
+        return `<div style="display:flex; gap:4px; margin-bottom:6px;">${mentioned.map(w => `<img src="${window.escAttr(w.img)}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'" title="${window.escAttr(w.name.replace('[FA] ',''))}" style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:2px solid var(--gold);">`).join('')}</div>`;
+    };
+
     // LIVE戰報牆：獨立於newsLog之外，專門儲存結構化的比賽戰報(含雙方照片)，供LIVE戰報牆呈現
     window.pushRecentMatch = function(entry) {
         if(!GS.recentMatchFeed) GS.recentMatchFeed = [];
@@ -3578,8 +3726,10 @@ function draftCompetitorCount(w) {
         filterEl.innerHTML = `<button type="button" class="btn ${!window._newsFilterCategory?'':'btn-sec'}" style="width:auto; padding:8px 16px; font-size:1.2rem;" onclick="window.setNewsFilter(null)">全部</button>` +
             allCats.map(cat => `<button type="button" class="btn ${window._newsFilterCategory===cat?'':'btn-sec'}" style="width:auto; padding:8px 16px; font-size:1.2rem;" onclick="window.setNewsFilter('${cat}')">${cat}</button>`).join('');
         let filtered = window._newsFilterCategory ? news.filter(n => n.category === window._newsFilterCategory) : news;
+        let aiOnlyEl = document.getElementById('news-ai-only-filter');
+        if(aiOnlyEl && aiOnlyEl.checked) filtered = filtered.filter(n => window.isNewsAboutAiTeam(n.text));
         listEl.innerHTML = filtered.length > 0
-            ? filtered.map(n => `<div class="card" style="margin-bottom:10px; padding:14px;"><p style="font-size:1.1rem; color:var(--muted); margin-bottom:4px;">${n.category}　第${n.year}年${n.month}月第${n.week}週</p><p style="font-size:1.4rem;">${n.text}</p></div>`).join('')
+            ? filtered.map(n => `<div class="card" style="margin-bottom:10px; padding:14px;"><p style="font-size:1.1rem; color:var(--muted); margin-bottom:4px;">${n.category}　第${n.year}年${n.month}月第${n.week}週</p>${window.renderMentionAvatars(n.text)}<p style="font-size:1.4rem;">${n.text}</p></div>`).join('')
             : `<p style="color:var(--muted); font-size:1.5rem;">此分類目前沒有新聞紀錄。</p>`;
     };
 
@@ -3587,6 +3737,21 @@ function draftCompetitorCount(w) {
         let statusEl = document.getElementById('tv-contract-status');
         let scheduleEl = document.getElementById('tv-schedule-content');
         if(!statusEl || !scheduleEl) return;
+
+        // 聯盟收視動態：全聯盟(含AI團隊)依人氣排序，讓玩家一覽整個聯盟目前的熱度排行，不用逐一點進每支AI團隊才能得知
+        // 放在函式最前面、不受下方轉播合約狀態的提前return影響，因為這是「全聯盟情報」，不該被玩家自己有沒有簽約卡住
+        let rankingEl = document.getElementById('tv-league-ranking-content');
+        if(rankingEl) {
+            let ranked = GS.factions.slice().sort((a,b) => (b.pop||0) - (a.pop||0));
+            rankingEl.innerHTML = ranked.map((f, i) => {
+                let rankIcon = i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : `${i+1}.`;
+                let isMe = f.id === 0;
+                return `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; margin-bottom:6px; border-radius:6px; ${isMe?'background:rgba(212,175,55,0.15); border:1px solid var(--gold);':'background:rgba(0,0,0,0.3);'}">
+                    <span style="${isMe?'color:var(--gold); font-weight:bold;':''}">${rankIcon} ${window.escAttr(f.name)}${isMe?'（我方）':''}</span>
+                    <span style="color:var(--neon-pink);">🌟 人氣 ${f.pop||0}</span>
+                </div>`;
+            }).join('');
+        }
 
         if(GS.tvDeal && GS.tvDeal.active) {
             statusEl.innerHTML = `<p>✅ 合約進行中：每週 <strong style="color:var(--gold);">$${GS.tvDeal.weeklyIncome.toLocaleString()}萬</strong>，剩餘 <strong>${GS.tvDeal.weeksRemaining}</strong> 週</p><p style="margin-top:8px; color:var(--muted); font-size:1.3rem;">績效門檻：團隊人氣需維持 ${GS.tvDeal.minPopRequired} 以上（連續3週未達標將解約並罰款）</p>`;
@@ -4204,12 +4369,14 @@ function draftCompetitorCount(w) {
                     f2.record.l++; f2.streak = (f2.streak||0) <= 0 ? (f2.streak||0)-1 : -1;
                     aiMatchResults.push({ text: `${f1.name} 擊敗 ${f2.name}`, winnerName: rep1?rep1.name:f1.name, winnerImg: rep1?rep1.img:null, loserName: rep2?rep2.name:f2.name, loserImg: rep2?rep2.img:null });
                     if(window.pushRecentMatch) window.pushRecentMatch({ winnerName: rep1?rep1.name:f1.name, winnerImg: rep1?rep1.img:null, loserName: rep2?rep2.name:f2.name, loserImg: rep2?rep2.img:null });
+                    if(window.addNewsLog) window.addNewsLog(`🏢 聯盟賽事：${f1.name} 擊敗 ${f2.name}！`);
                 } else {
                     f2.record.w++; f2.points = (f2.points||0) + 2; f2.streak = (f2.streak||0) >= 0 ? (f2.streak||0)+1 : 1;
                     f2.pop = Math.min(100, (f2.pop||0) + 2);
                     f1.record.l++; f1.streak = (f1.streak||0) <= 0 ? (f1.streak||0)-1 : -1;
                     aiMatchResults.push({ text: `${f2.name} 擊敗 ${f1.name}`, winnerName: rep2?rep2.name:f2.name, winnerImg: rep2?rep2.img:null, loserName: rep1?rep1.name:f1.name, loserImg: rep1?rep1.img:null });
                     if(window.pushRecentMatch) window.pushRecentMatch({ winnerName: rep2?rep2.name:f2.name, winnerImg: rep2?rep2.img:null, loserName: rep1?rep1.name:f1.name, loserImg: rep1?rep1.img:null });
+                    if(window.addNewsLog) window.addNewsLog(`🏢 聯盟賽事：${f2.name} 擊敗 ${f1.name}！`);
                 }
             }
         });
@@ -4335,14 +4502,15 @@ function draftCompetitorCount(w) {
         if(GS.week > 13) {
             GS.week = 1;
             let enteringNewYear = (GS.month === 10); // 冬季(第4季)結束、即將跨年前精準觸發一次
+            let enteringSummer = (GS.month === 1); // 春季(第1季)結束、即將進入夏季前精準觸發一次
             GS.month += 3;
-            // 新一季開始，重新生成賽程表(第4、8週的比賽對手)
+            // 新一季開始，重新生成賽程表(第4、8、11週的比賽對手)
             if(window.generateSeasonSchedule) window.generateSeasonSchedule();
             if(window.generateSeasonGoals) window.generateSeasonGoals();
-            // 生存大逃殺：每年開春(跨年進入新的一年)自動建立參賽名單，不強制彈出UI(避免跟頒獎典禮等其他年末自動流程衝突)，改用新聞通知讓玩家自行前往查看
-            if(enteringNewYear && window.startBattleRoyal) {
+            // 生存大逃殺：固定在夏季第一週自動建立參賽名單，不強制彈出UI(避免跟其他年末自動流程衝突)，改用新聞通知讓玩家自行前往查看
+            if(enteringSummer && window.startBattleRoyal) {
                 if(window.startBattleRoyal()) {
-                    window.addNewsLog(`💥 開春例行活動賽「生存大逃殺」已經開幕！請至「賽季行事曆」查看並進行比賽。`);
+                    window.addNewsLog(`💥 仲夏例行活動賽「生存大逃殺」已經開幕！請至「賽季行事曆」查看並進行比賽。`);
                 }
             }
             // 保險：若上一季的大賽沒有正式跑完收尾流程就跳到下一季，這裡自動處理，避免新季節開賽時卡住
@@ -4589,12 +4757,12 @@ function draftCompetitorCount(w) {
         else matchText = matchInfo.win ? '🏆 本場比賽獲勝' : '📉 本場比賽落敗';
         window.addNewsLog(`⚔️ 賽事結算 → 第${GS.year}年${GS.month}月 第${GS.week}週：${matchText}${events.length ? '，' + events.join('、') : ''}`);
 
-        // 社長能量改成每4週回復4點(不再每週回滿)，上限4點
+        // 社長能量每4週回復2點，上限6點
         GS.energyRegenCounter = (GS.energyRegenCounter || 0) + 1;
         if(GS.energyRegenCounter >= 4) {
             GS.energyRegenCounter = 0;
-            GS.presidentEnergy = Math.min(6, (GS.presidentEnergy||0) + 4);
-            window.addNewsLog(`⚡ 社長室能量回復 +4！`);
+            GS.presidentEnergy = Math.min(6, (GS.presidentEnergy||0) + 2);
+            window.addNewsLog(`⚡ 社長室能量回復 +2！`);
         }
         GS.weekPhase = 'management';
         window.updateUI();
@@ -4709,12 +4877,12 @@ function draftCompetitorCount(w) {
             document.getElementById('action-overlay').style.display = 'flex';
         });
     };
-    setupAction('btn-camp', '🏕️ 舉辦大合宿', '花費 $8萬/人，為期2週，期間內訓練效果加倍。', 8,
+    setupAction('btn-camp', '🏕️ 舉辦大合宿', '花費 $32萬/人，為期2週，期間內訓練效果加倍。', 32,
         i => { GS.roster[i].boost = 2; },
         w => w.boost>0 ? `🔥合宿中(剩${w.boost}週)` : '未在合宿', 3);
 
     // 慰勞會：全員自動參加(排除傷病/休假選手)，15萬/人，忠誠度公式依目前忠誠度反向計算(越低回越多)
-    const PARTY_ENERGY = 2, PARTY_PRICE = 3;
+    const PARTY_ENERGY = 2, PARTY_PRICE = 12;
     let btnParty = document.getElementById('btn-party');
     if(btnParty) btnParty.addEventListener('click', () => {
         let discEnergy = window.applyEnergyDiscount ? window.applyEnergyDiscount(PARTY_ENERGY) : PARTY_ENERGY;
@@ -4745,7 +4913,7 @@ function draftCompetitorCount(w) {
     });
 
     // 大眾宣傳：一週限選1人，固定150萬
-    const PROMO_ENERGY = 1, PROMO_PRICE = 30;
+    const PROMO_ENERGY = 1, PROMO_PRICE = 120;
     let btnPromo = document.getElementById('btn-promo');
     if(btnPromo) btnPromo.addEventListener('click', () => {
         let discEnergy = window.applyEnergyDiscount ? window.applyEnergyDiscount(PROMO_ENERGY) : PROMO_ENERGY;
@@ -4782,7 +4950,7 @@ function draftCompetitorCount(w) {
         let eligible = GS.roster.filter(w => !(w.injuryWeeks>0) && !(w.vacationWeeks>0)).slice().sort((a,b) => a.stamina - b.stamina); // 依體力由低到高排序，最疲勞的排最前面
         if(eligible.length === 0) return showSysMsg("錯誤", "目前沒有可以安排休假的選手！", true);
         document.getElementById('act-title').innerText = '🏖️ 安排休假';
-        document.getElementById('act-desc').innerText = `一週只能安排1位選手休假，費用＝週薪×週數+10萬，消耗 ${VAC_ENERGY} 點能量。`;
+        document.getElementById('act-desc').innerText = `一週只能安排1位選手休假，費用＝週薪×週數×4+40萬，消耗 ${VAC_ENERGY} 點能量。`;
         document.getElementById('act-content').innerHTML = `
             <label style="display:block; margin-bottom:12px; font-size:1.5rem;">選擇選手：
                 <select id="vac-wrestler-select" style="font-size:1.5rem; padding:8px; width:100%; margin-top:6px;">
@@ -4801,7 +4969,7 @@ function draftCompetitorCount(w) {
             let weeks = parseInt(document.getElementById('vac-weeks-select').value);
             let w = GS.roster[idx];
             if(!w) return;
-            let cost = w.salary * weeks + 10;
+            let cost = w.salary * weeks * 4 + 40;
             document.getElementById('vac-cost-preview').innerText = `預估花費：$${cost.toLocaleString()}萬`;
         };
         document.getElementById('vac-wrestler-select').addEventListener('change', updateVacPreview);
@@ -4814,7 +4982,7 @@ function draftCompetitorCount(w) {
             let w = GS.roster[idx];
             if(!w) return;
             if((GS.presidentEnergy||0) < VAC_ENERGY) return showSysMsg("能量不足", "社長能量不足！", true);
-            let cost = w.salary * weeks + 10;
+            let cost = w.salary * weeks * 4 + 40;
             if(GS.money < cost) return showSysMsg("錯誤", "資金不足！", true);
             GS.money -= cost;
             GS.presidentEnergy -= VAC_ENERGY;
@@ -5805,8 +5973,9 @@ function draftCompetitorCount(w) {
                         oppPop = this.t2.length > 0 ? Math.round(this.t2.reduce((s,fw)=>s+(fw.pop||30),0)/this.t2.length) : 30;
                     }
                     // 票房公式：場館各有所需人氣門檻(場館越大門檻越高)，人氣不夠硬租大場館入場率會很低、可能倒賠場租
+                    // (整體收入系統已調緊：票價降低、場館人氣門檻提高、跨團隊加成收斂，避免玩家輕鬆靠票房致富)
                     let avgPop = (myPop + oppPop) / 2;
-                    let requiredPop = Math.min(100, venue.capacity / 300); // 場館規模對應的人氣門檻
+                    let requiredPop = Math.min(100, venue.capacity / 400); // 場館規模對應的人氣門檻(門檻提高，更難滿場)
                     let attendanceRate = Math.max(0.02, Math.min(1, avgPop / requiredPop)); // 2%~100%，人氣嚴重不足時幾乎空場
                     // 宿敵對決加成：雙方領軍選手恩怨值越高，話題性越大，入場率額外加成(恩怨值100時+30%)
                     let rivalryBonus = 0;
@@ -5831,9 +6000,9 @@ function draftCompetitorCount(w) {
                     }
                     let attendance = Math.round(venue.capacity * attendanceRate);
                     let teamSizeMultiplier = 1 + (this.t1.length - 1) * 0.1;
-                    // 隊內大亂鬥屬於內部練習性質，賣座力打6折；跟其他團隊開戰(faction_war)則有1.3倍加成
-                    let modeMultiplier = (bm === 'faction_war') ? 1.3 : (bm === 'faction_intra' ? 0.6 : 1.0);
-                    let ticketPrice = 1; // 萬/人
+                    // 隊內大亂鬥屬於內部練習性質，賣座力打6折；跟其他團隊開戰(faction_war)則有加成(幅度收斂，避免無腦刷團體戰致富)
+                    let modeMultiplier = (bm === 'faction_war') ? 1.15 : (bm === 'faction_intra' ? 0.6 : 1.0);
+                    let ticketPrice = 0.6; // 萬/人(調降，收入系統整體收緊)
                     let p = Math.round(attendance * ticketPrice * teamSizeMultiplier * modeMultiplier);
                     GS.money += p;
                     GS.yearIncome = (GS.yearIncome||0) + p;
@@ -5894,10 +6063,28 @@ function draftCompetitorCount(w) {
         },
         upd: function() {
             if(this.t1.length > 1) {
-                let pH = this.t1.map((w) => `<img src="${window.escAttr(w.img)}" class="mini-fighter ${w.koed?'defeated':''} ${w===this.f1?'active-fighter':''}" style="border-color:var(--neon-pink);" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">`).join('');
-                pH += `<span style="font-size:2.4rem; font-weight:bold; margin:0 15px;">VS</span>`;
-                pH += this.t2.map((w) => `<img src="${window.escAttr(w.img)}" class="mini-fighter ${w.koed?'defeated':''} ${w===this.f2?'active-fighter':''}" style="border-color:var(--gold);" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">`).join('');
-                document.getElementById('team-preview-area').innerHTML = pH;
+                let totalCount = this.t1.length + this.t2.length;
+                // 依隊伍總人數動態縮小頭像尺寸/間距，人數越多縮得越小，確保5v5(10人)這類大場面也能完整塞進手機螢幕寬度、
+                // 完全不需要橫向捲動就能一次看到雙方全部選手(先前的縮放幅度不夠，10人時仍會超出可視寬度需要捲動查看)
+                let avatarSize = totalCount <= 4 ? 45 : totalCount <= 6 ? 36 : totalCount <= 8 ? 28 : 22;
+                let gapSize = totalCount <= 4 ? 8 : totalCount <= 6 ? 6 : totalCount <= 8 ? 4 : 3;
+                let paddingSize = totalCount <= 6 ? 10 : 6;
+                let vsFontSize = Math.max(1.2, 2.4 - totalCount * 0.1);
+                let vsMargin = Math.max(3, 15 - totalCount * 1.2);
+                let previewEl = document.getElementById('team-preview-area');
+                previewEl.style.gap = gapSize + 'px';
+                previewEl.style.padding = paddingSize + 'px';
+                let pH = this.t1.map((w) => `<img src="${window.escAttr(w.img)}" class="mini-fighter ${w.koed?'defeated':''} ${w===this.f1?'active-fighter':''}" style="border-color:var(--neon-pink); width:${avatarSize}px; height:${avatarSize}px;" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">`).join('');
+                pH += `<span style="font-size:${vsFontSize}rem; font-weight:bold; margin:0 ${vsMargin}px; flex-shrink:0;">VS</span>`;
+                pH += this.t2.map((w) => `<img src="${window.escAttr(w.img)}" class="mini-fighter ${w.koed?'defeated':''} ${w===this.f2?'active-fighter':''}" style="border-color:var(--gold); width:${avatarSize}px; height:${avatarSize}px;" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">`).join('');
+                previewEl.innerHTML = pH;
+                // 先預設靠左對齊，避免「置中但內容溢出」導致捲動位置卡在中間、兩側頭像被裁切在可視範圍外看不到的問題；
+                // 用requestAnimationFrame等瀏覽器完成這次排版計算後，才去讀取準確的scrollWidth判斷是否真的需要捲動(不溢出才改置中比較美觀)
+                previewEl.style.justifyContent = 'flex-start';
+                previewEl.scrollLeft = 0;
+                requestAnimationFrame(() => {
+                    previewEl.style.justifyContent = (previewEl.scrollWidth > previewEl.clientWidth) ? 'flex-start' : 'center';
+                });
             }
             // 戰術換人按鈕：冷卻中直接在按鈕文字顯示剩餘回合數，不用點下去才知道還能不能換
             let tacticalBtn = document.getElementById('btn-tactical-switch');
@@ -6720,14 +6907,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('e-hp').value = w.stamina;
         window.refreshEditStatsDisplay();
 
-        // 選手一旦進入自由市場，能力值就不能再調整(避免透過反覆進出市場刷取理想數值)，直接把按鈕設為disabled讓玩家一眼看出
+        // 選手初始能力值一旦生成即固定，不能再透過編輯功能重新調整(不分旗下陣容/自由市場/AI團隊)，直接把按鈕設為disabled讓玩家一眼看出
         let btnRerollStatsEl = document.getElementById('btn-reroll-stats');
         if(btnRerollStatsEl) {
-            let isFa = (poolType === 'fa');
-            btnRerollStatsEl.disabled = isFa;
-            btnRerollStatsEl.style.opacity = isFa ? '0.4' : '1';
-            btnRerollStatsEl.style.cursor = isFa ? 'not-allowed' : 'pointer';
-            btnRerollStatsEl.innerText = isFa ? '🔒 自由市場選手無法調整能力值' : '🎲 重新隨機能力值';
+            btnRerollStatsEl.disabled = true;
+            btnRerollStatsEl.style.opacity = '0.4';
+            btnRerollStatsEl.style.cursor = 'not-allowed';
+            btnRerollStatsEl.innerText = '🔒 能力值為初始隨機生成，無法調整';
         }
 
         // 頭像位置與縮放調整：載入選手目前的設定(預設位置50/50置中、縮放100%)，並初始化即時預覽
@@ -6851,11 +7037,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let btnRerollStats = document.getElementById('btn-reroll-stats');
     if(btnRerollStats) {
         btnRerollStats.addEventListener('click', () => {
-            if(window._editTarget && window._editTarget.poolType === 'fa') {
-                return window.showSysMsg("無法調整", "選手一旦進入自由市場，能力值就無法再調整，這是為了避免透過反覆進出市場來刷取理想數值！", true);
-            }
-            window._editStatsPreview = window.randomReasonableStats();
-            window.refreshEditStatsDisplay();
+            return window.showSysMsg("無法調整", "選手初始能力值為隨機生成，一旦建立完成就無法再調整，這是為了維持遊戲的隨機性挑戰！", true);
         });
     }
 
@@ -7136,7 +7318,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('act-title').innerText = "🏗️ 建立新團隊";
         document.getElementById('act-desc').innerText = `為新團隊命名並選擇加入的聯盟（初始人氣固定為10，目前已自建 ${customCount}/32 隊）。`;
         document.getElementById('act-content').innerHTML = `
-            <div style="margin-bottom:15px;"><label style="display:block; margin-bottom:6px; font-size:1.4rem;">團隊名稱</label><div style="display:flex; gap:8px;"><input type="text" id="nf-name" style="flex:1; padding:12px; font-size:1.6rem;" placeholder="例如：漆黑玫瑰"><button type="button" class="btn btn-sec" id="btn-random-facname" style="flex-shrink:0; padding:0 16px; font-size:1.3rem;">🎲 隨機</button></div></div>
+            <div style="margin-bottom:15px;"><label style="display:block; margin-bottom:6px; font-size:1.4rem;">團隊名稱</label><div style="display:flex; gap:8px;"><input type="text" id="nf-name" style="flex:1; padding:12px; font-size:1.6rem;" placeholder="例如：紅蓮乙女"><button type="button" class="btn btn-sec" id="btn-random-facname" style="flex-shrink:0; padding:0 16px; font-size:1.3rem;">🎲 隨機</button></div></div>
             <div><label style="display:block; margin-bottom:6px; font-size:1.4rem;">加入聯盟</label>
                 <select id="nf-league" style="width:100%; padding:12px; font-size:1.6rem;">
                     <option value="East">🔵 東聯盟</option>
@@ -7445,7 +7627,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return { teams: shuffled, rounds: [round1, []] };
     }
 
-    // 生存大逃殺(Battle Royal)：每年開春例行活動賽，8人混戰、加權隨機輪次淘汰(戰力越低越容易被淘汰，但保留隨機性)
+    // 生存大逃殺(Battle Royal)：每年仲夏例行活動賽，全聯盟每個團體各派一位選手參賽、加權隨機輪次淘汰(戰力越低越容易被淘汰，但保留隨機性)
     // 車輪戰擂台賽(Gauntlet Match)：玩家選一位選手連續應戰多位對手，血量不完全恢復，考驗續戰力。對手強度隨連勝場次逐漸提升
     window.startGauntletMatch = function(wrestlerId) {
         let w = GS.roster.find(x => x.id === wrestlerId);
@@ -7571,18 +7753,19 @@ document.addEventListener('DOMContentLoaded', () => {
     window.startBattleRoyal = function() {
         let entries = [];
         let myBest = GS.roster.filter(w => !((w.injuryWeeks||0)>0)).sort((a,b)=>(b.str+b.spd+b.tech+b.end+b.mnt)-(a.str+a.spd+a.tech+a.end+a.mnt))[0];
-        if(!myBest) return false; // 沒有健康選手可派出，本次活動賽從缺
-        entries.push({ facId: 0, wrestler: myBest });
-        let aiFactions = GS.factions.slice(1).filter(f => f.roster && f.roster.length > 0).sort(() => 0.5-Math.random());
+        if(myBest) entries.push({ facId: 0, wrestler: myBest });
+        // 每個團體都派一位選手參賽：不再限制8人上限、也不再隨機抽選部分AI團隊，全部15支AI團隊各派1位代表(挑該隊能力值最高的健康選手)
+        let aiFactions = GS.factions.slice(1).filter(f => f.roster && f.roster.length > 0);
         for(let f of aiFactions) {
-            if(entries.length >= 8) break;
-            let rep = f.roster[Math.floor(Math.random()*f.roster.length)];
+            let healthyRoster = f.roster.filter(w => !((w.injuryWeeks||0)>0));
+            let pool = healthyRoster.length > 0 ? healthyRoster : f.roster;
+            let rep = pool.slice().sort((a,b)=>(b.str+b.spd+b.tech+b.end+b.mnt)-(a.str+a.spd+a.tech+a.end+a.mnt))[0];
             entries.push({ facId: f.id, wrestler: rep, facName: f.name });
         }
         if(entries.length < 4) return false; // 參賽者不足，從缺(極端邊界保護)
 
         GS.battleRoyal = { active: true, year: GS.year, participants: entries, eliminated: [], champion: null, log: [] };
-        window.addHallOfFame(`💥 <strong style="color:var(--gold);">生存大逃殺</strong>開幕！${entries.length}位選手齊聚一堂，誓奪最後生還者寶座！`);
+        window.addHallOfFame(`💥 <strong style="color:var(--gold);">生存大逃殺</strong>開幕！全聯盟${entries.length}支團隊各派一位代表選手齊聚一堂，誓奪最後生還者寶座！`);
         return true;
     };
 
@@ -8088,7 +8271,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return true;
     };
 
+    // 大賽樹狀圖裡的生存大逃殺資訊卡片：跟賽季行事曆使用同樣的判斷邏輯，只在活動所屬的當年度、且還在夏季(4~6月)時顯示，
+    // 讓玩家在查看大賽賽程的同時，也能一併看到並直接進入生存大逃殺，不用特地切到賽季行事曆才找得到
+    window.renderBracketBattleRoyalInfo = function() {
+        let el = document.getElementById('bracket-battle-royal-info');
+        if(!el) return;
+        let br = GS.battleRoyal;
+        if(!br || br.year !== GS.year || GS.month < 4 || GS.month > 6) { el.innerHTML = ''; return; }
+        let statusHtml;
+        if(br.champion) statusHtml = `<span style="color:#7CFC00; font-weight:bold;">🏆 已產生最後生還者</span>`;
+        else if(br.active) statusHtml = `<span style="color:var(--gold); font-weight:bold;">⏳ 進行中</span>`;
+        else statusHtml = `<span style="color:var(--muted);">已結束</span>`;
+        el.innerHTML = `<div class="card" style="padding:14px; border-color:#ff6b6b; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <p style="font-size:1.5rem; margin:0;">💥 仲夏例行活動賽　<strong style="color:var(--gold);">生存大逃殺</strong>　${statusHtml}</p>
+            <button type="button" class="btn btn-sec" style="width:auto; padding:8px 16px; font-size:1.3rem;" onclick="window.renderBattleRoyal(); document.getElementById('battle-royal-overlay').style.display='flex';">☠️ 前往查看</button>
+        </div>`;
+    };
+
     window.openBracket = function() {
+        window.renderBracketBattleRoyalInfo();
         GS._activeBracketType = 'normal';
         // 五年一度世界冠軍賽：逢第5/10/15/20...年的冬季第12週，取代原本的冬季總決賽(優先權高於四年一度大決戰，避免兩者同時符合時衝突)
         let isWorldChampionshipYear = (GS.month === 10 && (GS.year % 5 === 0));
@@ -8140,13 +8341,16 @@ document.addEventListener('DOMContentLoaded', () => {
         let listEl = document.getElementById('hof-list');
         if(!listEl) return;
         let entries = GS.hallOfFame || [];
+        let aiOnlyEl = document.getElementById('hof-ai-only-filter');
+        if(aiOnlyEl && aiOnlyEl.checked) entries = entries.filter(e => window.isNewsAboutAiTeam(e.text));
         if(entries.length === 0) {
-            listEl.innerHTML = `<p style="font-size:1.6rem; color:var(--muted);">目前尚無重大紀錄，隨著大賽、季後賽、王座爭霸持續進行，歷史將會被記錄在這裡。</p>`;
+            listEl.innerHTML = `<p style="font-size:1.6rem; color:var(--muted);">${(aiOnlyEl && aiOnlyEl.checked) ? '目前沒有跟電腦團體相關的紀錄。' : '目前尚無重大紀錄，隨著大賽、季後賽、王座爭霸持續進行，歷史將會被記錄在這裡。'}</p>`;
             return;
         }
         listEl.innerHTML = entries.map(e => `
             <div style="padding:12px 0; border-bottom:1px dashed rgba(255,255,255,0.1); font-size:1.5rem;">
                 <span style="color:var(--muted); font-size:1.2rem;">第${e.year}年${e.month}月 第${e.week}週</span><br>
+                ${window.renderMentionAvatars(e.text)}
                 ${e.text}
             </div>
         `).join('');
@@ -9986,7 +10190,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if(!GS.champion) {
                 champContent.innerHTML = `<p style="color:var(--muted);">👑 王座目前懸缺，尚無人加冕。</p>`;
             } else {
-                champContent.innerHTML = `<p><strong style="color:${GS.champion.isPlayerOwned?'var(--neon-pink)':'var(--neon-blue)'};">${GS.champion.name}</strong>（${GS.champion.factionName}）｜連續防衛：${GS.champion.defenses}次</p>`;
+                champContent.innerHTML = `<div style="display:flex; align-items:center; gap:12px;">
+                    <img src="${window.escAttr(GS.champion.img)}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(GS.champion.name)}'" style="width:52px; height:52px; border-radius:50%; object-fit:cover; border:2px solid var(--gold); flex-shrink:0;">
+                    <p><strong style="color:${GS.champion.isPlayerOwned?'var(--neon-pink)':'var(--neon-blue)'};">${GS.champion.name}</strong>（${GS.champion.factionName}）｜連續防衛：${GS.champion.defenses}次</p>
+                </div>`;
             }
         }
 
@@ -9995,7 +10202,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if(!GS.tagChampion) {
                 tagChampContent.innerHTML = `<p style="color:var(--muted);">🤝 雙打王座目前懸缺，尚無人加冕。</p>`;
             } else {
-                tagChampContent.innerHTML = `<p><strong style="color:${GS.tagChampion.isPlayerOwned?'var(--neon-pink)':'var(--neon-blue)'};">${GS.tagChampion.name1}＆${GS.tagChampion.name2}</strong>（${GS.tagChampion.factionName}）｜連續防衛：${GS.tagChampion.defenses}次</p>`;
+                tagChampContent.innerHTML = `<div style="display:flex; align-items:center; gap:12px;">
+                    <div style="display:flex; flex-shrink:0;">
+                        <img src="${window.escAttr(GS.tagChampion.img1)}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(GS.tagChampion.name1)}'" style="width:52px; height:52px; border-radius:50%; object-fit:cover; border:2px solid var(--gold);">
+                        <img src="${window.escAttr(GS.tagChampion.img2)}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(GS.tagChampion.name2)}'" style="width:52px; height:52px; border-radius:50%; object-fit:cover; border:2px solid var(--gold); margin-left:-16px;">
+                    </div>
+                    <p><strong style="color:${GS.tagChampion.isPlayerOwned?'var(--neon-pink)':'var(--neon-blue)'};">${GS.tagChampion.name1}＆${GS.tagChampion.name2}</strong>（${GS.tagChampion.factionName}）｜連續防衛：${GS.tagChampion.defenses}次</p>
+                </div>`;
             }
         }
 
@@ -10556,6 +10769,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(imported.seasonGoals === undefined) imported.seasonGoals = [];
                     if(imported.pendingSignings === undefined) imported.pendingSignings = [];
                     if(imported.autoTacticalSwitch === undefined) imported.autoTacticalSwitch = false;
+                    if(imported.milestonesAwarded === undefined) imported.milestonesAwarded = {};
+                    if(imported.topLevelHolderId === undefined) imported.topLevelHolderId = null;
                     if(imported.yearEndRankingHistory === undefined) imported.yearEndRankingHistory = [];
                     imported.currentSlot = (window.GS && window.GS.currentSlot) || 1;
 
