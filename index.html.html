@@ -10264,11 +10264,14 @@ document.addEventListener('DOMContentLoaded', () => {
         let ranked = qualified.concat(unqualified);
 
         document.getElementById('leaderboard-list').innerHTML = ranked.map((e, i) => `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.1); ${e.games<MIN_GAMES?'opacity:0.5;':''}">
-                <span style="font-size:1.4rem; width:40px;">${i+1}</span>
-                <span style="font-size:1.5rem; flex:1;">${e.w.name}（${e.team}）</span>
-                <span style="font-size:1.3rem; color:var(--muted); width:100px;">${e.w.w||0}勝${e.w.l||0}敗</span>
-                <span style="font-size:1.5rem; color:var(--gold); font-weight:bold; width:80px; text-align:right;">${(e.rate*100).toFixed(1)}%</span>
+            <div style="display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid rgba(255,255,255,0.1); ${e.games<MIN_GAMES?'opacity:0.5;':''}">
+                <span style="font-size:1.4rem; width:26px; flex-shrink:0; color:var(--muted);">${i+1}</span>
+                <img src="${window.escAttr(e.w.img)}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(e.w.name)}'" style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid var(--gold); flex-shrink:0;">
+                <div style="flex:1; min-width:0;">
+                    <p style="font-size:1.5rem; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.w.name}</p>
+                    <p style="font-size:1.1rem; color:var(--muted); margin:2px 0 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.team}　${e.w.w||0}勝${e.w.l||0}敗</p>
+                </div>
+                <span style="font-size:1.5rem; color:var(--gold); font-weight:bold; flex-shrink:0; text-align:right;">${(e.rate*100).toFixed(1)}%</span>
             </div>
         `).join('') || '<p style="font-size:1.6rem;">目前沒有戰績資料</p>';
         document.getElementById('leaderboard-overlay').style.display = 'flex';
