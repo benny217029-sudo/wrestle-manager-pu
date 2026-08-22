@@ -549,13 +549,13 @@ body { overflow-x: hidden; }
                         <div style="flex:1;">
                             <label style="font-size:1.2rem; margin-bottom:2px; display:block;">↔️ 水平位置：<span id="e-imgpos-x-val">50</span>%</label>
                             <input type="range" id="e-imgpos-x" min="0" max="100" value="50" style="width:100%; margin-bottom:8px;">
-                            <label style="font-size:1.2rem; margin-bottom:2px; display:block;">↕️ 垂直位置：<span id="e-imgpos-y-val">50</span>%</label>
-                            <input type="range" id="e-imgpos-y" min="0" max="100" value="50" style="width:100%; margin-bottom:8px;">
+                            <label style="font-size:1.2rem; margin-bottom:2px; display:block;">↕️ 垂直位置：<span id="e-imgpos-y-val">0</span>%</label>
+                            <input type="range" id="e-imgpos-y" min="0" max="100" value="0" style="width:100%; margin-bottom:8px;">
                             <label style="font-size:1.2rem; margin-bottom:2px; display:block;">🔍 縮放大小：<span id="e-imgscale-val">100</span>%</label>
                             <input type="range" id="e-imgscale" min="50" max="250" value="100" style="width:100%;">
                         </div>
                     </div>
-                    <button type="button" class="btn btn-sec" style="width:100%; margin-top:10px; font-size:1.2rem; padding:8px;" id="btn-reset-imgpos">↺ 重設為置中・原始大小</button>
+                    <button type="button" class="btn btn-sec" style="width:100%; margin-top:10px; font-size:1.2rem; padding:8px;" id="btn-reset-imgpos">↺ 重設為預設位置・原始大小</button>
                 </div>
                 <div><label>❤️ 體力</label><input type="number" id="e-hp"></div>
                 <div><label>⭐ 等級</label><input type="text" id="e-level" disabled style="font-weight:bold; color:var(--gold);"></div>
@@ -1500,7 +1500,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return {
             id: Date.now() + R(1000000), name: window.genForeignWrestlerName(nationality),
             age: 22 + R(10), stamina: 100, nationality,
-            declineStartAge: 25 + R(8), imgPosX: 50, imgPosY: 50, imgScale: 1, img,
+            declineStartAge: 25 + R(8), imgPosX: 50, imgPosY: 0, imgScale: 1, img,
             str: base+R(12), spd: base+R(12), tech: base+R(12), mnt: base+R(12), end: base+R(12),
             pop: 60 + R(30), loyalty: 100, salary: 0, w: 0, l: 0, coachId: null, injuryWeeks: 0, vacationWeeks: 0,
             potential: 'S', scouted: true, traits: [], milestonesAwarded: [], contractYears: 1, contractYearsRemaining: 0,
@@ -1651,7 +1651,7 @@ document.addEventListener('DOMContentLoaded', () => {
             id: Date.now() + R(100000), name: (isFA ? "[FA] " : "") + window.getUniqueWrestlerName(),
             age: 17 + R(4), stamina: 100, // 選手生成年齡統一改成17~20歲隨機產生
             declineStartAge: 25 + R(8), // 成長衰退系統：每位選手隨機從25~32歲之間某個年齡開始衰退，取代原本全員固定28歲
-            imgPosX: 50, imgPosY: 50, imgScale: 1, // 頭像顯示位置與縮放(預設置中、不縮放)，可在編輯選手資料時調整
+            imgPosX: 50, imgPosY: 0, imgScale: 1, // 頭像顯示位置與縮放(預設水平置中、垂直對齊頂部、不縮放)，可在編輯選手資料時調整
             str: 40+R(21), spd: 40+R(21), tech: 40+R(21), mnt: 40+R(21), end: 40+R(21), // 初始能力固定40~60隨機範圍(含AI團隊/自由市場選手)，不可直接編輯只能重新隨機
             pop: 30+R(40), loyalty: 60+R(40), salary: Math.floor(base*0.3)+R(20),
             img: `https://api.dicebear.com/7.x/avataaars/svg?seed=${Math.random()}`,
@@ -1683,7 +1683,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 安全取得頭像位置數值：用!==undefined明確判斷，避免0這個falsy值被||運算子誤判成「未設定」而套用預設值50
     window.getImgPos = function(w) {
         let x = (w && w.imgPosX !== undefined) ? w.imgPosX : 50;
-        let y = (w && w.imgPosY !== undefined) ? w.imgPosY : 50;
+        let y = (w && w.imgPosY !== undefined) ? w.imgPosY : 0;
         return { x, y };
     };
     // 安全取得頭像縮放比例：預設1.0(不縮放)，範圍建議0.5~2.5
@@ -7073,7 +7073,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 頭像位置與縮放調整：載入選手目前的設定(預設位置50/50置中、縮放100%)，並初始化即時預覽
         let posX = (w.imgPosX !== undefined) ? w.imgPosX : 50;
-        let posY = (w.imgPosY !== undefined) ? w.imgPosY : 50;
+        let posY = (w.imgPosY !== undefined) ? w.imgPosY : 0;
         let scalePercent = (w.imgScale !== undefined && w.imgScale !== null) ? Math.round(w.imgScale * 100) : 100;
         document.getElementById('e-imgpos-x').value = posX;
         document.getElementById('e-imgpos-y').value = posY;
@@ -7152,9 +7152,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let btnResetImgPos = document.getElementById('btn-reset-imgpos');
     if(btnResetImgPos) btnResetImgPos.addEventListener('click', function() {
         document.getElementById('e-imgpos-x').value = 50;
-        document.getElementById('e-imgpos-y').value = 50;
+        document.getElementById('e-imgpos-y').value = 0;
         document.getElementById('e-imgpos-x-val').innerText = 50;
-        document.getElementById('e-imgpos-y-val').innerText = 50;
+        document.getElementById('e-imgpos-y-val').innerText = 0;
         document.getElementById('e-imgscale').value = 100;
         document.getElementById('e-imgscale-val').innerText = 100;
         window.updateEditImgPreview();
@@ -7228,7 +7228,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let parsedX = parseInt(document.getElementById('e-imgpos-x').value);
             let parsedY = parseInt(document.getElementById('e-imgpos-y').value);
             w.imgPosX = isNaN(parsedX) ? 50 : parsedX;
-            w.imgPosY = isNaN(parsedY) ? 50 : parsedY;
+            w.imgPosY = isNaN(parsedY) ? 0 : parsedY;
             let parsedScale = parseInt(document.getElementById('e-imgscale').value);
             w.imgScale = isNaN(parsedScale) ? 1 : (parsedScale / 100);
 
