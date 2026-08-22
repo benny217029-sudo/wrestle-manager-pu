@@ -5395,6 +5395,28 @@ function draftCompetitorCount(w) {
         }
     };
 
+    // 計算「本週賽事卡佇列裡其他場次」已經用過哪些選手index，供手動選擇彈窗跟隨機自動配置共用，確保兩處判斷邏輯一致
+    // (t1永遠對應我方GS.roster；t2則依目前的對戰模式對應到同一個池子，跟btnAddToCard送出時的驗證邏輯保持一致)
+    window.getQueueUsedIndices = function(team, bmNow, targetFactionIdNow) {
+        let usedIndices = new Set();
+        (window.MatchEngine && window.MatchEngine.cardQueue ? window.MatchEngine.cardQueue : []).forEach(m => {
+            if(team === 't1') {
+                m.t1Idx.forEach(v => usedIndices.add(parseInt(v)));
+                if(m.bm === 'faction_intra') m.t2Idx.forEach(v => usedIndices.add(parseInt(v)));
+            } else {
+                if(bmNow === 'faction_intra') {
+                    // 目前是隊內大亂鬥，t2池子也是GS.roster：任何場次只要用到GS.roster的選手都算(t1，以及bm同樣是隊內大亂鬥場次的t2)
+                    m.t1Idx.forEach(v => usedIndices.add(parseInt(v)));
+                    if(m.bm === 'faction_intra') m.t2Idx.forEach(v => usedIndices.add(parseInt(v)));
+                } else if(m.bm === bmNow && (bmNow !== 'faction_war' || m.targetFactionId === targetFactionIdNow)) {
+                    // 目前是對外比賽(faction_war/fa)，只跟同樣池子(同對手團隊、或同樣是自由市場)的場次比對
+                    m.t2Idx.forEach(v => usedIndices.add(parseInt(v)));
+                }
+            }
+        });
+        return usedIndices;
+    };
+
     // 開關自訂選手選擇清單：點擊「選擇選手」按鈕時呼叫，每次展開都重新計算頭像/正反派/已上場狀態
     window.togglePicker = function(team, idx) {
         window._currentPickerTeam = team;
@@ -5411,7 +5433,6 @@ function draftCompetitorCount(w) {
             if(sel && sel.value !== '') usedIndices.add(parseInt(sel.value));
         }
         // 同時檢查本週賽事卡裡「已經排定的其他場次」用過哪些選手，避免玩家選到一半才在送出時被擋下、造成困惑
-        // (t1永遠對應我方GS.roster；t2則依目前的對戰模式對應到同一個池子，跟btnAddToCard送出時的驗證邏輯保持一致)
         let bmNow = document.getElementById('booking-mode') ? document.getElementById('booking-mode').value : 'fa';
         let targetFactionIdNow = null;
         if(bmNow === 'faction_war') {
@@ -5419,21 +5440,7 @@ function draftCompetitorCount(w) {
             let fac = facSel ? GS.factions.find(f => f.id == facSel.value) : null;
             if(fac) targetFactionIdNow = fac.id;
         }
-        (window.MatchEngine && window.MatchEngine.cardQueue ? window.MatchEngine.cardQueue : []).forEach(m => {
-            if(team === 't1') {
-                m.t1Idx.forEach(v => usedIndices.add(parseInt(v)));
-                if(m.bm === 'faction_intra') m.t2Idx.forEach(v => usedIndices.add(parseInt(v)));
-            } else {
-                if(bmNow === 'faction_intra') {
-                    // 目前是隊內大亂鬥，t2池子也是GS.roster：任何場次只要用到GS.roster的選手都算(t1，以及bm同樣是隊內大亂鬥場次的t2)
-                    m.t1Idx.forEach(v => usedIndices.add(parseInt(v)));
-                    if(m.bm === 'faction_intra') m.t2Idx.forEach(v => usedIndices.add(parseInt(v)));
-                } else if(m.bm === bmNow && (bmNow !== 'faction_war' || m.targetFactionId === targetFactionIdNow)) {
-                    // 目前是對外比賽(faction_war/fa)，只跟同樣池子(同對手團隊、或同樣是自由市場)的場次比對
-                    m.t2Idx.forEach(v => usedIndices.add(parseInt(v)));
-                }
-            }
-        });
+        window.getQueueUsedIndices(team, bmNow, targetFactionIdNow).forEach(v => usedIndices.add(v));
         let currentSel = document.getElementById(team+'-p'+idx);
         let currentVal = currentSel ? currentSel.value : '';
         let rows = pool.map((w,i) => {
@@ -5478,16 +5485,30 @@ function draftCompetitorCount(w) {
         window.updateBookingSelects(); 
         let count = parseInt(document.getElementById('match-format').value);
 
+        // 取得目前對戰模式，供排除賽事卡佇列裡已用選手時判斷池子是否相同
+        let bmNow = document.getElementById('booking-mode') ? document.getElementById('booking-mode').value : 'fa';
+        let targetFactionIdNow = null;
+        if(bmNow === 'faction_war') {
+            let facSel = document.getElementById('target-faction-select');
+            let fac = facSel ? GS.factions.find(f => f.id == facSel.value) : null;
+            if(fac) targetFactionIdNow = fac.id;
+        }
+
         // 不重複抽樣：分別為t1、t2各自準備一份「可用選項index」池，每抽完一位就從池子移除，
-        // 確保同一隊伍的多個槽位不會抽到同一位選手(原本每個槽位各自獨立隨機，會出現重複/已上場選手被再次抽中的問題)
-        let buildPool = (selEl) => {
+        // 確保同一隊伍的多個槽位不會抽到同一位選手；同時排除「本週賽事卡佇列裡其他場次」已經用過的選手，
+        // 修正原本隨機時會抽到已經排定給其他場次的選手的問題(跟手動選擇彈窗的排除邏輯保持一致)
+        let buildPool = (selEl, team) => {
             if(!selEl) return [];
+            let usedInQueue = window.getQueueUsedIndices ? window.getQueueUsedIndices(team, bmNow, targetFactionIdNow) : new Set();
             let pool = [];
-            for(let i=0; i<selEl.options.length; i++) pool.push(i);
+            for(let i=0; i<selEl.options.length; i++) {
+                let optVal = parseInt(selEl.options[i].value);
+                if(!usedInQueue.has(optVal)) pool.push(i);
+            }
             return pool;
         };
-        let pool1 = buildPool(document.getElementById('t1-p0'));
-        let pool2 = buildPool(document.getElementById('t2-p0'));
+        let pool1 = buildPool(document.getElementById('t1-p0'), 't1');
+        let pool2 = buildPool(document.getElementById('t2-p0'), 't2');
 
         for(let i=0; i<count; i++) {
             let s1 = document.getElementById('t1-p'+i), s2 = document.getElementById('t2-p'+i);
