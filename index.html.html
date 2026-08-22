@@ -219,6 +219,12 @@ select:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 .modal-box > * { position: relative; z-index: 1; }
+/* 大賽彈窗(瑞士制/大決戰/世界冠軍賽)的底部操作按鈕列：固定貼在modal-box底部，不管上方內容(排行榜/對戰列表)多長都不會被擠出可視範圍，
+   避免玩家誤以為「進入比賽」按鈕沒有反應，實際上只是被內容推到畫面外、沒被完整看到或點到 */
+.modal-sticky-footer {
+    position: sticky; bottom: -25px; z-index: 2; margin: 0 -25px -25px -25px; padding: 15px 25px 25px 25px;
+    background: linear-gradient(to top, rgba(10,6,5,0.98) 60%, rgba(10,6,5,0));
+}
 
 /* ATB 實況戰鬥 UI */
 #match-overlay .modal-box { max-width: 1200px; width: 95vw; height: 95vh; max-height: 95vh; display: flex; flex-direction: column; border-color: var(--neon-blue); overflow-y: auto; overflow-x: hidden; }
@@ -356,6 +362,10 @@ select:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 /* 冠軍發光框：套在晉級賽/總決賽最終獲勝方的卡片上，取代原本純文字的標題呈現 */
 .bracket-champion-frame { border-color: var(--gold) !important; background: linear-gradient(135deg, rgba(212,175,55,0.25), rgba(20,10,30,0.9)) !important; box-shadow: 0 0 25px rgba(212,175,55,0.7) !important; }
 .bracket-champion-crown { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+/* 生存大逃殺混戰實況：LIVE標籤呼吸動畫、被淘汰選手的定格特效 */
+@keyframes brLivePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+.br-live-fighter { transition: transform 0.15s; }
+.br-live-fighter.br-eliminated-flash { transition: all 0.5s; filter: grayscale(100%) brightness(0.5); transform: scale(1.25); }
 
 /* 四季例行大賽主題色：春(櫻粉)/夏(艷陽橘)/秋(楓葉橙)/冬(冰霜藍)，讓四個賽季的賽程表一眼就能分辨 */
 .tourney-theme-spring .bracket-match { border-color: #ff8fc7; }
@@ -684,7 +694,7 @@ body { overflow-x: hidden; }
             <p style="color:var(--neon-blue); font-size:1.4rem; margin-bottom:15px;">🏟️ 会場：ドーム（大賽固定在最大場館舉行）</p>
             <div id="bracket-battle-royal-info" style="margin-bottom:15px;"></div>
             <div id="bracket-content" class="bracket-container" style="margin-bottom:25px;"></div>
-            <div style="display:flex; gap:20px;">
+            <div class="modal-sticky-footer" style="display:flex; gap:20px;">
                 <button class="btn btn-sec" style="flex:1; font-size:1.6rem; padding:18px;" id="btn-bracket-cancel">返回</button>
                 <button class="btn" style="flex:2; font-size:2rem; padding:18px; letter-spacing:4px;" id="btn-start-tourney">⚔️ 進入比賽！</button>
             </div>
@@ -707,7 +717,7 @@ body { overflow-x: hidden; }
             <h2 style="text-align:center; color:var(--gold); font-size:3.2rem; letter-spacing:3px; text-shadow:0 0 20px rgba(212,175,55,0.6);">⚡ 四年一度大決戰 ⚡</h2>
             <p style="text-align:center; color:var(--muted); font-size:1.3rem; margin-bottom:20px;">🏟️ 会場：ドーム（史上最高規格賽事，固定在最大場館舉行）</p>
             <div id="grand-finale-content" style="max-height:60vh; overflow-y:auto; margin-bottom:20px;"></div>
-            <div style="display:flex; gap:20px;">
+            <div class="modal-sticky-footer" style="display:flex; gap:20px;">
                 <button class="btn btn-sec" style="flex:1; font-size:1.6rem; padding:18px;" onclick="window.closeModal('grand-finale-overlay')">返回</button>
                 <button class="btn" style="flex:2; font-size:2rem; padding:18px; letter-spacing:4px; background:linear-gradient(135deg, var(--gold), #ff8c00); color:#000;" id="btn-advance-grand-finale">▶️ 進入下一場對戰</button>
             </div>
@@ -720,7 +730,7 @@ body { overflow-x: hidden; }
             <h2 style="text-align:center; color:var(--gold); font-size:3.2rem; letter-spacing:3px; text-shadow:0 0 20px rgba(212,175,55,0.8), 0 2px 4px #000;">🌍 世界冠軍賽 🌍</h2>
             <p id="wc-subtitle" style="text-align:center; color:#fff; font-size:1.4rem; margin-bottom:20px; text-shadow:0 2px 4px #000;">五年一度・史上最高規格國際賽事</p>
             <div id="world-championship-content" style="max-height:60vh; overflow-y:auto; margin-bottom:20px; background:rgba(10,6,5,0.55); border-radius:12px; padding:15px;"></div>
-            <div style="display:flex; gap:20px;">
+            <div class="modal-sticky-footer" style="display:flex; gap:20px;">
                 <button class="btn btn-sec" style="flex:1; font-size:1.6rem; padding:18px;" onclick="window.closeModal('world-championship-overlay')">返回</button>
                 <button class="btn" style="flex:2; font-size:2rem; padding:18px; letter-spacing:4px; background:linear-gradient(135deg, var(--gold), #ff8c00); color:#000;" id="btn-advance-world-championship">▶️ 進入下一場對戰</button>
             </div>
@@ -2783,7 +2793,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if(window.GS.gallery === undefined) window.GS.gallery = [];
             if(window.GS.ironmanTournament === undefined) window.GS.ironmanTournament = null;
             if(window.GS.u18Tournament === undefined) window.GS.u18Tournament = null;
-            if(window.GS.schedule === undefined) { window.GS.schedule = []; if(window.generateSeasonSchedule) window.generateSeasonSchedule(); }
+            if(window.GS.schedule === undefined || !window.GS.schedule.some(s => s.week === 11)) { window.GS.schedule = window.GS.schedule || []; if(window.generateSeasonSchedule) window.generateSeasonSchedule(); }
             if(window.GS.grandFinale === undefined) window.GS.grandFinale = null;
             if(window.GS.coachRefreshCounter === undefined) window.GS.coachRefreshCounter = 8;
             if(window.GS.battleRoyal === undefined) window.GS.battleRoyal = null;
@@ -2808,6 +2818,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('main-container').style.display='flex'; 
             closeModal('start-load-overlay'); 
             switchTab('dashboard'); 
+            if(window.updateUI) window.updateUI(); // 確保讀檔後畫面完全同步(尤其是「確認本週排班」按鈕的disabled狀態要正確反映GS.weekPhase，避免比賽週存檔讀取後按鈕誤顯示成可點擊)
             if(window.updateBookingSelects) window.updateBookingSelects(); 
             // 保險：若存檔時選秀正好進行到一半(候選名單還沒分配完)，讀檔後自動恢復選秀畫面，避免候選名單憑空消失
             if(window.GS.draft && window.GS.draft.length > 0) {
@@ -2880,7 +2891,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(GS.categorizedNews === undefined) GS.categorizedNews = [];
         if(GS.facilities === undefined) GS.facilities = { training: 0, medical: 0, scouting: 0 };
         if(GS.tvDeal === undefined) GS.tvDeal = null;
-        if(GS.schedule === undefined) { GS.schedule = []; if(window.generateSeasonSchedule) window.generateSeasonSchedule(); }
+        if(GS.schedule === undefined || !GS.schedule.some(s => s.week === 11)) { GS.schedule = GS.schedule || []; if(window.generateSeasonSchedule) window.generateSeasonSchedule(); }
         if(GS.grandFinale === undefined) GS.grandFinale = null;
         if(GS.coachRefreshCounter === undefined) GS.coachRefreshCounter = 8;
         if(GS.battleRoyal === undefined) GS.battleRoyal = null;
@@ -3929,7 +3940,12 @@ function draftCompetitorCount(w) {
     // 營運週 →「確認排班」：套用訓練/休息、扣薪水，然後切換到比賽週
     let advBtn = document.getElementById('btn-advance-time');
     if(advBtn) advBtn.addEventListener('click', () => {
-        if((GS.weekPhase || 'management') !== 'management') return; // 防呆：非營運週不可觸發
+        if((GS.weekPhase || 'management') !== 'management') {
+            // 本週是對抗賽/賽程表比賽週，玩家已進入比賽週但尚未完成比賽：明確告知並帶玩家過去，而非靜默無反應
+            window.showSysMsg("本週尚未完成比賽", "本週需要先在「比賽週」安排並完成一場比賽，才能前進到下一週！", true);
+            window.switchTab('booking');
+            return;
+        }
         if(GS.roster.length === 0) return showSysMsg("警告", "請先去自由市場簽約選手。", true);
 
         let salarySum = 0, trainCount = 0, restCount = 0, injuredCount = 0;
@@ -7697,11 +7713,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('world-championship-overlay').style.display = 'flex';
                 });
             } else {
-                let scoreA = match.a.wrestlers.reduce((s,w)=>s+w.str+w.spd+w.tech, 0) + RB(30);
-                let scoreB = match.b.wrestlers.reduce((s,w)=>s+w.str+w.spd+w.tech, 0) + RB(30);
-                match.winner = (scoreA >= scoreB) ? match.a : match.b;
-                window.checkWorldPlayoffRoundComplete(ws, ri);
-                window.renderWorldChampionship();
+                window.MatchEngine.startCustom(match.a.wrestlers, match.b.wrestlers, (winnerSide) => {
+                    match.winner = (winnerSide === 1) ? match.a : match.b;
+                    window.checkWorldPlayoffRoundComplete(ws, ri);
+                    window.renderWorldChampionship();
+                    document.getElementById('world-championship-overlay').style.display = 'flex';
+                });
             }
             return;
         }
@@ -7720,13 +7737,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('world-championship-overlay').style.display = 'flex';
                 });
             } else {
-                let scoreA = match.a.wrestlers.reduce((s,w)=>s+w.str+w.spd+w.tech, 0) + RB(30);
-                let scoreB = match.b.wrestlers.reduce((s,w)=>s+w.str+w.spd+w.tech, 0) + RB(30);
-                match.winner = (scoreA >= scoreB) ? match.a : match.b;
-                match.a.opponentIds.push(match.b.id);
-                match.b.opponentIds.push(match.a.id);
-                match.winner.wins++;
-                window.renderWorldChampionship();
+                window.MatchEngine.startCustom(match.a.wrestlers, match.b.wrestlers, (winnerSide) => {
+                    match.winner = (winnerSide === 1) ? match.a : match.b;
+                    match.winner.wins++;
+                    match.a.opponentIds.push(match.b.id);
+                    match.b.opponentIds.push(match.a.id);
+                    window.renderWorldChampionship();
+                    document.getElementById('world-championship-overlay').style.display = 'flex';
+                });
             }
             return;
         }
@@ -8019,6 +8037,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.advanceBattleRoyal = function() {
         let br = GS.battleRoyal;
         if(!br) return;
+        if(window._brAnimating) return; // 防呆：混戰實況動畫播放中，避免玩家連續點擊導致多場動畫疊加執行
         if(br.champion) {
             const BASE_PRIZE = 800;
             if(br.champion.facId === 0) {
@@ -8064,12 +8083,62 @@ document.addEventListener('DOMContentLoaded', () => {
             if(roll <= cum) { eliminatedIdx = i; break; }
         }
         let eliminatedEntry = remaining[eliminatedIdx];
-        br.eliminated.push(eliminatedEntry);
-        br.log.unshift(`☠️ ${eliminatedEntry.wrestler.name}${eliminatedEntry.facId===0?'（我方）':''}被淘汰出局！（剩餘${remaining.length-1}人）`);
 
-        let newRemaining = remaining.filter(p => p.wrestler.id !== eliminatedEntry.wrestler.id);
-        if(newRemaining.length === 1) br.champion = newRemaining[0];
-        window.renderBattleRoyal();
+        // 先播放混戰實況動畫(視覺化呈現這一輪過程)，動畫結束後才真正套用淘汰結果並更新完整戰況畫面，
+        // 取代原本「點擊按鈕→直接看到結果列表更新」的靜默呈現方式
+        window.playBattleRoyalLiveAnimation(remaining, eliminatedEntry, () => {
+            br.eliminated.push(eliminatedEntry);
+            br.log.unshift(`☠️ ${eliminatedEntry.wrestler.name}${eliminatedEntry.facId===0?'（我方）':''}被淘汰出局！（剩餘${remaining.length-1}人）`);
+            let newRemaining = remaining.filter(p => p.wrestler.id !== eliminatedEntry.wrestler.id);
+            if(newRemaining.length === 1) br.champion = newRemaining[0];
+            window.renderBattleRoyal();
+        });
+    };
+
+    // 生存大逃殺混戰實況：用CSS動畫呈現「這一輪還在場上的所有選手」交鋒過程(隨機輪流高亮)，
+    // 最後聚焦定格顯示被淘汰的選手，讓每一輪淘汰更有臨場感，而不是直接靜默更新結果列表
+    window.playBattleRoyalLiveAnimation = function(remaining, eliminatedEntry, onDone) {
+        let el = document.getElementById('battle-royal-content');
+        if(!el) { onDone(); return; } // 保險：找不到容器就直接跳過動畫
+        window._brAnimating = true;
+        let advBtn = document.getElementById('btn-advance-battle-royal');
+        if(advBtn) { advBtn.disabled = true; advBtn.style.opacity = '0.5'; }
+
+        let liveHtml = `<p style="text-align:center; font-size:1.6rem; color:var(--gold); font-weight:bold; margin-bottom:15px; animation: brLivePulse 1s infinite;">🔴 LIVE - 混戰中...</p>`;
+        liveHtml += `<div id="br-live-ring" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(80px, 1fr)); gap:12px; padding:20px; background:radial-gradient(ellipse at center, rgba(196,30,58,0.15), rgba(0,0,0,0.5)); border-radius:12px; border:2px solid var(--neon-pink);">`;
+        remaining.forEach(p => {
+            liveHtml += `<div class="br-live-fighter" data-id="${p.wrestler.id}" style="text-align:center;">
+                <img src="${window.escAttr(p.wrestler.img)}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(p.wrestler.name)}'" style="width:60px; height:60px; border-radius:50%; object-fit:cover; border:3px solid var(--neon-pink);">
+                <p style="font-size:1rem; margin-top:4px; color:${p.facId===0?'var(--gold)':'#fff'};">${window.escAttr(p.wrestler.name)}</p>
+            </div>`;
+        });
+        liveHtml += `</div>`;
+        el.innerHTML = liveHtml;
+
+        // 隨機讓場上選手輪流「高亮」，模擬混戰交鋒的視覺效果，跑完固定次數後聚焦顯示被淘汰的選手
+        let fighters = Array.from(el.querySelectorAll('.br-live-fighter'));
+        let flashCount = 0;
+        let flashInterval = setInterval(() => {
+            fighters.forEach(f => { f.style.transform = 'scale(1)'; });
+            let randomFighter = fighters[Math.floor(Math.random()*fighters.length)];
+            randomFighter.style.transform = 'scale(1.15)';
+            flashCount++;
+            if(flashCount >= 8) {
+                clearInterval(flashInterval);
+                fighters.forEach(f => { f.style.transform = 'scale(1)'; });
+                let eliminatedEl = el.querySelector(`.br-live-fighter[data-id="${eliminatedEntry.wrestler.id}"]`);
+                if(eliminatedEl) {
+                    eliminatedEl.classList.add('br-eliminated-flash');
+                    eliminatedEl.insertAdjacentHTML('beforeend', `<p style="color:#ff3333; font-weight:bold; font-size:1.3rem; margin-top:4px;">☠️ OUT!</p>`);
+                }
+                setTimeout(() => {
+                    window._brAnimating = false;
+                    let advBtn2 = document.getElementById('btn-advance-battle-royal');
+                    if(advBtn2) { advBtn2.disabled = false; advBtn2.style.opacity = '1'; }
+                    onDone();
+                }, 1200);
+            }
+        }, 200);
     };
 
     window.renderBattleRoyal = function() {
@@ -8224,10 +8293,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         } else {
-            let scoreA = teamA.wrestlers.reduce((s,w)=>s+w.str+w.spd+w.tech, 0) + RB(30);
-            let scoreB = teamB.wrestlers.reduce((s,w)=>s+w.str+w.spd+w.tech, 0) + RB(30);
-            match.winner = (scoreA >= scoreB) ? match.a : match.b;
-            onMatchDone();
+            window.MatchEngine.startCustom(teamA.wrestlers, teamB.wrestlers, (winnerSide) => {
+                match.winner = (winnerSide === 1) ? match.a : match.b;
+                onMatchDone();
+                if(afterMatchUI) {
+                    afterMatchUI.renderFn();
+                    document.getElementById(afterMatchUI.overlayId).style.display = 'flex';
+                }
+            });
         }
         return true;
     }
@@ -8856,25 +8929,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 執行一場對戰的共用邏輯：我方參戰時走真實對戰引擎，AI對AI則依綜合戰力加權隨機判定
+    // 執行一場對戰的共用邏輯：不論是否有玩家參戰，一律透過MatchEngine真實對戰引擎執行，讓AI對AI的比賽也能開啟對戰畫面觀看實況
+    // (不想看可按「跳過」快轉)，取代原本AI對AI純粹依分數加權靜默判定、完全不開啟任何畫面的方式
     function runBracketMatch(match, teamA, teamB, onWin, onRenderNeeded) {
-        if(teamA.facId === 0 || teamB.facId === 0) {
-            let playerIsA = (teamA.facId === 0);
-            let myTeam = playerIsA ? teamA.wrestlers : teamB.wrestlers;
-            let oppTeam = playerIsA ? teamB.wrestlers : teamA.wrestlers;
-            if(myTeam[0].stamina < 30) return window.showSysMsg("警告", `我方先發選手 ${myTeam[0].name} 體力過低（未滿30），請先安排休息後再挑戰！`, true);
-            if((myTeam[0].injuryWeeks||0) > 0) return window.showSysMsg("警告", `我方先發選手 ${myTeam[0].name} 傷病中（剩${myTeam[0].injuryWeeks}週），暫時無法出賽！`, true);
-            window.MatchEngine.startCustom(myTeam, oppTeam, (winnerSide) => {
-                let winningIsA = playerIsA ? (winnerSide === 1) : (winnerSide === 2);
-                onWin(winningIsA);
-                onRenderNeeded();
-            });
-        } else {
-            let scoreA = teamA.wrestlers.reduce((s,w)=>s+w.str+w.spd+w.tech, 0) + RB(30);
-            let scoreB = teamB.wrestlers.reduce((s,w)=>s+w.str+w.spd+w.tech, 0) + RB(30);
-            onWin(scoreA >= scoreB);
-            onRenderNeeded();
+        // 只檢查玩家隊伍(facId===0)先發選手的體力/受傷狀態；AI隊伍不受此限制，避免AI選手狀態不佳導致賽事卡死無法進行
+        if(teamA.facId === 0) {
+            if(teamA.wrestlers[0].stamina < 30) return window.showSysMsg("警告", `我方先發選手 ${teamA.wrestlers[0].name} 體力過低（未滿30），請先安排休息後再挑戰！`, true);
+            if((teamA.wrestlers[0].injuryWeeks||0) > 0) return window.showSysMsg("警告", `我方先發選手 ${teamA.wrestlers[0].name} 傷病中（剩${teamA.wrestlers[0].injuryWeeks}週），暫時無法出賽！`, true);
         }
+        if(teamB.facId === 0) {
+            if(teamB.wrestlers[0].stamina < 30) return window.showSysMsg("警告", `我方先發選手 ${teamB.wrestlers[0].name} 體力過低（未滿30），請先安排休息後再挑戰！`, true);
+            if((teamB.wrestlers[0].injuryWeeks||0) > 0) return window.showSysMsg("警告", `我方先發選手 ${teamB.wrestlers[0].name} 傷病中（剩${teamB.wrestlers[0].injuryWeeks}週），暫時無法出賽！`, true);
+        }
+        window.MatchEngine.startCustom(teamA.wrestlers, teamB.wrestlers, (winnerSide) => {
+            onWin(winnerSide === 1); // winnerSide===1代表t1(teamA)獲勝
+            onRenderNeeded();
+        });
     }
 
     window.advanceSwissPhase = function(t) {
@@ -10703,6 +10773,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('btn-skip-match').style.display = 'block';
             document.getElementById('btn-auto-toggle').style.display = 'block';
             document.getElementById('bracket-overlay').style.display = 'none';
+            document.getElementById('grand-finale-overlay').style.display = 'none';
+            document.getElementById('world-championship-overlay').style.display = 'none';
             document.getElementById('match-overlay').style.display = 'flex';
 
             this.upd();
@@ -10890,18 +10962,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('bracket-overlay').style.display = 'flex';
                 });
             } else {
-                // AI對AI：依當前殘存血量+能力值加權判定，並套用同樣的血量繼承規則
-                let aState = t.hpState[teamA.wrestler.id], bState = t.hpState[teamB.wrestler.id];
-                let scoreA = (teamA.wrestler.str+teamA.wrestler.spd+teamA.wrestler.tech) * (aState.hp/aState.maxHp) + RB(20);
-                let scoreB = (teamB.wrestler.str+teamB.wrestler.spd+teamB.wrestler.tech) * (bState.hp/bState.maxHp) + RB(20);
-                let aWins = scoreA >= scoreB;
-                let winState = aWins ? aState : bState, loseState = aWins ? bState : aState;
-                winState.hp = Math.min(winState.maxHp, Math.max(1, Math.round(winState.maxHp*0.3)));
-                loseState.eliminated = true;
-                loseState.hp = Math.round(loseState.maxHp*0.2);
-                match.winner = aWins ? match.a : match.b;
-                window.checkIronmanRoundComplete(ri);
-                window.renderIronmanBracket();
+                // AI對AI：直接複用runIronmanMatch(已封裝血量繼承機制)，透過真實對戰引擎執行，玩家可以觀看實況(不想看可按「跳過」快轉)
+                window.runIronmanMatch(teamA.wrestler, teamB.wrestler, (winnerSide) => {
+                    match.winner = (winnerSide === 1) ? match.a : match.b;
+                    window.checkIronmanRoundComplete(ri);
+                    window.renderIronmanBracket();
+                    document.getElementById('bracket-overlay').style.display = 'flex';
+                });
             }
         };
     })();
@@ -11059,26 +11126,24 @@ document.addEventListener('DOMContentLoaded', () => {
             let teamA = t.teams[match.a], teamB = t.teams[match.b];
 
             if(teamA.facId === 0 || teamB.facId === 0) {
-                let playerIsA = (teamA.facId === 0);
-                let myTeam = playerIsA ? teamA.wrestlers : teamB.wrestlers;
-                let oppTeam = playerIsA ? teamB.wrestlers : teamA.wrestlers;
+                let myTeam = teamA.facId === 0 ? teamA.wrestlers : teamB.wrestlers;
                 if(myTeam.some(w => (w.injuryWeeks||0) > 0)) {
                     return window.showSysMsg('警告', `我方隊伍有選手傷病中，暫時無法出賽！`, true);
                 }
-                window.MatchEngine.startCustom(myTeam, oppTeam, (winnerSide) => {
-                    let winningTeam = (winnerSide === 1) ? (playerIsA ? teamA : teamB) : (playerIsA ? teamB : teamA);
-                    match.winner = (winningTeam === teamA) ? match.a : match.b;
+                window.MatchEngine.startCustom(teamA.wrestlers, teamB.wrestlers, (winnerSide) => {
+                    match.winner = (winnerSide === 1) ? match.a : match.b;
                     window.checkU18RoundComplete(ri);
                     window.renderU18Bracket();
                     document.getElementById('bracket-overlay').style.display = 'flex';
                 });
             } else {
-                // AI對AI：依隊伍平均能力值加權判定
-                let scoreA = teamA.wrestlers.reduce((s,w)=>s+w.str+w.spd+w.tech+w.end+w.mnt,0) + RB(60);
-                let scoreB = teamB.wrestlers.reduce((s,w)=>s+w.str+w.spd+w.tech+w.end+w.mnt,0) + RB(60);
-                match.winner = (scoreA >= scoreB) ? match.a : match.b;
-                window.checkU18RoundComplete(ri);
-                window.renderU18Bracket();
+                // AI對AI：透過MatchEngine真實對戰引擎執行，玩家可以觀看實況(不想看可按「跳過」快轉)
+                window.MatchEngine.startCustom(teamA.wrestlers, teamB.wrestlers, (winnerSide) => {
+                    match.winner = (winnerSide === 1) ? match.a : match.b;
+                    window.checkU18RoundComplete(ri);
+                    window.renderU18Bracket();
+                    document.getElementById('bracket-overlay').style.display = 'flex';
+                });
             }
         };
     })();
@@ -11189,6 +11254,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('main-header').style.display = 'flex';
                     document.getElementById('main-container').style.display = 'flex';
                     window.switchTab('dashboard');
+                    if(window.updateUI) window.updateUI(); // 確保匯入後畫面完全同步(尤其是「確認本週排班」按鈕的disabled狀態要正確反映GS.weekPhase)
                     if(window.updateBookingSelects) window.updateBookingSelects();
                     window.saveGame();
                     // 保險：若匯入的存檔競標正好進行到一半，自動恢復競標畫面
