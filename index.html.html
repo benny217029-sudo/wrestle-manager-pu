@@ -344,10 +344,39 @@ select:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 .playoff-grand-final { background: radial-gradient(circle at top, rgba(251,191,36,.25), rgba(0,0,0,.7)); border: 2px solid var(--gold); border-radius: 16px; padding: 22px 18px; text-align: center; min-width: 220px; box-shadow: 0 0 30px rgba(251,191,36,.45); }
 #playoff-overlay { z-index: 100000; }
 .bracket-round { display: flex; flex-direction: column; gap: 20px; justify-content: space-around; min-width: 160px; }
-.bracket-match { background: rgba(20,10,30,0.9); border: 2px solid var(--border); border-radius: 8px; padding: 10px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-.bracket-match.active-match { border-color: var(--gold); box-shadow: 0 0 15px var(--gold); }
+.bracket-match { background: rgba(20,10,30,0.9); border: 2px solid var(--border); border-radius: 8px; padding: 10px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.5); position: relative; }
+.bracket-match.active-match { border-color: var(--gold); box-shadow: 0 0 15px var(--gold); animation: bracketLivePulse 1.6s ease-in-out infinite; }
 .bracket-player { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; }
 .bracket-player img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+/* 「目前比賽」LIVE標籤：貼在對戰卡片右上角，配合active-match的發光邊框一起使用 */
+.bracket-live-tag { position: absolute; top: -10px; right: 8px; background: var(--crimson-dark); color: #fff; font-size: 0.95rem; font-weight: bold; padding: 2px 10px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.6); letter-spacing: 1px; }
+@keyframes bracketLivePulse { 0%, 100% { box-shadow: 0 0 12px var(--gold); } 50% { box-shadow: 0 0 24px var(--gold); } }
+/* 「已淘汰」標籤：晉級賽(單淘汰)階段落敗方專用，跟瑞士制的「單場落敗」意義不同(瑞士制輸一場不會出局) */
+.bracket-eliminated-tag { display: inline-block; font-size: 0.85rem; color: #ff6b6b; border: 1px solid #ff6b6b; border-radius: 4px; padding: 0 6px; margin-left: 6px; vertical-align: middle; }
+/* 冠軍發光框：套在晉級賽/總決賽最終獲勝方的卡片上，取代原本純文字的標題呈現 */
+.bracket-champion-frame { border-color: var(--gold) !important; background: linear-gradient(135deg, rgba(212,175,55,0.25), rgba(20,10,30,0.9)) !important; box-shadow: 0 0 25px rgba(212,175,55,0.7) !important; }
+.bracket-champion-crown { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+
+/* 四季例行大賽主題色：春(櫻粉)/夏(艷陽橘)/秋(楓葉橙)/冬(冰霜藍)，讓四個賽季的賽程表一眼就能分辨 */
+.tourney-theme-spring .bracket-match { border-color: #ff8fc7; }
+.tourney-theme-spring .bracket-match.active-match { border-color: #ff5cad; box-shadow: 0 0 15px #ff5cad; }
+.tourney-theme-spring h4, .tourney-theme-spring .bracket-round h4 { color: #ff8fc7 !important; }
+.tourney-theme-summer .bracket-match { border-color: #ff9d42; }
+.tourney-theme-summer .bracket-match.active-match { border-color: #ff7a1a; box-shadow: 0 0 15px #ff7a1a; }
+.tourney-theme-summer h4 { color: #ff9d42 !important; }
+.tourney-theme-autumn .bracket-match { border-color: #d97a2b; }
+.tourney-theme-autumn .bracket-match.active-match { border-color: #b8590f; box-shadow: 0 0 15px #b8590f; }
+.tourney-theme-autumn h4 { color: #e08a3c !important; }
+.tourney-theme-winter .bracket-match { border-color: #7ec8e3; }
+.tourney-theme-winter .bracket-match.active-match { border-color: #4aa8d8; box-shadow: 0 0 15px #4aa8d8; }
+.tourney-theme-winter h4 { color: #7ec8e3 !important; }
+/* 四年一度大決戰：金紫史詩配色，呼應「究極王者」的全遊戲最高規格定位 */
+.tourney-theme-grandfinale .bracket-match { border-color: #b088ff; background: linear-gradient(135deg, rgba(90,40,150,0.25), rgba(20,10,30,0.9)); }
+.tourney-theme-grandfinale .bracket-match.active-match { border-color: var(--gold); box-shadow: 0 0 20px var(--gold); }
+.tourney-theme-grandfinale h3 { color: #b088ff !important; }
+/* 世界冠軍賽：地球藍配色，呼應「世界」主題 */
+.tourney-theme-world .bracket-match { border-color: #4ac9ff; }
+.tourney-theme-world .bracket-match.active-match { border-color: #1fa8e0; box-shadow: 0 0 15px #1fa8e0; }
 /* ================= 手機版 RWD ================= */
 html { -webkit-text-size-adjust: 100%; font-size: 15px; } /* 桌面版/寬螢幕根字體：原本沒有明確設定會吃瀏覽器預設16px，全站文字都是rem單位偏大，這裡統一調降到正常閱讀尺寸 */
 body { overflow-x: hidden; }
@@ -933,8 +962,8 @@ body { overflow-x: hidden; }
                     <h3 style="color:var(--gold); font-size:2.2rem; margin-bottom:10px;">👑 財報與規模</h3>
                     <p style="font-size:1.6rem; margin-bottom:8px;">資金餘額：<strong style="color:var(--neon-blue);">$<span id="dash-money"></span>萬</strong></p>
                     <p style="font-size:1.6rem; margin-bottom:8px;">本週預估支出：<strong id="dash-salary-forecast"></strong></p>
-                    <p style="font-size:1.6rem; margin-bottom:8px;">旗下陣容：<strong style="color:var(--neon-pink);" id="dash-roster"></strong> / 20 人</p>
-                    <p style="font-size:1.6rem; margin-bottom:10px;">聘用教練：<strong style="color:var(--neon-blue);" id="dash-coach"></strong> / 10 人</p>
+                    <p style="font-size:1.6rem; margin-bottom:8px;">旗下陣容：<strong style="color:var(--neon-pink);" id="dash-roster"></strong> / 16 人</p>
+                    <p style="font-size:1.6rem; margin-bottom:10px;">聘用教練：<strong style="color:var(--neon-blue);" id="dash-coach"></strong> / 4 人</p>
                     <button class="btn btn-sec" style="width:100%; font-size:1.3rem; padding:10px;" onclick="window.showOverallRankings()">🏆 綜合評價排名</button>
                 </div>
                 <div class="card">
@@ -948,7 +977,7 @@ body { overflow-x: hidden; }
             <div id="roster-coaches-summary" style="margin-bottom:20px;"></div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-bottom:2px solid rgba(236,72,153,0.3); padding-bottom:10px; flex-wrap:wrap; gap:10px;">
-                <h3 style="color:var(--neon-pink); margin:0;">📋 旗下陣容管理 (上限 20 人)</h3>
+                <h3 style="color:var(--neon-pink); margin:0;">📋 旗下陣容管理 (上限 16 人)</h3>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
                     <button class="btn btn-sec" id="btn-set-all-train" style="font-size:1.3rem; padding:8px 16px;">🏋️ 全部訓練</button>
                     <button class="btn btn-sec" id="btn-set-all-rest" style="font-size:1.3rem; padding:8px 16px;">🛌 全部休息</button>
@@ -1080,10 +1109,10 @@ body { overflow-x: hidden; }
             <div class="grid" id="facility-grid"></div>
         </section>
 
-        <!-- 雙聯盟 -->
+        <!-- 聯盟總覽 -->
         <section id="tab-faction" class="tab">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:15px;">
-                <h2 style="margin:0;" id="fac-total-title">🏢 雙聯盟總覽</h2>
+                <h2 style="margin:0;" id="fac-total-title">🏢 聯盟總覽</h2>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
                     <button class="btn btn-sec" id="btn-all-wrestlers" style="font-size:1.4rem; padding:10px 20px;">📋 全選手總覽</button>
                     <button class="btn btn-sec" id="btn-leaderboard" style="font-size:1.4rem; padding:10px 20px;">🏅 戰績排行榜</button>
@@ -1097,10 +1126,8 @@ body { overflow-x: hidden; }
                     🏗️ 只看我自建的團隊
                 </label>
             </div>
-            <div style="display:flex; gap:30px; flex-wrap:wrap;">
-                <div style="flex:1; min-width:320px;"><h3 style="color:var(--neon-blue); border-bottom:3px solid var(--border); padding-bottom:15px; font-size:2.6rem;">🔵 東聯盟 (East) <span id="fac-count-east" style="font-size:1.5rem; color:var(--muted); font-weight:normal;"></span></h3><div id="fac-list-east" class="grid" style="grid-template-columns:1fr; margin-top:20px;"></div></div>
-                <div style="flex:1; min-width:320px;"><h3 style="color:var(--neon-pink); border-bottom:3px solid var(--border); padding-bottom:15px; font-size:2.6rem;">🔴 西聯盟 (West) <span id="fac-count-west" style="font-size:1.5rem; color:var(--muted); font-weight:normal;"></span></h3><div id="fac-list-west" class="grid" style="grid-template-columns:1fr; margin-top:20px;"></div></div>
-            </div>
+            <h3 style="color:var(--gold); border-bottom:3px solid var(--border); padding-bottom:15px; font-size:2.6rem;">🏆 全聯盟團隊 <span id="fac-count-all" style="font-size:1.5rem; color:var(--muted); font-weight:normal;"></span></h3>
+            <div id="fac-list-all" class="grid" style="grid-template-columns:1fr; margin-top:20px;"></div>
         </section>
 
         <!-- ATB 舉辦比賽 -->
@@ -1197,7 +1224,7 @@ body { overflow-x: hidden; }
         <section id="tab-coaches" class="tab">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <h2 style="margin:0;">👨‍🏫 教練系統</h2>
-                <p style="font-size:1.3rem; color:var(--muted); margin:0;">🔄 教練市場每4週自動更新一次（<span id="coach-refresh-countdown">-</span>週後更新）</p>
+                <p style="font-size:1.3rem; color:var(--muted); margin:0;">🔄 教練市場每8週自動更新一次（<span id="coach-refresh-countdown">-</span>週後更新）</p>
             </div>
             <p style="color:var(--muted); font-size:1.4rem; margin-bottom:20px;">聘用教練後，可指派給特定選手。在「訓練」排班時，若有教練指導，屬性成長將大幅增加！</p>
             <div class="grid" id="coach-grid"></div>
@@ -1682,7 +1709,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let w = GS.roster.find(x => x.id === id);
         if(!w) return;
         if((w.injuryWeeks||0) > 0) return window.showSysMsg("尚未痊癒", `${w.name} 傷病尚未痊癒(剩餘${w.injuryWeeks}週)，無法從傷兵名單復出！`, true);
-        if(window.getActiveRosterCount() >= 20) return window.showSysMsg("陣容已滿", "目前有效陣容已達20人上限，請先釋出其他選手才能讓此選手復出！", true);
+        if(window.getActiveRosterCount() >= 16) return window.showSysMsg("陣容已滿", "目前有效陣容已達16人上限，請先釋出其他選手才能讓此選手復出！", true);
         w.onIR = false;
         window.addNewsLog(`🏥 ${w.name} 傷癒歸隊，重新回到正式陣容！`);
         window.updateUI();
@@ -2540,13 +2567,23 @@ document.addEventListener('DOMContentLoaded', () => {
         return 1.0;
     };
 
+    // 教練等級評定：依「專長項目數+訓練加成幅度」的綜合分數分成ABC三級，等級越高薪水越貴，讓玩家能一眼判斷這位教練值不值得砸錢聘用
+    window.rateCoachTier = function(specialtyCount, boost) {
+        let score = specialtyCount * 10 + boost; // 專長越多、加成越高，分數越高(範圍13~36：s=1時13~16、s=2時23~26、s=3時33~36)
+        if(score >= 30) return 'A'; // 3項專長的教練
+        if(score >= 20) return 'B'; // 2項專長的教練
+        return 'C'; // 1項專長的教練
+    };
+    const COACH_TIER_BASE_COST = { A: 280, B: 140, C: 60 }; // 三級基礎月薪，A級是C級的將近5倍，拉開明顯差距
     function genCoach() {
         let t = ["力量","速度","技巧","耐力","精神"], s = R(3)+1;
         let boost = R(4)+3; // 3~6，換算成訓練加成量1~4
+        let tier = rateCoachTier(s, boost);
+        let cost = COACH_TIER_BASE_COST[tier] + (s-1)*30 + (boost-3)*15; // 三級基礎薪資之上，專長數/加成幅度再微調
         return {
             id: Math.random().toString(36).substr(2, 6), name: "教練 "+getRandName().split(" ")[0],
             specialty: t.slice().sort(()=>0.5-Math.random()).slice(0, s).join(", "),
-            boost, cost: 40+(s-1)*40+(boost-3)*20, hired: false, hiredBy: null,
+            boost, tier, cost, hired: false, hiredBy: null,
             coachXp: 0, coachLevel: 1, // 教練成長系統：帶隊訓練會累積經驗值，升級後指導加成變強
         };
     }
@@ -2670,12 +2707,12 @@ document.addEventListener('DOMContentLoaded', () => {
         let startMoney = 3000 + Math.floor(Math.random()*2001); window.GS = { money: startMoney, year: 1, month: 1, week: 1, roster: [], fa: [], factions: [], coaches: [], draft: [], currentSlot: 1, weekPhase: 'management', newsLog: [], bankruptcyCount: 0, champion: null, tagChampion: null, playoffBracket: null, aiSmartManagement: false, presidentEnergy: 6, hallOfFame: [], domeUnlocked: false, energyRegenCounter: 0, yearTransactions: [], yearIncome: 0, yearExpense: 0, yearTournamentChampions: [], retiredArchive: [], _yearStartMoney: startMoney, sponsorship: null, tvDeal: null, presidentXp: 0, presidentLevel: 1, popMilestonesAwarded: [], facilities: { training: 0, medical: 0, scouting: 0 } };
         for(let i=0; i<8; i++) GS.roster.push(genWrestler(false));
         for(let i=0; i<25; i++) GS.fa.push(genWrestler(true));
-        for(let i=0; i<30; i++) GS.coaches.push(genCoach());
+        for(let i=0; i<10; i++) GS.coaches.push(genCoach());
         
-        GS.factions.push({ id: 0, name: "玩家團隊", league: "East", pop: 10, roster: GS.roster, record: {w:0, l:0}, points: 0, streak: 0, emblem: window.pickUniqueEmblem() });
-        for(let k=1; k<=15; k++) {
+        GS.factions.push({ id: 0, name: "玩家團隊", pop: 10, roster: GS.roster, record: {w:0, l:0}, points: 0, streak: 0, emblem: window.pickUniqueEmblem() });
+        for(let k=1; k<=7; k++) {
             let fR = []; for(let r=0; r<10; r++) fR.push(genWrestler(false, 20));
-            GS.factions.push({ id: k, name: window.generateRandomFactionName(), league: k%2===0?"East":"West", pop: 10, roster: fR, record: {w:0, l:0}, points: 0, streak: 0, emblem: window.pickUniqueEmblem(), facilities: {training:0, medical:0, scouting:0} });
+            GS.factions.push({ id: k, name: window.generateRandomFactionName(), pop: 10, roster: fR, record: {w:0, l:0}, points: 0, streak: 0, emblem: window.pickUniqueEmblem(), facilities: {training:0, medical:0, scouting:0} });
         }
         if(window.generateSeasonSchedule) window.generateSeasonSchedule(); // 開局第一季也要有賽程表(第4、8、11週的比賽對手)
         if(window.generateSeasonGoals) window.generateSeasonGoals(); // 開局第一季也要有賽季目標
@@ -2748,7 +2785,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if(window.GS.u18Tournament === undefined) window.GS.u18Tournament = null;
             if(window.GS.schedule === undefined) { window.GS.schedule = []; if(window.generateSeasonSchedule) window.generateSeasonSchedule(); }
             if(window.GS.grandFinale === undefined) window.GS.grandFinale = null;
-            if(window.GS.coachRefreshCounter === undefined) window.GS.coachRefreshCounter = 4;
+            if(window.GS.coachRefreshCounter === undefined) window.GS.coachRefreshCounter = 8;
             if(window.GS.battleRoyal === undefined) window.GS.battleRoyal = null;
             if(window.GS.worldChampionship === undefined) window.GS.worldChampionship = null;
             if(window.GS.gauntletMatch === undefined) window.GS.gauntletMatch = null;
@@ -2774,7 +2811,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if(window.updateBookingSelects) window.updateBookingSelects(); 
             // 保險：若存檔時選秀正好進行到一半(候選名單還沒分配完)，讀檔後自動恢復選秀畫面，避免候選名單憑空消失
             if(window.GS.draft && window.GS.draft.length > 0) {
-                if((window.getActiveRosterCount?window.getActiveRosterCount():window.GS.roster.length) >= 20 && window.distributeRemainingDraftPoolResume) {
+                if((window.getActiveRosterCount?window.getActiveRosterCount():window.GS.roster.length) >= 16 && window.distributeRemainingDraftPoolResume) {
                     window.distributeRemainingDraftPoolResume();
                 } else if(window.renderDraftPickerResume) {
                     window.renderDraftPickerResume();
@@ -2845,7 +2882,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(GS.tvDeal === undefined) GS.tvDeal = null;
         if(GS.schedule === undefined) { GS.schedule = []; if(window.generateSeasonSchedule) window.generateSeasonSchedule(); }
         if(GS.grandFinale === undefined) GS.grandFinale = null;
-        if(GS.coachRefreshCounter === undefined) GS.coachRefreshCounter = 4;
+        if(GS.coachRefreshCounter === undefined) GS.coachRefreshCounter = 8;
         if(GS.battleRoyal === undefined) GS.battleRoyal = null;
         if(GS.worldChampionship === undefined) GS.worldChampionship = null;
         if(GS.gauntletMatch === undefined) GS.gauntletMatch = null;
@@ -2937,7 +2974,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return `
             <div class="card" style="${injured ? 'border-color:#ff6b6b;' : (lowHp ? 'border-color:#ff4d4d;' : (w.readyForRetirementMatch ? 'border-color:var(--gold);' : ''))}">
                 <div style="display:flex; gap:12px; margin-bottom:10px;">
-                    <img src="${window.escAttr(w.img)}" class="wrestler-img" style="width:90px; height:auto; flex-shrink:0; margin-bottom:0; object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
+                    <img src="${window.escAttr(w.img)}" class="wrestler-img" style="width:90px; height:auto; flex-shrink:0; margin-bottom:0; object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'" onload="this.style.background='transparent'">
                     <div style="flex:1; min-width:0;">
                         <h3 style="color:var(--neon-pink); font-size:2rem; margin-bottom:2px;">${lowHp?'⚠️ ':''}<span style="cursor:pointer; text-decoration:underline dotted;" onclick="window.showWrestlerProfile('${w.id}')" title="查看選手詳細資料">${w.name}</span> <span style="font-size:1.6rem; color:var(--gold); font-weight:900;">${window.wrestlerLevel(w)}</span></h3>
                         <p style="font-size:1.2rem; color:var(--muted); margin-bottom:4px;">${w.age}歲${window.getWrestlerTitle && window.getWrestlerTitle(w) ? `　「${window.getWrestlerTitle(w)}」` : ''}</p>
@@ -2986,7 +3023,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.renderMarketGrid();
 
         let coachCountdownEl = document.getElementById('coach-refresh-countdown');
-        if(coachCountdownEl) coachCountdownEl.innerText = GS.coachRefreshCounter !== undefined ? GS.coachRefreshCounter : 4;
+        if(coachCountdownEl) coachCountdownEl.innerText = GS.coachRefreshCounter !== undefined ? GS.coachRefreshCounter : 8;
 
         let coachHTML = GS.coaches.map((c) => {
             if(c.coachXp === undefined) { c.coachXp = 0; c.coachLevel = 1; } // 舊存檔教練補上成長系統欄位
@@ -3008,19 +3045,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     : `<p style="font-size:1.2rem; color:var(--muted); margin-bottom:6px;">尚未指導任何選手</p>`;
                 let atLimit = assignedWrestlers.length >= MAX_STUDENTS;
                 let termHtml = c.isFormerWrestler ? `<p style="font-size:1.2rem; margin-bottom:10px; color:var(--steel);">🎓 前選手轉任・任期至第${c.coachTermEndYear}年（剩餘${Math.max(0, c.coachTermEndYear - GS.year)}年）</p>` : '';
-                return `<div class="card" style="border-color:var(--neon-pink);"><h3 style="color:var(--neon-pink); font-size:2.2rem; margin-bottom:10px;">${c.name} (我方)</h3>${levelHtml}${termHtml}<p style="font-size:1.4rem; margin-bottom:8px;">專長指導: <strong style="color:var(--gold);">${c.specialty}</strong></p><p style="font-size:1.3rem; margin-bottom:15px; color:var(--muted);">指導效果：每次訓練專長項目額外 +${bonusPerStat}${levelBonus>0?`（含等級加成+${levelBonus}）`:''}</p><p style="font-size:1.3rem; color:var(--neon-pink); margin-bottom:6px;">👥 指導中（${assignedWrestlers.length}/${MAX_STUDENTS}）：</p>${studentsHtml}<button type="button" class="btn btn-sec" style="width:100%; font-size:1.4rem; padding:10px; ${atLimit?'opacity:0.4;':''}" ${atLimit?'disabled':''} onclick="window.openCoachStudentPicker('${c.id}')">${atLimit?'已達3人上限，請先移除才能新增':'-- 新增指導選手 --'}</button><button class="btn btn-danger" style="width:100%; margin-top:10px;" onclick="window.fireCoach('${c.id}')">解雇教練</button></div>`;
+                let tierColor = { A: '#ffd700', B: '#c0c0c0', C: '#cd7f32' }[c.tier] || '#c0c0c0';
+                let tierHtml = c.tier ? `<span style="display:inline-block; background:${tierColor}; color:#000; font-weight:bold; font-size:1.2rem; padding:2px 10px; border-radius:10px; margin-left:8px;">${c.tier}級</span>` : '';
+                return `<div class="card" style="border-color:var(--neon-pink);"><h3 style="color:var(--neon-pink); font-size:2.2rem; margin-bottom:10px;">${c.name} (我方)${tierHtml}</h3>${levelHtml}${termHtml}<p style="font-size:1.4rem; margin-bottom:8px;">專長指導: <strong style="color:var(--gold);">${c.specialty}</strong></p><p style="font-size:1.3rem; margin-bottom:15px; color:var(--muted);">指導效果：每次訓練專長項目額外 +${bonusPerStat}${levelBonus>0?`（含等級加成+${levelBonus}）`:''}</p><p style="font-size:1.3rem; color:var(--neon-pink); margin-bottom:6px;">👥 指導中（${assignedWrestlers.length}/${MAX_STUDENTS}）：</p>${studentsHtml}<button type="button" class="btn btn-sec" style="width:100%; font-size:1.4rem; padding:10px; ${atLimit?'opacity:0.4;':''}" ${atLimit?'disabled':''} onclick="window.openCoachStudentPicker('${c.id}')">${atLimit?'已達3人上限，請先移除才能新增':'-- 新增指導選手 --'}</button><button class="btn btn-danger" style="width:100%; margin-top:10px;" onclick="window.fireCoach('${c.id}')">解雇教練</button></div>`;
             } else if (!c.hired) {
-                return `<div class="card"><h3 style="color:var(--gold); font-size:2.2rem; margin-bottom:10px;">${c.name}</h3>${levelHtml}<p style="font-size:1.4rem; margin-bottom:8px;">專長指導: <strong style="color:var(--neon-blue);">${c.specialty}</strong></p><p style="font-size:1.3rem; margin-bottom:15px; color:var(--muted);">指導效果：每次訓練專長項目額外 +${bonusPerStat}</p><button class="btn" style="width:100%; font-size:1.6rem;" onclick="window.hireCoach('${c.id}')">聘用 ($${c.cost.toLocaleString()}萬)</button></div>`;
+                let tierColor2 = { A: '#ffd700', B: '#c0c0c0', C: '#cd7f32' }[c.tier] || '#c0c0c0';
+                let tierHtml2 = c.tier ? `<span style="display:inline-block; background:${tierColor2}; color:#000; font-weight:bold; font-size:1.2rem; padding:2px 10px; border-radius:10px; margin-left:8px;">${c.tier}級</span>` : '';
+                return `<div class="card"><h3 style="color:var(--gold); font-size:2.2rem; margin-bottom:10px;">${c.name}${tierHtml2}</h3>${levelHtml}<p style="font-size:1.4rem; margin-bottom:8px;">專長指導: <strong style="color:var(--neon-blue);">${c.specialty}</strong></p><p style="font-size:1.3rem; margin-bottom:15px; color:var(--muted);">指導效果：每次訓練專長項目額外 +${bonusPerStat}</p><button class="btn" style="width:100%; font-size:1.6rem;" onclick="window.hireCoach('${c.id}')">聘用 ($${c.cost.toLocaleString()}萬)</button></div>`;
             } return "";
         }).join('');
         document.getElementById('coach-grid').innerHTML = coachHTML || "<p>暫無教練</p>";
 
-        let cardHtml = f => `<div class="card" style="border-color:${f.isCustom?'var(--gold)':'var(--border)'}; padding:15px; margin-bottom:10px;"><div style="display:flex; justify-content:space-between; align-items:center;"><h3 style="color:${f.league==='East'?'var(--neon-blue)':'var(--neon-pink)'}; font-size:2.2rem; margin:0; display:flex; align-items:center; gap:10px;">${window.renderEmblemHtml(f.emblem, 38)}<span>${f.name}</span></h3><span style="font-size:1.4rem; color:var(--muted);">選手數: ${f.roster.length} ｜ 🌟人氣: ${f.pop||0}</span></div><div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;"><p style="font-size:1.8rem; color:var(--gold); font-weight:bold; margin:0;">${f.record.w}勝 ${f.record.l}敗｜積分：${f.points||0}分</p><button class="btn btn-sec" style="font-size:1.2rem; padding:8px 15px;" onclick="window.showNpcRoster(${f.id})">👥 查看名單</button></div>${(f.streak||0) >= 3 ? `<p style="color:#ff6b6b; font-size:1.3rem; margin-top:6px; font-weight:bold;">🔥連勝中：${f.streak}場</p>` : ''}</div>`;
+        let cardHtml = f => `<div class="card" style="border-color:${f.isCustom?'var(--gold)':'var(--border)'}; padding:15px; margin-bottom:10px;"><div style="display:flex; justify-content:space-between; align-items:center;"><h3 style="color:var(--neon-blue); font-size:2.2rem; margin:0; display:flex; align-items:center; gap:10px;">${window.renderEmblemHtml(f.emblem, 38)}<span>${f.name}</span></h3><span style="font-size:1.4rem; color:var(--muted);">選手數: ${f.roster.length} ｜ 🌟人氣: ${f.pop||0}</span></div><div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;"><p style="font-size:1.8rem; color:var(--gold); font-weight:bold; margin:0;">${f.record.w}勝 ${f.record.l}敗｜積分：${f.points||0}分</p><button class="btn btn-sec" style="font-size:1.2rem; padding:8px 15px;" onclick="window.showNpcRoster(${f.id})">👥 查看名單</button></div>${(f.streak||0) >= 3 ? `<p style="color:#ff6b6b; font-size:1.3rem; margin-top:6px; font-weight:bold;">🔥連勝中：${f.streak}場</p>` : ''}</div>`;
 
         let playerFactionHtml = f => `<div class="card" style="border:2px solid var(--gold); padding:15px; margin-bottom:15px; background:rgba(251,191,36,0.08);"><div style="display:flex; justify-content:space-between; align-items:center;"><h3 style="color:var(--gold); font-size:2.4rem; margin:0; display:flex; align-items:center; gap:10px;">${window.renderEmblemHtml(f.emblem, 42)}<span>👑 ${f.name} <span style="font-size:1.2rem; color:var(--muted);">(我方)</span></span></h3><span style="font-size:1.4rem; color:var(--muted);">選手數: ${f.roster.length} ｜ 🌟人氣: ${f.pop||0}</span></div><div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;"><p style="font-size:1.4rem; color:var(--muted); margin:0;">聯盟排名不計入我方戰績</p><div style="display:flex; gap:8px;"><button class="btn btn-sec" style="font-size:1.2rem; padding:8px 15px;" onclick="window.rerollFactionEmblem(${f.id})">🔄 換徽章</button><button class="btn btn-sec" style="font-size:1.2rem; padding:8px 15px;" onclick="window.openRenameFaction(${f.id})">✏️ 改名</button><button class="btn btn-sec" style="font-size:1.2rem; padding:8px 15px;" onclick="window.showNpcRoster(${f.id})">👥 查看名單</button></div></div></div>`;
 
         let totalTitleEl = document.getElementById('fac-total-title');
-        if(totalTitleEl) totalTitleEl.innerText = `🏢 雙聯盟總覽`;
+        if(totalTitleEl) totalTitleEl.innerText = `🏢 聯盟總覽`;
 
         let searchEl = document.getElementById('fac-search');
         let customOnlyEl = document.getElementById('fac-filter-custom');
@@ -3034,20 +3075,13 @@ document.addEventListener('DOMContentLoaded', () => {
             .filter(f => !searchTerm || f.name.toLowerCase().includes(searchTerm))
             .filter(f => !customOnly || f.isCustom)
             .sort((a,b)=>(b.points||0) - (a.points||0));
-        let eastH = (showPlayerCard && playerFaction.league==='East' ? playerFactionHtml(playerFaction) : '') + sortedFactions.filter(f=>f.league==='East').map(cardHtml).join('');
-        let westH = (showPlayerCard && playerFaction.league==='West' ? playerFactionHtml(playerFaction) : '') + sortedFactions.filter(f=>f.league==='West').map(cardHtml).join('');
-        document.getElementById('fac-list-east').innerHTML = eastH || `<p style="font-size:1.5rem; color:var(--muted);">沒有符合條件的團隊。</p>`;
-        document.getElementById('fac-list-west').innerHTML = westH || `<p style="font-size:1.5rem; color:var(--muted);">沒有符合條件的團隊。</p>`;
+        let allH = (showPlayerCard ? playerFactionHtml(playerFaction) : '') + sortedFactions.map(cardHtml).join('');
+        document.getElementById('fac-list-all').innerHTML = allH || `<p style="font-size:1.5rem; color:var(--muted);">沒有符合條件的團隊。</p>`;
 
         // 聯盟數量統計：一律用未篩選的完整資料計算，不受搜尋關鍵字/自建篩選影響，避免顯示出誤導性的數字
-        let allEastFactions = GS.factions.filter(f => f.league === 'East');
-        let allWestFactions = GS.factions.filter(f => f.league === 'West');
-        let eastPlayerTotal = allEastFactions.reduce((s,f) => s + (f.roster ? f.roster.length : 0), 0);
-        let westPlayerTotal = allWestFactions.reduce((s,f) => s + (f.roster ? f.roster.length : 0), 0);
-        let eastCountEl = document.getElementById('fac-count-east');
-        if(eastCountEl) eastCountEl.innerText = `（共${allEastFactions.length}隊・${eastPlayerTotal}位選手）`;
-        let westCountEl = document.getElementById('fac-count-west');
-        if(westCountEl) westCountEl.innerText = `（共${allWestFactions.length}隊・${westPlayerTotal}位選手）`;
+        let allTeamsTotal = GS.factions.reduce((s,f) => s + (f.roster ? f.roster.length : 0), 0);
+        let allCountEl = document.getElementById('fac-count-all');
+        if(allCountEl) allCountEl.innerText = `（共${GS.factions.length}/16隊・${allTeamsTotal}位選手）`;
         
         let c = document.getElementById('sv-c'); 
         if(c) {
@@ -3303,7 +3337,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('act-content').innerHTML = '';
 
         let doSign = (years, cost) => {
-            if((window.getActiveRosterCount?window.getActiveRosterCount():GS.roster.length) >= 20) { window.closeModal('action-overlay'); window.showSysMsg("招募失敗", "陣容已達20人上限，無法完成簽約！", true); return; }
+            if((window.getActiveRosterCount?window.getActiveRosterCount():GS.roster.length) >= 16) { window.closeModal('action-overlay'); window.showSysMsg("招募失敗", "陣容已達16人上限，無法完成簽約！", true); return; }
             if(cost > 0 && GS.money < cost) { window.closeModal('action-overlay'); window.showSysMsg("招募失敗", "資金不足！", true); return; }
             if(cost > 0) { GS.money -= cost; GS.yearExpense = (GS.yearExpense||0) + cost; }
             let idx2 = GS.fa.findIndex(x => x.id === w.id);
@@ -3331,7 +3365,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 啟動簽約流程：需等待2週，期間判定是否有AI團隊也感興趣；沒有競爭者則2週後自動走一般簽約流程，有競爭者則進入競標
     window.signWrestler = function(id) {
-        if((window.getActiveRosterCount?window.getActiveRosterCount():GS.roster.length) >= 20) return showSysMsg("招募失敗", "陣容已達 20 人上限！", true);
+        if((window.getActiveRosterCount?window.getActiveRosterCount():GS.roster.length) >= 16) return showSysMsg("招募失敗", "陣容已達 16 人上限！", true);
         let w = GS.fa.find(x => x.id === id);
         if(!w) return showSysMsg("錯誤", "找不到該選手，可能已被異動！", true);
         let requiredPop = window.calcFaRequiredPop ? window.calcFaRequiredPop(w) : 0;
@@ -3380,7 +3414,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let affordable = myTeamPop >= requiredPop;
             return `
             <div class="card" style="${affordable ? '' : 'opacity:0.7;'}">
-                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
+                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'" onload="this.style.background='transparent'">
                 <h3 style="color:var(--neon-pink); font-size:2.4rem; margin-bottom:2px;">${w.name.replace('[FA] ','')} <span style="font-size:1.8rem; color:var(--gold); font-weight:900;">${window.wrestlerLevel(w)}</span> <span style="font-size:1.4rem; color:var(--muted);">(${w.age}歲)</span></h3>
                 <div class="stat-row"><span>🌟 人氣: ${w.pop}</span><span>🔮 潛力: ${w.potential||'-'}</span></div>
                 <div class="stat-row"><span>💪 力:${w.str}</span><span>⚡ 速:${w.spd}</span><span>🎯 技:${w.tech}</span></div>
@@ -3412,7 +3446,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showSysMsg("已刪除", `「${w.name.replace('[FA] ','')}」已從自由市場永久移除。`, false);
     };
     window.hireCoach = function(id) {
-        if(GS.coaches.filter(c=>c.hiredBy===0).length >= 10) return showSysMsg("失敗", "教練滿編！", true);
+        if(GS.coaches.filter(c=>c.hiredBy===0).length >= 4) return showSysMsg("失敗", "教練滿編！", true);
         let c = GS.coaches.find(c => c.id === id);
         if(!c) return;
         if(GS.money < c.cost) return showSysMsg("失敗", "資金不足！", true);
@@ -3591,9 +3625,9 @@ function draftCompetitorCount(w) {
             window.addNewsLog(`🔭 球探網路(3級)自動偵查：${luckyOne.name} 的潛力值已提前揭曉！`);
         }
 
-        // 陣容已達20人上限：跳過玩家指名步驟，直接把整批候選分配給AI團隊/自由市場，避免超過上限
-        if((window.getActiveRosterCount ? window.getActiveRosterCount() : GS.roster.length) >= 20) {
-            window.showSysMsg("陣容已滿", "我方陣容已達20人上限，本屆選秀將不指名新秀，候選選手直接分配給各團隊與自由市場。", true);
+        // 陣容已達16人上限：跳過玩家指名步驟，直接把整批候選分配給AI團隊/自由市場，避免超過上限
+        if((window.getActiveRosterCount ? window.getActiveRosterCount() : GS.roster.length) >= 16) {
+            window.showSysMsg("陣容已滿", "我方陣容已達16人上限，本屆選秀將不指名新秀，候選選手直接分配給各團隊與自由市場。", true);
             distributeRemainingDraftPool();
             return;
         }
@@ -4270,7 +4304,7 @@ function draftCompetitorCount(w) {
         return released;
     }
 
-    // 年度季後賽：東西聯盟各取積分前4名晉級，冠軍打跨聯盟總冠軍賽（全程自動模擬，玩家不參戰）
+    // 年度季後賽：全聯盟積分前8名(團隊數不足時降為4名)晉級單淘汰決出年度總冠軍（全程自動模擬，玩家不參戰）
     function runYearEndPlayoffs() {
         let simulateMatch = (f1, f2) => {
             let p1 = factionPower(f1), p2 = factionPower(f2);
@@ -4279,36 +4313,46 @@ function draftCompetitorCount(w) {
         };
         let snap = f => ({ name: f.name, id: f.id });
 
-        let eastTop4 = GS.factions.slice(1).filter(f=>f.league==='East').sort((a,b)=>(b.points||0)-(a.points||0)).slice(0,4);
-        let westTop4 = GS.factions.slice(1).filter(f=>f.league==='West').sort((a,b)=>(b.points||0)-(a.points||0)).slice(0,4);
+        let allAiFactions = GS.factions.slice(1).sort((a,b)=>(b.points||0)-(a.points||0));
+        // 依實際可參賽的AI團隊數量，動態決定賽制規模：8隊以上維持原本8強賽制，不足8隊但有4隊以上則降為4強賽制
+        let bracketSize = allAiFactions.length >= 8 ? 8 : (allAiFactions.length >= 4 ? 4 : 0);
+        let top8 = allAiFactions.slice(0, bracketSize);
 
-        function runConference(top4) {
-            if(top4.length < 4) return null;
-            let semi1Winner = simulateMatch(top4[0], top4[3]);
-            let semi2Winner = simulateMatch(top4[1], top4[2]);
-            let confChampWrestler = simulateMatch(semi1Winner, semi2Winner);
-            return {
-                semis: [
-                    { teamA: snap(top4[0]), teamB: snap(top4[3]), winner: snap(semi1Winner) },
-                    { teamA: snap(top4[1]), teamB: snap(top4[2]), winner: snap(semi2Winner) }
-                ],
-                final: { teamA: snap(semi1Winner), teamB: snap(semi2Winner), winner: snap(confChampWrestler) },
-                championRef: confChampWrestler
-            };
-        }
+        if(bracketSize === 8) {
+            let quarters = [], quarterWinners = [];
+            for(let i=0; i<8; i+=2) {
+                let winner = simulateMatch(top8[i], top8[i+1]);
+                quarters.push({ teamA: snap(top8[i]), teamB: snap(top8[i+1]), winner: snap(winner) });
+                quarterWinners.push(winner);
+            }
+            let semis = [], semiWinners = [];
+            for(let i=0; i<4; i+=2) {
+                let winner = simulateMatch(quarterWinners[i], quarterWinners[i+1]);
+                semis.push({ teamA: snap(quarterWinners[i]), teamB: snap(quarterWinners[i+1]), winner: snap(winner) });
+                semiWinners.push(winner);
+            }
+            let grandWinnerRef = simulateMatch(semiWinners[0], semiWinners[1]);
+            let final = { teamA: snap(semiWinners[0]), teamB: snap(semiWinners[1]), winner: snap(grandWinnerRef) };
 
-        let eastResult = runConference(eastTop4);
-        let westResult = runConference(westTop4);
-
-        if(eastResult && westResult) {
-            let grandWinnerRef = simulateMatch(eastResult.championRef, westResult.championRef);
             GS.money += 200;
-            GS.playoffBracket = {
-                year: GS.year,
-                east: { semis: eastResult.semis, final: eastResult.final },
-                west: { semis: westResult.semis, final: westResult.final },
-                grandFinal: { eastChamp: snap(eastResult.championRef), westChamp: snap(westResult.championRef), winner: snap(grandWinnerRef) }
-            };
+            GS.playoffBracket = { year: GS.year, quarters, semis, final };
+            window.addNewsLog(`🏆 年度總冠軍賽結果：${grandWinnerRef.name} 奪得年度總冠軍！（我方獲得轉播分潤 $200萬）`);
+            window.addHallOfFame(`👑 <strong style="color:var(--gold);">年度聯盟總冠軍</strong>：${grandWinnerRef.name}`);
+            if(window.grantPresidentXp) window.grantPresidentXp(15, "完成一整年度營運");
+            if(window.renderPlayoffBracket) window.renderPlayoffBracket();
+        } else if(bracketSize === 4) {
+            // 團隊數不足8隊：簡化成4強賽制(準決賽2場+決賽1場)，不直接從缺
+            let semis = [], semiWinners = [];
+            for(let i=0; i<4; i+=2) {
+                let winner = simulateMatch(top8[i], top8[i+1]);
+                semis.push({ teamA: snap(top8[i]), teamB: snap(top8[i+1]), winner: snap(winner) });
+                semiWinners.push(winner);
+            }
+            let grandWinnerRef = simulateMatch(semiWinners[0], semiWinners[1]);
+            let final = { teamA: snap(semiWinners[0]), teamB: snap(semiWinners[1]), winner: snap(grandWinnerRef) };
+
+            GS.money += 200;
+            GS.playoffBracket = { year: GS.year, quarters: [], semis, final };
             window.addNewsLog(`🏆 年度總冠軍賽結果：${grandWinnerRef.name} 奪得年度總冠軍！（我方獲得轉播分潤 $200萬）`);
             window.addHallOfFame(`👑 <strong style="color:var(--gold);">年度聯盟總冠軍</strong>：${grandWinnerRef.name}`);
             if(window.grantPresidentXp) window.grantPresidentXp(15, "完成一整年度營運");
@@ -4350,11 +4394,10 @@ function draftCompetitorCount(w) {
             return f.roster.slice().sort((a,b)=>(b.str+b.spd+b.tech+b.end+b.mnt)-(a.str+a.spd+a.tech+a.end+a.mnt))[0];
         }
 
-        // 東西聯盟各自內部配對（修正原本東西聯盟交錯打的bug），並更新積分與連勝
+        // 全聯盟隨機兩兩配對(不再分東西聯盟)，並更新積分與連勝
         // 只有「賽程表比賽」週才會進行AI團隊間的正式例行賽對戰，其餘週次(營運/對抗賽/王座/極限連戰/大賽)AI團隊當週不進行例行賽
         if(justFinishedWeekType === 'schedule') {
-        ['East', 'West'].forEach(leagueName => {
-            let teams = GS.factions.slice(1).filter(f => f.league === leagueName).sort(() => 0.5 - Math.random());
+            let teams = GS.factions.slice(1).sort(() => 0.5 - Math.random());
             for(let i=0; i+1 < teams.length; i+=2) {
                 let f1 = teams[i], f2 = teams[i+1];
                 let p1 = factionPower(f1), p2 = factionPower(f2);
@@ -4379,7 +4422,6 @@ function draftCompetitorCount(w) {
                     if(window.addNewsLog) window.addNewsLog(`🏢 聯盟賽事：${f2.name} 擊敗 ${f1.name}！`);
                 }
             }
-        });
         }
 
         // AI團隊內部對抗賽：每支AI團隊各自進行指定場次的隊內模擬對戰，每場隨機挑兩位不同選手互打，
@@ -4465,13 +4507,13 @@ function draftCompetitorCount(w) {
         // 器材緊急維修保護期每週遞減
         if(GS._equipmentTempFixWeeks > 0) GS._equipmentTempFixWeeks--;
 
-        // 教練市場每4週自動刷新一次：保留已聘用的教練，重新生成20位未聘用候選教練(取代原本的手動花錢刷新機制)
-        if(GS.coachRefreshCounter === undefined) GS.coachRefreshCounter = 4;
+        // 教練市場每8週自動刷新一次：保留已聘用的教練，重新生成10位未聘用候選教練(取代原本的手動花錢刷新機制)
+        if(GS.coachRefreshCounter === undefined) GS.coachRefreshCounter = 8;
         GS.coachRefreshCounter--;
         if(GS.coachRefreshCounter <= 0) {
             GS.coaches = GS.coaches.filter(c => c.hired);
-            for(let i=0; i<20; i++) GS.coaches.push(genCoach());
-            GS.coachRefreshCounter = 4;
+            for(let i=0; i<10; i++) GS.coaches.push(genCoach());
+            GS.coachRefreshCounter = 8;
             window.addNewsLog(`🔄 教練市場已自動更新，新一批候選教練已上市！`);
         }
 
@@ -6643,7 +6685,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             if(document.getElementById('c-pool').value === 'roster') {
-                if((window.getActiveRosterCount?window.getActiveRosterCount():window.GS.roster.length) >= 20) return window.showSysMsg("失敗", "我方陣容已滿 20 人！", true);
+                if((window.getActiveRosterCount?window.getActiveRosterCount():window.GS.roster.length) >= 16) return window.showSysMsg("失敗", "我方陣容已滿 16 人！", true);
                 window.GS.roster.push(w);
             } else {
                 w.name = "[FA] " + w.name;
@@ -6735,7 +6777,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:15px; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px;">
                     <label style="display:flex; align-items:center; gap:6px; font-size:1.3rem; cursor:pointer;"><input type="checkbox" id="g-select-all" style="width:18px; height:18px;"> 全選</label>
                     <span style="font-size:1.3rem; color:var(--muted);">共 <strong id="g-count-text" style="color:var(--gold);">0</strong> 張，已選取 <strong id="g-selected-count-text" style="color:var(--neon-pink);">0</strong> 張</span>
-                    <button type="button" class="btn btn-danger" id="btn-remove-selected-gallery" style="width:auto; margin-left:auto; padding:8px 16px; font-size:1.2rem;">🗑️ 刪除已選取</button>
+                    <button type="button" class="btn" style="width:auto; margin-left:auto; padding:8px 16px; font-size:1.2rem; background:rgba(80,40,140,0.92);" id="btn-batch-remove-white-bg">✂️ 批次去背</button>
+                    <button type="button" class="btn btn-danger" id="btn-remove-selected-gallery" style="width:auto; padding:8px 16px; font-size:1.2rem;">🗑️ 刪除已選取</button>
                     <button type="button" class="btn btn-danger" id="btn-clear-gallery" style="width:auto; padding:8px 16px; font-size:1.2rem;">🗑️ 清空整個圖庫</button>
                 </div>
                 <div class="grid" id="gallery-grid" style="grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:15px;">
@@ -6793,6 +6836,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnRemoveSelectedGallery) btnRemoveSelectedGallery.addEventListener('click', () => window.removeSelectedGalleryImages());
     let btnClearGallery = document.getElementById('btn-clear-gallery');
     if(btnClearGallery) btnClearGallery.addEventListener('click', () => window.clearGallery());
+    let btnBatchRemoveWhiteBg = document.getElementById('btn-batch-remove-white-bg');
+    if(btnBatchRemoveWhiteBg) btnBatchRemoveWhiteBg.addEventListener('click', () => window.batchRemoveWhiteBgFromGallery());
 
     // 渲染圖庫畫面的函數
     window.renderGallery = function() {
@@ -6822,9 +6867,95 @@ document.addEventListener('DOMContentLoaded', () => {
                      title="點擊以使用此圖片">
                 <button style="position:absolute; top:5px; right:5px; background:rgba(214, 40, 40, 0.9); color:white; border:2px solid #fff; border-radius:50%; width:28px; height:28px; font-weight:bold; cursor:pointer; font-size:1.2rem;" 
                         onclick="window.removeGallery(${i})" title="刪除此圖片">X</button>
+                <button style="position:absolute; bottom:5px; right:5px; background:rgba(80,40,140,0.92); color:white; border:2px solid #fff; border-radius:6px; padding:3px 8px; font-weight:bold; cursor:pointer; font-size:1.1rem;"
+                        onclick="window.removeWhiteBgFromGallery(${i})" title="嘗試把白色背景去除成透明">✂️ 去背</button>
             </div>
         `).join('');
         window.updateGallerySelectedCount();
+    };
+
+    // 白色背景去透明處理：用Canvas逐像素比對，越接近純白的像素透明度越低(邊緣做羽化避免鋸齒感)，處理完成後回傳PNG格式的data URL
+    // 重要限制：許多外部圖床不會開放跨網域讀取像素資料(CORS)，瀏覽器基於安全性會擋下讀取、讓canvas變成「受污染」狀態而報錯，
+    // 這種情況下無法繞過，只能換一張圖片來源網址再試(通常圖床本身有沒有加上正確的CORS標頭，是隨機、不受這裡控制的)
+    window.removeWhiteBackgroundImage = function(imgUrl) {
+        return new Promise((resolve, reject) => {
+            let img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = function() {
+                try {
+                    let canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    let ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height); // 若圖片來源跨網域且未開放CORS，這行會拋出SecurityError
+                    let data = imageData.data;
+                    // 門檻：RGB三色都高於225才視為「接近白色」，並依離225~255這段範圍內的位置線性計算透明度，讓邊緣有自然的漸層而不是死板的硬邊
+                    let threshold = 225;
+                    for(let p = 0; p < data.length; p += 4) {
+                        let r = data[p], g = data[p+1], b = data[p+2];
+                        let minChannel = Math.min(r, g, b);
+                        if(minChannel >= threshold) {
+                            let whiteness = (minChannel - threshold) / (255 - threshold); // 0~1，越接近1代表越白
+                            data[p+3] = Math.round(data[p+3] * (1 - whiteness));
+                        }
+                    }
+                    ctx.putImageData(imageData, 0, 0);
+                    resolve(canvas.toDataURL('image/png'));
+                } catch(e) {
+                    reject(e);
+                }
+            };
+            img.onerror = function() { reject(new Error('圖片載入失敗')); };
+            img.src = imgUrl;
+        });
+    };
+
+    window.removeWhiteBgFromGallery = function(idx) {
+        let url = window.GS.gallery[idx];
+        if(!url) return;
+        window.showSysMsg("處理中", "正在嘗試去除白色背景，請稍候...", false);
+        window.removeWhiteBackgroundImage(url).then(dataUrl => {
+            window.GS.gallery[idx] = dataUrl;
+            window.renderGallery();
+            if(window.saveGame) window.saveGame();
+            window.showSysMsg("去背完成", "已將白色背景轉為透明！新版本已存入圖庫（原本的網址已被取代，且無法復原）。", false);
+        }).catch(err => {
+            window.showSysMsg("去背失敗", "這張圖片的來源網站不允許跨網域讀取像素資料（CORS 限制），瀏覽器基於安全性擋下了處理，這是無法繞過的限制。可以試試看其他圖床來源的圖片網址。", true);
+        });
+    };
+
+    // 批次去背：依序(不是同時)處理每一張已選取的圖片，避免瀏覽器同時開太多canvas運算造成卡頓；
+    // 逐張更新按鈕文字顯示目前進度，全部處理完後統計成功/失敗張數，失敗通常是來源網站的CORS限制(無法繞過)
+    window.batchRemoveWhiteBgFromGallery = async function() {
+        let chks = document.querySelectorAll('.g-select-chk');
+        let selectedIdx = Array.from(chks).filter(c => c.checked).map(c => parseInt(c.getAttribute('data-idx')));
+        if(selectedIdx.length === 0) return window.showSysMsg("尚未選取", "請先勾選要去背的圖片！", true);
+        if(!confirm(`確定要對這 ${selectedIdx.length} 張圖片批次去背嗎？部分圖片可能因為來源網站的跨網域限制（CORS）而處理失敗，這是無法繞過的瀏覽器安全限制，處理完成後會告知成功與失敗的張數。`)) return;
+
+        let btn = document.getElementById('btn-batch-remove-white-bg');
+        let originalText = btn ? btn.innerText : '';
+        if(btn) btn.disabled = true;
+        let successCount = 0, failCount = 0;
+        for(let i = 0; i < selectedIdx.length; i++) {
+            let idx = selectedIdx[i];
+            if(btn) btn.innerText = `處理中 (${i+1}/${selectedIdx.length})...`;
+            let url = window.GS.gallery[idx];
+            if(!url) { failCount++; continue; }
+            try {
+                let dataUrl = await window.removeWhiteBackgroundImage(url);
+                window.GS.gallery[idx] = dataUrl;
+                successCount++;
+            } catch(e) {
+                failCount++;
+            }
+        }
+        if(btn) { btn.innerText = originalText; btn.disabled = false; }
+        window.renderGallery();
+        if(window.saveGame) window.saveGame();
+        let summary = `批次去背完成！成功 ${successCount} 張，失敗 ${failCount} 張。`;
+        if(failCount > 0) summary += `失敗的圖片通常是因為來源網站不允許跨網域讀取像素資料（CORS 限制），可以試試看更換圖床來源。`;
+        window.showSysMsg("批次去背完成", summary, successCount === 0 && failCount > 0);
     };
 
     // 更新「已選取N張」的計數顯示，並同步全選checkbox的勾選狀態
@@ -7123,7 +7254,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let grid = document.getElementById('npc-r-grid');
         grid.innerHTML = f.roster.map(w => `
             <div class="card">
-                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
+                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'" onload="this.style.background='transparent'">
                 <h4 style="color:var(--gold); font-size:1.6rem; margin-bottom:2px;">${w.name} <span style="font-size:1.3rem; color:var(--neon-blue); font-weight:900;">${window.wrestlerLevel(w)}</span></h4>
                 <p style="font-size:1.1rem; color:var(--muted); margin-bottom:8px;">${w.age}歲</p>
                 <div class="stat-row" style="font-size:1.1rem;"><span>💪 力:${w.str}</span><span>⚡ 速:${w.spd}</span></div>
@@ -7239,7 +7370,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let plan = window.POACH_TIERS[tier];
         if(!plan) return;
         let cost = Math.round(window.calcPoachBaseCost(w) * plan.costMult);
-        if((window.getActiveRosterCount?window.getActiveRosterCount():GS.roster.length) >= 20) return window.showSysMsg("陣容已滿", "我方陣容已達20人上限，無法再挖角！", true);
+        if((window.getActiveRosterCount?window.getActiveRosterCount():GS.roster.length) >= 16) return window.showSysMsg("陣容已滿", "我方陣容已達16人上限，無法再挖角！", true);
         if(GS.money < cost) return window.showSysMsg("資金不足", `${plan.label}需要 $${cost.toLocaleString()}萬，目前資金不足！`, true);
         if(!confirm(`對 ${w.name} 進行「${plan.label}」？花費 $${cost.toLocaleString()}萬（不論成敗都會扣款）。`)) return;
 
@@ -7311,20 +7442,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 建立新團隊
     window.openCreateFactionForm = function() {
-        let customCount = window.GS.factions.filter(f => f.isCustom).length;
-        if(customCount >= 32) {
-            return window.showSysMsg("已達上限", "自建團隊已達32隊上限，請先解散一些自建團隊再新增！", true);
+        if(window.GS.factions.length >= 16) {
+            return window.showSysMsg("已達上限", "全聯盟團隊數已達16組上限，請先解散一些團隊再新增！", true);
         }
         document.getElementById('act-title').innerText = "🏗️ 建立新團隊";
-        document.getElementById('act-desc').innerText = `為新團隊命名並選擇加入的聯盟（初始人氣固定為10，目前已自建 ${customCount}/32 隊）。`;
+        document.getElementById('act-desc').innerText = `為新團隊命名（初始人氣固定為10，目前全聯盟共 ${window.GS.factions.length}/16 組團體）。`;
         document.getElementById('act-content').innerHTML = `
             <div style="margin-bottom:15px;"><label style="display:block; margin-bottom:6px; font-size:1.4rem;">團隊名稱</label><div style="display:flex; gap:8px;"><input type="text" id="nf-name" style="flex:1; padding:12px; font-size:1.6rem;" placeholder="例如：紅蓮乙女"><button type="button" class="btn btn-sec" id="btn-random-facname" style="flex-shrink:0; padding:0 16px; font-size:1.3rem;">🎲 隨機</button></div></div>
-            <div><label style="display:block; margin-bottom:6px; font-size:1.4rem;">加入聯盟</label>
-                <select id="nf-league" style="width:100%; padding:12px; font-size:1.6rem;">
-                    <option value="East">🔵 東聯盟</option>
-                    <option value="West">🔴 西聯盟</option>
-                </select>
-            </div>
         `;
         let btnRandomFacName = document.getElementById('btn-random-facname');
         if(btnRandomFacName) btnRandomFacName.onclick = () => { document.getElementById('nf-name').value = window.generateRandomFactionName(); };
@@ -7334,7 +7458,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let name = document.getElementById('nf-name').value.trim();
             if(!name) return alert("請輸入團隊名稱！");
             let pop = 10; // 團隊人氣一律固定10，不可自訂
-            let league = document.getElementById('nf-league').value;
             let newId = Math.max(...window.GS.factions.map(f=>f.id)) + 1;
 
             // 隨機生成10名選手，頭像優先從圖庫不重複帶入：先排除所有現存選手(玩家陣容+全部AI團隊+自由市場)已經在用的圖片，
@@ -7355,7 +7478,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 newRoster.push(w);
             }
 
-            window.GS.factions.push({ id: newId, name, league, pop, roster: newRoster, record: {w:0,l:0}, points: 0, streak: 0, isCustom: true, emblem: window.pickUniqueEmblem(), facilities: {training:0, medical:0, scouting:0} });
+            window.GS.factions.push({ id: newId, name, pop, roster: newRoster, record: {w:0,l:0}, points: 0, streak: 0, isCustom: true, emblem: window.pickUniqueEmblem(), facilities: {training:0, medical:0, scouting:0} });
             window.closeModal('action-overlay');
             window.updateUI();
             window.saveGame();
@@ -7445,26 +7568,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 五年一度世界冠軍賽：國內選拔階段。東西聯盟各自蒐集符合資格的選手(等級90+，每團體最多派2位，取戰力最強的)，重用既有樹狀圖基礎設施(把單一選手包裝成"只有1人的隊伍")
     window.startWorldChampionshipQualifier = function() {
-        function collectQualifiers(league) {
-            let entries = [];
-            GS.factions.filter(f => f.league === league).forEach(f => {
-                let eligible = (f.roster||[]).filter(w => !((w.injuryWeeks||0)>0) && window.wrestlerLevel(w) >= 90);
-                eligible.sort((a,b) => (b.str+b.spd+b.tech+b.end+b.mnt) - (a.str+a.spd+a.tech+a.end+a.mnt));
-                eligible.slice(0, 2).forEach(w => entries.push({ facId: f.id, facName: f.name, name: `${w.name}（${f.name}）`, wrestlers: [w] }));
-            });
-            return entries;
-        }
-        let eastEntries = collectQualifiers('East');
-        let westEntries = collectQualifiers('West');
-        if(eastEntries.length < 2 || westEntries.length < 2) return false; // 參賽人數不足(極端邊界保護，理論上16隊裡幾乎不會發生)
+        let entries = [];
+        GS.factions.forEach(f => {
+            let eligible = (f.roster||[]).filter(w => !((w.injuryWeeks||0)>0) && window.wrestlerLevel(w) >= 90);
+            eligible.sort((a,b) => (b.str+b.spd+b.tech+b.end+b.mnt) - (a.str+a.spd+a.tech+a.end+a.mnt));
+            eligible.slice(0, 2).forEach(w => entries.push({ facId: f.id, facName: f.name, name: `${w.name}（${f.name}）`, wrestlers: [w] }));
+        });
+        if(entries.length < 4) return false; // 參賽人數不足(邊界保護，改成單一聯盟後至少要4人才能打一輪合理的瑞士制)
 
         GS.worldChampionship = {
             active: true, year: GS.year, phase: 'domestic',
-            east: buildLeagueBracket(eastEntries),
-            west: buildLeagueBracket(westEntries),
+            league: buildLeagueSwiss(entries),
             japanReps: [], worldStage: null,
         };
-        window.addHallOfFame(`🌍 <strong style="color:var(--gold);">世界冠軍賽</strong>國內選拔開幕！東聯盟${eastEntries.length}位、西聯盟${westEntries.length}位好手齊聚一堂，誓奪日本代表資格！`);
+        window.addHallOfFame(`🌍 <strong style="color:var(--gold);">世界冠軍賽</strong>國內選拔開幕！全聯盟${entries.length}位好手齊聚一堂，以瑞士制車輪戰爭奪日本代表資格！`);
         return true;
     };
 
@@ -7509,7 +7626,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 entrants.push({ id: w.id, facId: -1, facName: nat, name: `${w.name}（${window.WC_COUNTRY_LABELS ? window.WC_COUNTRY_LABELS[nat] : nat}）`, nationality: nat, wrestlers: [w], wins: 0, opponentIds: [] });
             }
         });
-        wc.worldStage = { entrants, rounds: [pairSwissRound(entrants)], currentRound: 0, champion: null, totalRounds: 4 };
+        wc.worldStage = { entrants, rounds: [pairSwissRound(entrants)], currentRound: 0, champion: null, totalRounds: 4, phase: 'swiss', playoffRounds: [] };
         window.addHallOfFame(`🌍 <strong style="color:var(--gold);">世界冠軍賽</strong>正式開幕！16位好手齊聚一堂，瑞士制車輪戰正式展開！`);
     };
 
@@ -7517,6 +7634,29 @@ document.addEventListener('DOMContentLoaded', () => {
         let wc = GS.worldChampionship;
         let ws = wc && wc.worldStage;
         if(!ws) return;
+
+        if(ws.phase === 'playoff') {
+            let ri = ws.playoffRounds.findIndex(r => r.length > 0 && r.some(m => m.winner === null));
+            if(ri === -1) return;
+            let match = ws.playoffRounds[ri].find(m => m.winner === null);
+            let facAIsPlayer = match.a.facId === 0, facBIsPlayer = match.b.facId === 0;
+            if(facAIsPlayer || facBIsPlayer) {
+                window.MatchEngine.startCustom(match.a.wrestlers, match.b.wrestlers, (winnerSide) => {
+                    match.winner = (winnerSide === 1) ? match.a : match.b;
+                    window.checkWorldPlayoffRoundComplete(ws, ri);
+                    window.renderWorldChampionship();
+                    document.getElementById('world-championship-overlay').style.display = 'flex';
+                });
+            } else {
+                let scoreA = match.a.wrestlers.reduce((s,w)=>s+w.str+w.spd+w.tech, 0) + RB(30);
+                let scoreB = match.b.wrestlers.reduce((s,w)=>s+w.str+w.spd+w.tech, 0) + RB(30);
+                match.winner = (scoreA >= scoreB) ? match.a : match.b;
+                window.checkWorldPlayoffRoundComplete(ws, ri);
+                window.renderWorldChampionship();
+            }
+            return;
+        }
+
         let currentRoundMatches = ws.rounds[ws.currentRound];
         let match = currentRoundMatches.find(m => m.winner === null);
         if(match) {
@@ -7546,9 +7686,31 @@ document.addEventListener('DOMContentLoaded', () => {
             ws.rounds.push(pairSwissRound(ws.entrants));
             window.renderWorldChampionship();
         } else {
+            // 瑞士制4輪結束，取戰績前4名晉級單淘汰賽，決定最終世界冠軍(增加高潮，不再直接以戰績最高為冠軍)
             let sorted = ws.entrants.slice().sort((a,b) => b.wins - a.wins);
-            ws.champion = sorted[0];
+            let playoffEntrants = sorted.slice(0, 4);
+            ws.phase = 'playoff';
+            ws.playoffRounds = [[
+                { a: playoffEntrants[0], b: playoffEntrants[3], winner: null },
+                { a: playoffEntrants[1], b: playoffEntrants[2], winner: null }
+            ]];
+            window.addNewsLog(`🌍 世界冠軍賽瑞士制4輪結束！前4強晉級單淘汰賽，準備爭奪世界冠軍寶座！`);
+            window.renderWorldChampionship();
+        }
+    };
+
+    window.checkWorldPlayoffRoundComplete = function(ws, ri) {
+        let round = ws.playoffRounds[ri];
+        if(!round.every(m => m.winner !== null)) return;
+        if(round.length === 1) {
+            ws.champion = round[0].winner;
             window.finishWorldChampionship();
+        } else {
+            let nextRound = [];
+            for(let i = 0; i < round.length; i += 2) {
+                nextRound.push({ a: round[i].winner, b: round[i + 1].winner, winner: null });
+            }
+            ws.playoffRounds[ri + 1] = nextRound;
         }
     };
 
@@ -7588,33 +7750,17 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-    // 國內選拔賽推進：逐場結算東/西聯盟的樹狀圖比賽，該聯盟優勝者確定後記入日本代表，兩聯盟都選出代表後自動開啟世界大賽正式階段
-    window.advanceDomesticQualifier = function(league) {
+    // 國內選拔賽推進：全聯盟瑞士制車輪戰，打完固定輪數後取排名前2名記入日本代表，接著自動開啟世界大賽正式階段
+    window.advanceDomesticQualifier = function() {
         let wc = GS.worldChampionship;
         if(!wc) return;
-        let bracket = league === 'East' ? wc.east : wc.west;
-        for(let ri = 0; ri < bracket.rounds.length; ri++) {
-            if(bracket.rounds[ri].length === 0) continue;
-            let result = checkBracketRoundComplete(bracket, ri);
-            if(result === null) {
-                advanceOneMatch(bracket, ri, () => window.renderWorldChampionship(), { renderFn: window.renderWorldChampionship, overlayId: 'world-championship-overlay' });
-                return;
-            }
-            if(result.done) {
-                let championEntry = bracket.teams[result.championIdx];
-                bracket.champion = championEntry;
-                bracket.runnerUp = result.runnerUpIdx !== null ? bracket.teams[result.runnerUpIdx] : null;
-                if(!wc.japanReps.some(r => r.wrestlers[0].id === championEntry.wrestlers[0].id)) {
-                    wc.japanReps.push(championEntry);
-                    window.addHallOfFame(`🌍 <strong style="color:var(--gold);">${league === 'East' ? '東' : '西'}聯盟選拔賽</strong>優勝：${championEntry.wrestlers[0].name}（${championEntry.facName}），確定成為日本代表之一！`);
-                }
-                if(wc.japanReps.length >= 2 && wc.phase === 'domestic') {
-                    window.startWorldStage();
-                }
-                window.renderWorldChampionship();
-                return;
-            }
-        }
+        let bracket = wc.league;
+        let handled = advanceLeagueSwissMatch(bracket, () => {
+            wc.japanReps = [bracket.champion, bracket.runnerUp];
+            window.addHallOfFame(`🌍 <strong style="color:var(--gold);">國內選拔賽</strong>瑞士制車輪戰結束，日本代表確定：${bracket.champion.wrestlers[0].name}（${bracket.champion.facName}）、${bracket.runnerUp.wrestlers[0].name}（${bracket.runnerUp.facName}）！`);
+            window.startWorldStage();
+        }, () => { window.renderWorldChampionship(); document.getElementById('world-championship-overlay').style.display = 'flex'; });
+        if(handled) window.renderWorldChampionship();
     };
 
     function buildLeagueBracket(teams) {
@@ -7625,6 +7771,58 @@ document.addEventListener('DOMContentLoaded', () => {
             round1.push({ a: i, b: (i+1 < shuffled.length ? i+1 : null), winner: (i+1 < shuffled.length ? null : i) });
         }
         return { teams: shuffled, rounds: [round1, []] };
+    }
+
+    // 通用瑞士制聯盟預選賽建構：取代原本buildLeagueBracket的單淘汰邏輯，打固定輪數瑞士制，結束後取前2名代表(champion/runnerUp)，
+    // 供四年一度大決戰、世界冠軍賽國內選拔共用；後續的4強交叉賽仍是單淘汰(用既有的checkBracketRoundComplete)，正是「瑞士制後前幾名再打淘汰賽」的淘汰賽部分
+    function buildLeagueSwiss(teams) {
+        teams.forEach(t => { t.wins = 0; t.opponentIndices = []; });
+        let shuffled = teams.slice().sort(() => 0.5 - Math.random());
+        let totalSwissRounds = Math.max(3, Math.ceil(Math.log2(shuffled.length)));
+        let standings = shuffled.map((_,i) => i);
+        return {
+            teams: shuffled, phase: 'swiss',
+            swissRounds: [window.pairSwissRoundByIndex(shuffled, standings)],
+            currentSwissRound: 0, totalSwissRounds,
+            champion: null, runnerUp: null,
+        };
+    }
+
+    // 瑞士制某一輪是否已全部打完：若還沒打完固定輪數，配對下一輪；若已打完，依總勝場數排名取前2名記為champion/runnerUp
+    // 回傳true代表整個瑞士制階段已結束(前2名已確定)，false代表還在進行中
+    function checkLeagueSwissComplete(bracket) {
+        let currentRoundMatches = bracket.swissRounds[bracket.currentSwissRound];
+        if(!currentRoundMatches.every(m => m.winner !== null)) return false;
+        if(bracket.currentSwissRound + 1 < bracket.totalSwissRounds) {
+            bracket.currentSwissRound++;
+            let standings = bracket.teams.map((_,i) => i);
+            bracket.swissRounds.push(window.pairSwissRoundByIndex(bracket.teams, standings));
+            return false;
+        } else {
+            let ranked = bracket.teams.map((_,i)=>i).sort((a,b) => (bracket.teams[b].wins||0) - (bracket.teams[a].wins||0));
+            bracket.champion = bracket.teams[ranked[0]];
+            bracket.runnerUp = bracket.teams[ranked[1]];
+            return true;
+        }
+    }
+
+    // 推進瑞士制聯盟預選賽的一場比賽：找出本輪還沒打的場次並執行，打完後檢查是否要進下一輪或結束瑞士制。
+    // 回傳true代表這次呼叫確實處理了一場比賽(需要重新渲染)，false代表這個聯盟目前沒有待打的比賽
+    function advanceLeagueSwissMatch(bracket, onSwissComplete, onRenderNeeded) {
+        if(bracket.champion) return false;
+        let currentMatches = bracket.swissRounds[bracket.currentSwissRound];
+        let match = currentMatches.find(m => m.winner === null);
+        if(!match) return false;
+        let teamA = bracket.teams[match.a], teamB = bracket.teams[match.b];
+        runBracketMatch(match, teamA, teamB, (winningIsA) => {
+            match.winner = winningIsA ? match.a : match.b;
+            bracket.teams[match.a].opponentIndices.push(match.b);
+            bracket.teams[match.b].opponentIndices.push(match.a);
+            bracket.teams[match.winner].wins = (bracket.teams[match.winner].wins||0) + 1;
+            let done = checkLeagueSwissComplete(bracket);
+            if(done && onSwissComplete) onSwissComplete();
+        }, onRenderNeeded);
+        return true;
     }
 
     // 生存大逃殺(Battle Royal)：每年仲夏例行活動賽，全聯盟每個團體各派一位選手參賽、加權隨機輪次淘汰(戰力越低越容易被淘汰，但保留隨機性)
@@ -7885,39 +8083,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         let bestOf = arr => arr.slice().sort((a,b) => (b.str+b.spd+b.tech+b.end+b.mnt) - (a.str+a.spd+a.tech+a.end+a.mnt));
         let myFaction = window.GS.factions.find(f => f.id === 0);
-        let myLeague = myFaction ? myFaction.league : 'East';
         let myTeamEntry = { facId: 0, name: myFaction ? myFaction.name : '玩家團隊', wrestlers: bestOf(healthyRoster).slice(0,1) };
 
-        function pickLeagueTeams(league) {
-            let pool = window.GS.factions.slice(1).filter(f => f.league === league && f.roster.length > 0);
-            let sorted = pool.sort((a,b) => (b.points||0) - (a.points||0));
-            let entries = sorted.slice(0, 7).map(f => ({ facId: f.id, name: f.name, wrestlers: bestOf(f.roster).slice(0,1) }));
-            if(league === myLeague) entries.unshift(myTeamEntry);
-            // 不足8隊時，用其餘同聯盟團隊輪空補滿（極端邊界保護）
-            while(entries.length < 8) {
-                let extra = pool.find(f => !entries.some(e => e.facId === f.id) && f.roster.length > 0);
-                if(!extra) break;
-                entries.push({ facId: extra.id, name: extra.name, wrestlers: bestOf(extra.roster).slice(0,1) });
-            }
-            return entries.slice(0, 8);
-        }
+        let aiPool = window.GS.factions.slice(1).filter(f => f.roster.length > 0).sort((a,b) => (b.points||0) - (a.points||0));
+        let entries = [myTeamEntry].concat(aiPool.slice(0, 15).map(f => ({ facId: f.id, name: f.name, wrestlers: bestOf(f.roster).slice(0,1) })));
 
-        let eastTeams = pickLeagueTeams('East');
-        let westTeams = pickLeagueTeams('West');
-        if(eastTeams.length < 4 || westTeams.length < 4) {
-            window.showSysMsg("無法開賽", "東西聯盟可參賽的團隊數量不足，暫時無法組成完整大決戰賽程！", true);
+        if(entries.length < 8) {
+            window.showSysMsg("無法開賽", "全聯盟可參賽的團隊數量不足，暫時無法組成完整大決戰賽程！", true);
             return false;
         }
 
         window.GS.grandFinale = {
             active: true, year: GS.year, champion: null,
-            east: buildLeagueBracket(eastTeams),
-            west: buildLeagueBracket(westTeams),
+            league: buildLeagueSwiss(entries),
             finalFour: null,
         };
-        window.addHallOfFame(`⚡ <strong style="color:var(--gold);">四年一度大決戰</strong>開幕！東西聯盟各自派出8隊精銳，誓奪究極王者之座！`);
+        window.addHallOfFame(`⚡ <strong style="color:var(--gold);">四年一度大決戰</strong>開幕！全聯盟${entries.length}隊精銳齊聚一堂，先以瑞士制車輪戰決出前4強，再交叉爭奪究極王者之座！`);
         return true;
     };
+
+    // 4強交叉配對：從瑞士制排名取前4名，第1名vs第4名、第2名vs第3名，勝者晉級總決賽
+    function buildFinalFourFromSwiss(bracket) {
+        let ranked = bracket.teams.map((_,i)=>i).sort((a,b) => (bracket.teams[b].wins||0) - (bracket.teams[a].wins||0));
+        let top4 = ranked.slice(0,4).map(i => bracket.teams[i]);
+        let round1 = [
+            { a: 0, b: 3, winner: null },
+            { a: 1, b: 2, winner: null },
+        ];
+        return { teams: top4, rounds: [round1, []], champion: null };
+    }
 
     // 通用版賽事推進判斷：可傳入任何{teams,rounds}結構的bracket(東聯盟/西聯盟/4強皆適用)，不限定GS.tournament
     // 回傳 {done:false} 代表這輪打完、已生成下一輪；回傳 {done:true, championIdx, runnerUpIdx} 代表這個bracket已經產生冠亞軍
@@ -8008,11 +8202,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.GS.achievements.push({ id: 'grand_finale_champion', year: GS.year, month: GS.month, week: GS.week });
                 }
             }
-            window.addHallOfFame(`⚡ <strong style="color:var(--gold); font-size:1.3em;">四年一度大決戰・究極王者</strong>：${gf.champion.name}${gf.champion.facId===0?'（我方）':''}！東西聯盟精銳盡出，最終問鼎的唯一王座！`);
+            window.addHallOfFame(`⚡ <strong style="color:var(--gold); font-size:1.3em;">四年一度大決戰・究極王者</strong>：${gf.champion.name}${gf.champion.facId===0?'（我方）':''}！全聯盟精銳盡出，最終問鼎的唯一王座！`);
             window.closeModal('grand-finale-overlay');
             window.updateUI();
             window.saveGame();
-            window.showBigEvent('⚡ 四年一度大決戰', '👑 究極王者誕生！', `${gf.champion.name}${gf.champion.facId===0?'（我方）':''}擊敗東西聯盟所有精銳，成為究極王者！獲得冠軍分紅 $${GRAND_FINALE_PRIZE.toLocaleString()}萬，團隊人氣+15！`, gf.champion.wrestlers && gf.champion.wrestlers[0] ? gf.champion.wrestlers[0].img : null);
+            window.showBigEvent('⚡ 四年一度大決戰', '👑 究極王者誕生！', `${gf.champion.name}${gf.champion.facId===0?'（我方）':''}擊敗全聯盟所有精銳，成為究極王者！獲得冠軍分紅 $${GRAND_FINALE_PRIZE.toLocaleString()}萬，團隊人氣+15！`, gf.champion.wrestlers && gf.champion.wrestlers[0] ? gf.champion.wrestlers[0].img : null);
             return;
         }
 
@@ -8033,58 +8227,49 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 階段一：東西聯盟各自賽事進行中
-        for(let side of ['east', 'west']) {
-            let bracket = gf[side];
-            if(bracket.champion) continue;
-            let ri = bracket.rounds.findIndex(r => r.length > 0 && r.some(m => m.winner === null));
-            if(ri === -1) continue;
-            let handled = advanceOneMatch(bracket, ri, () => {
-                let result = checkBracketRoundComplete(bracket, ri);
-                if(result && result.done) {
-                    bracket.champion = bracket.teams[result.championIdx];
-                    bracket.runnerUp = bracket.teams[result.runnerUpIdx];
-                    window.addHallOfFame(`⚡ 大決戰${side==='east'?'東':'西'}聯盟代表出爐：冠軍 ${bracket.champion.name}、亞軍 ${bracket.runnerUp.name}，兩隊將晉級4強交叉賽！`);
-                }
-            }, { renderFn: window.renderGrandFinale, overlayId: 'grand-finale-overlay' });
-            if(handled) { window.renderGrandFinale(); return; }
-        }
-
-        // 東西聯盟都已決出冠亞軍，組成4強交叉賽
-        if(gf.east.champion && gf.west.champion && !gf.finalFour) {
-            gf.finalFour = buildFinalFour(gf.east, gf.west);
-            window.addNewsLog(`⚡ 東西聯盟預選賽結束！4強交叉賽即將展開：東聯盟冠軍 ${gf.east.champion.name} vs 西聯盟亞軍 ${gf.west.runnerUp.name}；西聯盟冠軍 ${gf.west.champion.name} vs 東聯盟亞軍 ${gf.east.runnerUp.name}！`);
-            window.renderGrandFinale();
-        }
+        // 階段一：全聯盟瑞士制預選賽進行中
+        let bracket = gf.league;
+        let handled = advanceLeagueSwissMatch(bracket, () => {
+            let ff = buildFinalFourFromSwiss(bracket);
+            gf.finalFour = ff;
+            window.addHallOfFame(`⚡ 大決戰瑞士制車輪戰結束！前4強晉級交叉賽：${ff.teams.map(t=>t.name).join('、')}！`);
+            window.addNewsLog(`⚡ 4強交叉賽即將展開：${ff.teams[0].name} vs ${ff.teams[3].name}；${ff.teams[1].name} vs ${ff.teams[2].name}！`);
+        }, () => { window.renderGrandFinale(); document.getElementById('grand-finale-overlay').style.display = 'flex'; });
+        if(handled) { window.renderGrandFinale(); return; }
     };
 
     // 渲染單一聯盟賽事的晉級路徑(供東/西聯盟共用)
+    // 渲染瑞士制聯盟預選賽畫面：戰績排行(前5名) + 本輪對戰配對，供大決戰東西聯盟跟世界冠軍賽國內選拔共用
     function renderLeagueBracketHtml(bracket, sideLabel, sideColor) {
         if(!bracket) return '';
-        // 依參賽人數動態計算總輪數，從最後一輪往前反推正確名稱(冠軍戰/準決賽/八強戰)，
-        // 而非寫死正向索引對應——因為大決戰固定8人3輪沒問題，但世界冠軍賽參賽人數會浮動(最多16人4輪)，
-        // 寫死索引會讓輪次名稱跟實際情況不符(例如16人賽事的第1輪其實是16強戰，卻被誤標成八強戰)
-        let totalRounds = Math.max(1, Math.ceil(Math.log2(Math.max(2, bracket.teams.length))));
-        let namesFromFinal = ['冠軍戰', '準決賽', '八強戰', '16強戰', '32強戰'];
         let html = `<h3 style="color:${sideColor}; font-size:1.8rem; margin-bottom:10px;">${sideLabel}</h3>`;
-        bracket.rounds.forEach((round, ri) => {
-            if(round.length === 0) return;
-            let fromEnd = totalRounds - 1 - ri; // 距離最後一輪還有幾輪(0=最後一輪)
-            let roundLabel = namesFromFinal[fromEnd] || `第${ri+1}輪`;
-            html += `<p style="font-size:1.2rem; color:var(--muted); margin:8px 0 4px;">${roundLabel}</p>`;
-            round.forEach(m => {
-                let teamA = bracket.teams[m.a];
-                let teamB = m.b !== null ? bracket.teams[m.b] : null;
-                let aWin = m.winner === m.a, bWin = m.b !== null && m.winner === m.b;
-                html += `<div style="font-size:1.2rem; padding:6px 10px; margin-bottom:4px; background:rgba(0,0,0,0.3); border-radius:4px; border-left:3px solid ${sideColor};">
-                    <span style="${aWin?`color:${sideColor};font-weight:bold;`:'color:var(--muted);'}">${teamA ? window.escAttr(teamA.name) : '?'}${teamA&&teamA.facId===0?' 👑':''}</span>
-                    ${teamB ? ` vs <span style="${bWin?`color:${sideColor};font-weight:bold;`:'color:var(--muted);'}">${window.escAttr(teamB.name)}${teamB.facId===0?' 👑':''}</span>` : '（輪空晉級）'}
-                </div>`;
-            });
-        });
+
         if(bracket.champion) {
-            html += `<p style="font-size:1.4rem; color:${sideColor}; font-weight:bold; margin-top:10px;">🏆 冠軍：${window.escAttr(bracket.champion.name)}　🥈 亞軍：${window.escAttr(bracket.runnerUp.name)}</p>`;
+            html += `<p style="font-size:1.4rem; color:${sideColor}; font-weight:bold; margin-bottom:10px;">🏆 優勝：${window.escAttr(bracket.champion.name)}　🥈 亞軍：${window.escAttr(bracket.runnerUp.name)}</p>`;
+            return html;
         }
+
+        html += `<p style="font-size:1.2rem; color:var(--muted); margin-bottom:8px;">瑞士制車輪戰　第${bracket.currentSwissRound+1}/${bracket.totalSwissRounds}輪</p>`;
+
+        let currentMatches = bracket.swissRounds[bracket.currentSwissRound];
+        currentMatches.forEach(m => {
+            let teamA = bracket.teams[m.a];
+            let teamB = m.b !== null ? bracket.teams[m.b] : null;
+            let aWin = m.winner === m.a, bWin = m.b !== null && m.winner === m.b;
+            html += `<div style="font-size:1.2rem; padding:6px 10px; margin-bottom:4px; background:rgba(0,0,0,0.3); border-radius:4px; border-left:3px solid ${sideColor};">
+                <span style="${aWin?`color:${sideColor};font-weight:bold;`:(m.winner!==null?'opacity:0.5;':'color:var(--muted);')}">${teamA ? window.escAttr(teamA.name) : '?'}${teamA&&teamA.facId===0?' 👑':''}</span>
+                ${teamB ? ` vs <span style="${bWin?`color:${sideColor};font-weight:bold;`:(m.winner!==null?'opacity:0.5;':'color:var(--muted);')}">${window.escAttr(teamB.name)}${teamB.facId===0?' 👑':''}</span>` : '（輪空晉級）'}
+            </div>`;
+        });
+
+        let ranked = bracket.teams.map((team,i)=>({team,i})).sort((a,b)=>(b.team.wins||0)-(a.team.wins||0));
+        html += `<p style="font-size:1.2rem; color:var(--muted); margin:10px 0 4px;">📊 目前戰績排行(前5名)</p>`;
+        ranked.slice(0,5).forEach((r,idx) => {
+            html += `<div style="font-size:1.1rem; padding:4px 10px; display:flex; justify-content:space-between;">
+                <span>${idx+1}. ${window.escAttr(r.team.name)}${r.team.facId===0?' 👑':''}</span>
+                <span style="color:${sideColor};">${r.team.wins||0}勝</span>
+            </div>`;
+        });
         return html;
     }
 
@@ -8098,53 +8283,88 @@ document.addEventListener('DOMContentLoaded', () => {
         if(!el) return;
 
         if(wc.phase === 'domestic') {
-            if(subtitleEl) subtitleEl.innerText = `第${wc.year}年・國內選拔賽・東西聯盟各自選出日本代表`;
+            el.className = 'tourney-theme-world';
+            if(subtitleEl) subtitleEl.innerText = `第${wc.year}年・國內選拔賽・全聯盟選出日本代表`;
             let html = `<p style="text-align:center; font-size:1.4rem; color:#fff; margin-bottom:15px; text-shadow:0 2px 4px #000;">等級90以上的好手齊聚一堂，誓奪代表日本出征世界的資格！</p>`;
-            html += `<div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-                <div>${renderLeagueBracketHtml(wc.east, '🔵 東聯盟選拔賽', 'var(--neon-blue)')}</div>
-                <div>${renderLeagueBracketHtml(wc.west, '🔴 西聯盟選拔賽', 'var(--neon-pink)')}</div>
-            </div>`;
+            html += `<div>${renderLeagueBracketHtml(wc.league, '🌍 全聯盟選拔賽', 'var(--gold)')}</div>`;
             el.innerHTML = html;
             if(advBtn) advBtn.innerText = '▶️ 進入下一場對戰';
         } else if(wc.phase === 'world') {
             let ws = wc.worldStage;
-            if(subtitleEl) subtitleEl.innerText = `第${wc.year}年・世界大賽・8國16人瑞士制車輪戰　第${ws.currentRound+1}/${ws.totalRounds}輪`;
             let html = '';
-            if(ws.champion) {
-                html += `<div style="text-align:center; padding:20px; background:rgba(212,175,55,0.25); border-radius:8px; margin-bottom:20px; border:2px solid var(--gold);">
-                    <h2 style="color:var(--gold); font-size:2.4rem; text-shadow:0 2px 4px #000;">👑 世界冠軍：${window.escAttr(ws.champion.name)}${ws.champion.facId===0?'（我方）':''} 👑</h2>
-                </div>`;
-            }
+            el.className = 'tourney-theme-world';
+            if(ws.phase === 'playoff') {
+                if(subtitleEl) subtitleEl.innerText = `第${wc.year}年・世界大賽・前4強單淘汰晉級賽`;
+                if(ws.champion) {
+                    html += `<div class="bracket-champion-frame" style="text-align:center; padding:20px; border-radius:8px; margin-bottom:20px;">
+                        <span class="bracket-champion-crown" style="font-size:1.8rem;">👑 世界冠軍誕生</span>
+                        <h2 style="color:var(--gold); font-size:2.4rem; text-shadow:0 2px 4px #000;">${window.escAttr(ws.champion.name)}${ws.champion.facId===0?'（我方）':''} 👑</h2>
+                    </div>`;
+                }
+                let roundLabels = ['準決賽', '冠軍戰'];
+                let pendingRoundIdx = ws.playoffRounds.findIndex(r => r.length > 0 && r.some(m => m.winner === null));
+                ws.playoffRounds.forEach((round, ri) => {
+                    if(round.length === 0) return;
+                    html += `<h3 style="color:var(--gold); font-size:1.8rem; margin-bottom:10px; text-shadow:0 2px 4px #000;">⚔️ ${roundLabels[ri] || ('第'+(ri+1)+'輪')}</h3>`;
+                    round.forEach(m => {
+                        let aWin = m.winner === m.a, bWin = m.winner === m.b;
+                        let isActive = (ri === pendingRoundIdx) && m.winner === null;
+                        let isFinal = (round.length === 1);
+                        let aIsChampion = isFinal && aWin, bIsChampion = isFinal && bWin;
+                        let aEliminatedTag = (m.winner !== null && m.winner !== m.a) ? '<span class="bracket-eliminated-tag">❌ 已淘汰</span>' : '';
+                        let bEliminatedTag = (m.winner !== null && m.winner !== m.b) ? '<span class="bracket-eliminated-tag">❌ 已淘汰</span>' : '';
+                        html += `<div class="bracket-match ${isActive ? 'active-match' : ''} ${(aIsChampion||bIsChampion) ? 'bracket-champion-frame' : ''}" style="font-size:1.3rem; padding:8px 12px; margin-bottom:6px; position:relative;">
+                            ${isActive ? '<span class="bracket-live-tag">🔴 LIVE</span>' : ''}
+                            <span style="${aWin?'color:var(--gold);font-weight:bold;':'color:#ddd;'}">${window.escAttr(m.a.name)}${m.a.facId===0?' 👑':''}</span>${aEliminatedTag}
+                            <span style="color:var(--muted); margin:0 8px;">VS</span>
+                            <span style="${bWin?'color:var(--gold);font-weight:bold;':'color:#ddd;'}">${window.escAttr(m.b.name)}${m.b.facId===0?' 👑':''}</span>${bEliminatedTag}
+                        </div>`;
+                    });
+                });
+                el.innerHTML = html;
+                if(advBtn) advBtn.innerText = ws.champion ? '🏆 領取世界冠軍獎勵' : '▶️ 進入下一場對戰';
+            } else {
+            if(subtitleEl) subtitleEl.innerText = `第${wc.year}年・世界大賽・8國16人瑞士制車輪戰　第${ws.currentRound+1}/${ws.totalRounds}輪`;
             // 目前輪次對戰配對
             let currentMatches = ws.rounds[ws.currentRound] || [];
             html += `<h3 style="color:var(--gold); font-size:1.8rem; margin-bottom:10px; text-shadow:0 2px 4px #000;">⚔️ 第${ws.currentRound+1}輪對戰</h3>`;
+            let liveMatchFound = false;
             currentMatches.forEach(m => {
                 let aWin = m.winner === m.a, bWin = m.winner === m.b;
-                html += `<div style="font-size:1.3rem; padding:8px 12px; margin-bottom:6px; background:rgba(0,0,0,0.5); border-radius:4px; border-left:3px solid var(--gold);">
+                let isLive = !liveMatchFound && m.winner === null;
+                if(isLive) liveMatchFound = true;
+                html += `<div class="bracket-match ${isLive ? 'active-match' : ''}" style="font-size:1.3rem; padding:8px 12px; margin-bottom:6px; position:relative;">
+                    ${isLive ? '<span class="bracket-live-tag">🔴 LIVE</span>' : ''}
                     <span style="${aWin?'color:var(--gold);font-weight:bold;':'color:#ddd;'}">${window.escAttr(m.a.name)}${m.a.facId===0?' 👑':''}</span>
                     <span style="color:var(--muted); margin:0 8px;">VS</span>
                     <span style="${bWin?'color:var(--gold);font-weight:bold;':'color:#ddd;'}">${window.escAttr(m.b.name)}${m.b.facId===0?' 👑':''}</span>
                 </div>`;
             });
             // 目前戰績排名榜
-            html += `<h3 style="color:var(--gold); font-size:1.8rem; margin:20px 0 10px; text-shadow:0 2px 4px #000;">📊 目前戰績排名</h3>`;
+            html += `<h3 style="color:var(--gold); font-size:1.8rem; margin:20px 0 10px; text-shadow:0 2px 4px #000;">📊 目前戰績排名（前4名將晉級單淘汰賽）</h3>`;
             let sorted = ws.entrants.slice().sort((a,b) => b.wins - a.wins);
             html += `<div style="max-height:200px; overflow-y:auto;">`;
             sorted.forEach((e, i) => {
-                html += `<div style="display:flex; justify-content:space-between; font-size:1.2rem; padding:6px 10px; ${e.facId===0?'background:rgba(212,175,55,0.15);':''} border-bottom:1px dashed rgba(255,255,255,0.15);">
+                html += `<div style="display:flex; justify-content:space-between; font-size:1.2rem; padding:6px 10px; ${e.facId===0?'background:rgba(212,175,55,0.15);':''} ${i<4?'border-left:3px solid var(--gold);':''} border-bottom:1px dashed rgba(255,255,255,0.15);">
                     <span style="color:#fff;">${i+1}. ${window.escAttr(e.name)}${e.facId===0?' 👑':''}</span>
                     <span style="color:var(--gold); font-weight:bold;">${e.wins}勝</span>
                 </div>`;
             });
             html += `</div>`;
             el.innerHTML = html;
-            if(advBtn) advBtn.innerText = ws.champion ? '🏆 領取世界冠軍獎勵' : '▶️ 進入下一場對戰';
+            if(advBtn) advBtn.innerText = '▶️ 進入下一場對戰';
+            }
         }
 
         // 有比賽正在進行時，套用比賽時況背景圖增添臨場感
         let modalBox = document.querySelector('#world-championship-overlay .modal-box');
         if(modalBox) {
-            let isLiveMatch = (wc.phase === 'world' && wc.worldStage && !wc.worldStage.champion && (wc.worldStage.rounds[wc.worldStage.currentRound]||[]).some(m => m.winner === null));
+            let ws = wc.worldStage;
+            let isLiveMatch = (wc.phase === 'world' && ws && !ws.champion && (
+                ws.phase === 'playoff'
+                    ? (ws.playoffRounds||[]).some(round => round.some(m => m.winner === null))
+                    : (ws.rounds[ws.currentRound]||[]).some(m => m.winner === null)
+            ));
             modalBox.classList.toggle('wc-bg-live', isLiveMatch);
             modalBox.classList.toggle('wc-bg-arena', !isLiveMatch);
         }
@@ -8155,8 +8375,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let wc = GS.worldChampionship;
         if(!wc) return;
         if(wc.phase === 'domestic') {
-            if(!wc.east.champion) window.advanceDomesticQualifier('East');
-            else if(!wc.west.champion) window.advanceDomesticQualifier('West');
+            window.advanceDomesticQualifier();
         } else if(wc.phase === 'world') {
             window.advanceWorldStage();
         }
@@ -8167,13 +8386,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if(!gf) return;
         let el = document.getElementById('grand-finale-content');
         if(!el) return;
+        el.className = 'tourney-theme-grandfinale';
 
-        let html = `<p style="text-align:center; font-size:1.4rem; color:var(--muted); margin-bottom:15px;">第${gf.year}年・四年一度大決戰　東西聯盟精銳對決，誓奪唯一王座！</p>`;
+        let html = `<p style="text-align:center; font-size:1.4rem; color:var(--muted); margin-bottom:15px;">第${gf.year}年・四年一度大決戰　全聯盟精銳對決，誓奪唯一王座！</p>`;
 
-        html += `<div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-            <div>${renderLeagueBracketHtml(gf.east, '🔵 東聯盟預選賽', 'var(--neon-blue)')}</div>
-            <div>${renderLeagueBracketHtml(gf.west, '🔴 西聯盟預選賽', 'var(--neon-pink)')}</div>
-        </div>`;
+        if(!gf.finalFour) {
+            html += `<div>${renderLeagueBracketHtml(gf.league, '⚡ 瑞士制預選賽', 'var(--gold)')}</div>`;
+        }
 
         if(gf.finalFour) {
             let ff = gf.finalFour;
@@ -8181,15 +8400,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h3 style="text-align:center; color:var(--gold); font-size:2.2rem; margin-bottom:15px;">⚡ 4強交叉賽 ⚡</h3>`;
             ff.rounds.forEach((round, ri) => {
                 if(round.length === 0) return;
+                let pendingRoundIdx = ff.rounds.findIndex(r => r.length > 0 && r.some(m => m.winner === null));
                 html += `<p style="text-align:center; font-size:1.3rem; color:var(--muted); margin:10px 0;">${ri===0?'準決賽（交叉對戰）':'🏆 總決賽 🏆'}</p>`;
                 round.forEach(m => {
                     let teamA = ff.teams[m.a];
                     let teamB = m.b !== null ? ff.teams[m.b] : null;
                     let aWin = m.winner === m.a, bWin = m.b !== null && m.winner === m.b;
-                    html += `<div style="text-align:center; font-size:1.5rem; padding:10px; margin-bottom:8px;">
-                        <span style="${aWin?'color:var(--gold);font-weight:bold;':''}">${teamA?window.escAttr(teamA.name):'?'}${teamA&&teamA.facId===0?' 👑':''}</span>
+                    let isActive = (ri === pendingRoundIdx) && m.winner === null;
+                    let isFinal = (round.length === 1);
+                    let aIsChampion = isFinal && aWin, bIsChampion = isFinal && bWin;
+                    let aEliminatedTag = (m.winner !== null && m.winner !== m.a) ? '<span class="bracket-eliminated-tag">❌ 已淘汰</span>' : '';
+                    let bEliminatedTag = (m.b !== null && m.winner !== null && m.winner !== m.b) ? '<span class="bracket-eliminated-tag">❌ 已淘汰</span>' : '';
+                    html += `<div class="bracket-match ${isActive ? 'active-match' : ''} ${(aIsChampion||bIsChampion) ? 'bracket-champion-frame' : ''}" style="text-align:center; padding:10px; margin-bottom:8px; position:relative;">
+                        ${isActive ? '<span class="bracket-live-tag">🔴 LIVE</span>' : ''}
+                        ${(aIsChampion||bIsChampion) ? '<span class="bracket-champion-crown">👑 究極王者</span>' : ''}
+                        <span style="font-size:1.5rem; ${aWin?'color:var(--gold);font-weight:bold;':''}">${teamA?window.escAttr(teamA.name):'?'}${teamA&&teamA.facId===0?' 👑':''}</span>${aEliminatedTag}
                         <span style="color:var(--muted); margin:0 10px;">VS</span>
-                        <span style="${bWin?'color:var(--gold);font-weight:bold;':''}">${teamB?window.escAttr(teamB.name):'（輪空）'}${teamB&&teamB.facId===0?' 👑':''}</span>
+                        <span style="font-size:1.5rem; ${bWin?'color:var(--gold);font-weight:bold;':''}">${teamB?window.escAttr(teamB.name):'（輪空）'}${teamB&&teamB.facId===0?' 👑':''}</span>${bEliminatedTag}
                     </div>`;
                 });
             });
@@ -8211,10 +8438,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 四季大賽賽制表：規模、每隊出賽人數、獎勵、輪次名稱
     const TOURNAMENT_FORMATS = {
-        spring: { label: '春季16強單淘汰', teamSize: 16, wrestlersPerTeam: 1, prize: 480, roundNames: ['十六強戰','八強戰','準決賽','冠軍戰'] },
-        summer: { label: '夏季8強5v5團體戰', teamSize: 8, wrestlersPerTeam: 5, prize: 720, roundNames: ['八強戰','準決賽','冠軍戰'] },
-        autumn: { label: '秋季32強遠征單淘汰', teamSize: 32, wrestlersPerTeam: 1, prize: 1120, roundNames: ['三十二強戰','十六強戰','八強戰','準決賽','冠軍戰'] },
-        winter: { label: '冬季年度總決賽（菁英8強）', teamSize: 8, wrestlersPerTeam: 1, prize: 1400, roundNames: ['八強戰','準決賽','冠軍戰'], eliteOnly: true }
+        spring: { label: '春季16強瑞士制', teamSize: 16, wrestlersPerTeam: 1, prize: 480, roundNames: ['十六強戰','八強戰','準決賽','冠軍戰'] },
+        summer: { label: '夏季8強瑞士制5v5團體戰', teamSize: 8, wrestlersPerTeam: 5, prize: 720, roundNames: ['八強戰','準決賽','冠軍戰'] },
+        autumn: { label: '秋季32強瑞士制遠征賽', teamSize: 32, wrestlersPerTeam: 1, prize: 1120, roundNames: ['三十二強戰','十六強戰','八強戰','準決賽','冠軍戰'] },
+        winter: { label: '冬季年度總決賽瑞士制（菁英8強）', teamSize: 8, wrestlersPerTeam: 1, prize: 1400, roundNames: ['八強戰','準決賽','冠軍戰'], eliteOnly: true }
     };
 
     window.generateTournament = function() {
@@ -8258,17 +8485,58 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         }
 
+        teams.forEach(t => { t.wins = 0; t.opponentIndices = []; });
         teams = teams.sort(() => 0.5 - Math.random());
-        let round1 = [];
-        for(let i = 0; i < teams.length; i += 2) {
-            round1.push({ a: i, b: (i + 1 < teams.length ? i + 1 : null), winner: (i + 1 < teams.length ? null : i) });
-        }
-        let totalRounds = Math.ceil(Math.log2(fmt.teamSize));
-        let rounds = [round1];
-        for(let r = 1; r < totalRounds; r++) rounds.push([]);
+        let standings = teams.map((_,i) => i);
+        // 瑞士制輪數：依隊伍規模決定，至少打3輪才有足夠的戰績區分度；打完後取前4名晉級單淘汰決定最終冠軍(增加高潮)
+        let totalSwissRounds = Math.max(3, Math.ceil(Math.log2(fmt.teamSize)));
 
-        window.GS.tournament = { active: true, teams, rounds, champion: null, format: season, prize: fmt.prize, label: fmt.label, roundNames: fmt.roundNames };
+        window.GS.tournament = {
+            active: true, teams, format: season, prize: fmt.prize, label: fmt.label,
+            phase: 'swiss',
+            swissRounds: [window.pairSwissRoundByIndex(teams, standings)],
+            currentSwissRound: 0,
+            totalSwissRounds,
+            playoffSize: 4,
+            playoffTeams: [],
+            playoffRounds: [],
+            playoffRoundNames: ['準決賽', '冠軍戰'],
+            champion: null,
+        };
         return true;
+    };
+
+    // 通用瑞士制配對函式：依目前累積勝場數排序、優先配對戰績相近且尚未對戰過的對手，找不到全新對手時才退回配對任何可用對手，
+    // 人數為奇數時最後一位輪空直接記一勝。可被四季例行大賽/四年一度大決戰/世界冠軍賽等大賽共用
+    window.pairSwissRoundByIndex = function(entrants, standingsIndices) {
+        let sorted = standingsIndices.slice().sort((a,b) => (entrants[b].wins||0) - (entrants[a].wins||0));
+        let paired = [];
+        let used = new Set();
+        for(let i=0; i<sorted.length; i++) {
+            let a = sorted[i];
+            if(used.has(a)) continue;
+            let opponent = null;
+            for(let j=i+1; j<sorted.length; j++) {
+                let b = sorted[j];
+                if(used.has(b)) continue;
+                if(!(entrants[a].opponentIndices||[]).includes(b)) { opponent = b; break; }
+            }
+            if(opponent === null) {
+                for(let j=i+1; j<sorted.length; j++) {
+                    let b = sorted[j];
+                    if(!used.has(b)) { opponent = b; break; }
+                }
+            }
+            if(opponent !== null) {
+                paired.push({ a, b: opponent, winner: null });
+                used.add(a); used.add(opponent);
+            } else {
+                paired.push({ a, b: null, winner: a }); // 輪空直接晉級(視為一勝，同步遞增勝場數才能正確反映在排名上)
+                entrants[a].wins = (entrants[a].wins||0) + 1;
+                used.add(a);
+            }
+        }
+        return paired;
     };
 
     // 大賽樹狀圖裡的生存大逃殺資訊卡片：跟賽季行事曆使用同樣的判斷邏輯，只在活動所屬的當年度、且還在夏季(4~6月)時顯示，
@@ -8364,35 +8632,30 @@ document.addEventListener('DOMContentLoaded', () => {
             let isWinner = winnerSnap && team.id === winnerSnap.id;
             return `<div class="playoff-team-line ${isWinner ? 'winner' : 'loser'}">${isWinner ? '👑 ' : ''}${team.name}</div>`;
         };
-        let matchCard = (m, leagueClass) => `
-            <div class="playoff-match-card ${leagueClass}">
+        let matchCard = (m) => `
+            <div class="playoff-match-card">
                 ${teamLine(m.teamA, m.winner)}
                 <div class="playoff-vs-label">vs</div>
                 ${teamLine(m.teamB, m.winner)}
             </div>`;
 
-        let eastSemisHtml = p.east.semis.map(m => matchCard(m, 'east')).join('');
-        let eastFinalHtml = matchCard(p.east.final, 'east');
-        let westSemisHtml = p.west.semis.map(m => matchCard(m, 'west')).join('');
-        let westFinalHtml = matchCard(p.west.final, 'west');
-
-        let grandFinalHtml = `
+        let quartersHtml = p.quarters.map(m => matchCard(m)).join('');
+        let semisHtml = p.semis.map(m => matchCard(m)).join('');
+        let finalHtml = `
             <div class="playoff-grand-final">
                 <div style="font-size:2.2rem;">🏆</div>
-                <div style="font-weight:800; color:var(--neon-blue); font-size:1.5rem; margin:10px 0 4px;">${p.grandFinal.eastChamp.name}</div>
+                <div style="font-weight:800; color:var(--neon-blue); font-size:1.5rem; margin:10px 0 4px;">${p.final.teamA.name}</div>
                 <div style="color:var(--muted); font-size:1.2rem;">VS</div>
-                <div style="font-weight:800; color:var(--neon-pink); font-size:1.5rem; margin:4px 0 10px;">${p.grandFinal.westChamp.name}</div>
+                <div style="font-weight:800; color:var(--neon-pink); font-size:1.5rem; margin:4px 0 10px;">${p.final.teamB.name}</div>
                 <div style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(251,191,36,.4); color:var(--gold); font-size:1.7rem; font-weight:800;">
-                    👑 年度總冠軍<br>${p.grandFinal.winner.name}
+                    👑 年度總冠軍<br>${p.final.winner.name}
                 </div>
             </div>`;
 
         document.getElementById('playoff-content').innerHTML = `
-            <div class="playoff-column">${eastSemisHtml}</div>
-            <div class="playoff-column">${eastFinalHtml}</div>
-            <div class="playoff-column">${grandFinalHtml}</div>
-            <div class="playoff-column">${westFinalHtml}</div>
-            <div class="playoff-column">${westSemisHtml}</div>
+            <div class="playoff-column"><h4 style="text-align:center; color:var(--gold); font-size:1.5rem; margin-bottom:10px;">8強戰</h4>${quartersHtml}</div>
+            <div class="playoff-column"><h4 style="text-align:center; color:var(--gold); font-size:1.5rem; margin-bottom:10px;">4強戰</h4>${semisHtml}</div>
+            <div class="playoff-column"><h4 style="text-align:center; color:var(--gold); font-size:1.5rem; margin-bottom:10px;">冠軍戰</h4>${finalHtml}</div>
         `;
         document.getElementById('playoff-title').innerText = `🏆 第${p.year}年 聯盟季後賽戰報`;
         document.getElementById('playoff-overlay').style.display = 'flex';
@@ -8401,38 +8664,89 @@ document.addEventListener('DOMContentLoaded', () => {
     window.renderBracket = function() {
         let t = window.GS.tournament;
         if(!t) return;
-        let pendingRoundIdx = t.rounds.findIndex(r => r.length > 0 && r.some(m => m.winner === null));
-        let roundNames = t.roundNames || [];
+
+        let playerCard = (team) => `<img src="${window.escAttr(team.wrestlers[0].img)}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(team.name)}'">${team.name}${team.wrestlers.length > 1 ? ` (${team.wrestlers.length}人團體)` : ''}${team.facId===0?' 👑':''}`;
+
+        // 依四季賦予獨特主題色，讓春/夏/秋/冬的賽程表一眼就能分辨
+        let themeClass = 'tourney-theme-' + (t.format || 'spring');
+        let contentEl = document.getElementById('bracket-content');
+        contentEl.className = 'bracket-container ' + themeClass;
 
         let html = '';
-        t.rounds.forEach((round, ri) => {
-            if(round.length === 0) return;
-            html += `<div class="bracket-round"><h4 style="text-align:center;color:var(--gold);font-size:1.6rem;margin-bottom:10px;">${roundNames[ri] || ('第' + (ri + 1) + '輪')}</h4>`;
-            round.forEach(m => {
-                let teamA = t.teams[m.a], teamB = (m.b !== null) ? t.teams[m.b] : null;
-                let isActive = (ri === pendingRoundIdx) && m.winner === null;
-                let aStyle = m.winner === m.a ? 'color:var(--gold);font-weight:bold;' : (m.winner !== null ? 'opacity:0.4;' : '');
-                let bStyle = (m.b !== null && m.winner === m.b) ? 'color:var(--gold);font-weight:bold;' : (m.winner !== null ? 'opacity:0.4;' : '');
-                let aImg = teamA.wrestlers[0].img, bImg = teamB ? teamB.wrestlers[0].img : '';
-                let aTeamTag = teamA.wrestlers.length > 1 ? ` (${teamA.wrestlers.length}人團體)` : '';
-                let bTeamTag = teamB && teamB.wrestlers.length > 1 ? ` (${teamB.wrestlers.length}人團體)` : '';
-                html += `<div class="bracket-match ${isActive ? 'active-match' : ''}">
-                    <div class="bracket-player" style="${aStyle}"><img src="${window.escAttr(aImg)}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(teamA.name)}'">${teamA.name}${aTeamTag}${teamA.facId===0?' 👑':''}</div>
-                    <div style="font-size:0.9rem;color:var(--muted);margin:4px 0;">VS</div>
-                    ${teamB ? `<div class="bracket-player" style="${bStyle}"><img src="${window.escAttr(bImg)}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(teamB.name)}'">${teamB.name}${bTeamTag}${teamB.facId===0?' 👑':''}</div>` : `<div class="bracket-player" style="opacity:0.5;">（輪空晉級）</div>`}
+        if(t.phase === 'swiss') {
+            html += `<div style="width:100%;">`;
+            // 瑞士制階段：戰績排行榜 + 本輪對戰配對
+            let ranked = t.teams.map((team,i)=>({team,i})).sort((a,b)=>(b.team.wins||0)-(a.team.wins||0));
+            html += `<div style="margin-bottom:25px;"><h4 style="text-align:center;color:var(--gold);font-size:1.6rem;margin-bottom:10px;">📊 瑞士制戰績排行（第${t.currentSwissRound+1}/${t.totalSwissRounds}輪）</h4>`;
+            html += `<div style="max-height:280px; overflow-y:auto; text-align:left;">`;
+            ranked.forEach((r, idx) => {
+                let inPlayoffZone = idx < t.playoffSize;
+                html += `<div style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:rgba(0,0,0,0.3); border-radius:6px; margin-bottom:4px; ${inPlayoffZone ? 'border-left:3px solid var(--gold);' : ''}">
+                    <span style="color:var(--gold); font-weight:bold; width:34px; flex-shrink:0;">#${idx+1}</span>
+                    <img src="${window.escAttr(r.team.wrestlers[0].img)}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(r.team.name)}'" style="width:32px; height:32px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+                    <span style="flex:1; min-width:0;">${r.team.name}${r.team.facId===0?' 👑':''}</span>
+                    <span style="color:var(--neon-blue); flex-shrink:0;">${r.team.wins||0}勝</span>
                 </div>`;
             });
-            html += `</div>`;
-        });
-        document.getElementById('bracket-content').innerHTML = html;
+            html += `</div><p style="font-size:1.1rem; color:var(--muted); margin-top:8px;">💡 金色邊框標示目前排名前${t.playoffSize}名，瑞士制結束後將晉級單淘汰賽爭奪最終冠軍</p></div>`;
+
+            html += `<div><h4 style="text-align:center;color:var(--gold);font-size:1.6rem;margin-bottom:10px;">⚔️ 本輪對戰</h4>`;
+            let currentRoundMatches = t.swissRounds[t.currentSwissRound];
+            let liveMatchFound = false; // 只標示「本輪第一場尚未分出勝負」的比賽為LIVE，避免多場同時顯示LIVE造成混淆
+            currentRoundMatches.forEach(m => {
+                let teamA = t.teams[m.a], teamB = (m.b !== null) ? t.teams[m.b] : null;
+                let aStyle = m.winner === m.a ? 'color:var(--gold);font-weight:bold;' : (m.winner !== null ? 'opacity:0.4;' : '');
+                let bStyle = (m.b !== null && m.winner === m.b) ? 'color:var(--gold);font-weight:bold;' : (m.winner !== null ? 'opacity:0.4;' : '');
+                let isLive = !liveMatchFound && m.winner === null;
+                if(isLive) liveMatchFound = true;
+                html += `<div class="bracket-match ${isLive ? 'active-match' : ''}">
+                    ${isLive ? '<span class="bracket-live-tag">🔴 LIVE</span>' : ''}
+                    <div class="bracket-player" style="${aStyle}">${playerCard(teamA)}</div>
+                    <div style="font-size:0.9rem;color:var(--muted);margin:4px 0;">VS</div>
+                    ${teamB ? `<div class="bracket-player" style="${bStyle}">${playerCard(teamB)}</div>` : `<div class="bracket-player" style="opacity:0.5;">（輪空晉級）</div>`}
+                </div>`;
+            });
+            html += `</div></div>`;
+        } else {
+            // 晉級賽階段：單淘汰樹狀圖
+            let pendingRoundIdx = t.playoffRounds.findIndex(r => r.length > 0 && r.some(m => m.winner === null));
+            let roundNames = t.playoffRoundNames || [];
+            t.playoffRounds.forEach((round, ri) => {
+                if(round.length === 0) return;
+                html += `<div class="bracket-round"><h4 style="text-align:center;color:var(--gold);font-size:1.6rem;margin-bottom:10px;">${roundNames[ri] || ('第' + (ri + 1) + '輪')}</h4>`;
+                round.forEach(m => {
+                    let teamA = t.teams[m.a], teamB = (m.b !== null) ? t.teams[m.b] : null;
+                    let isActive = (ri === pendingRoundIdx) && m.winner === null;
+                    let isFinal = (round.length === 1); // 冠軍戰(最後一輪只剩1場)，分出勝負後獲勝方要套上冠軍框
+                    let aIsChampion = isFinal && m.winner === m.a;
+                    let bIsChampion = isFinal && m.b !== null && m.winner === m.b;
+                    let aStyle = m.winner === m.a ? 'color:var(--gold);font-weight:bold;' : (m.winner !== null ? 'opacity:0.5;' : '');
+                    let bStyle = (m.b !== null && m.winner === m.b) ? 'color:var(--gold);font-weight:bold;' : (m.winner !== null ? 'opacity:0.5;' : '');
+                    let aEliminatedTag = (m.winner !== null && m.winner !== m.a) ? '<span class="bracket-eliminated-tag">❌ 已淘汰</span>' : '';
+                    let bEliminatedTag = (m.b !== null && m.winner !== null && m.winner !== m.b) ? '<span class="bracket-eliminated-tag">❌ 已淘汰</span>' : '';
+                    html += `<div class="bracket-match ${isActive ? 'active-match' : ''} ${(aIsChampion||bIsChampion) ? 'bracket-champion-frame' : ''}">
+                        ${isActive ? '<span class="bracket-live-tag">🔴 LIVE</span>' : ''}
+                        ${(aIsChampion||bIsChampion) ? '<span class="bracket-champion-crown">👑 最終冠軍</span>' : ''}
+                        <div class="bracket-player" style="${aStyle}">${playerCard(teamA)}${aEliminatedTag}</div>
+                        <div style="font-size:0.9rem;color:var(--muted);margin:4px 0;">VS</div>
+                        ${teamB ? `<div class="bracket-player" style="${bStyle}">${playerCard(teamB)}${bEliminatedTag}</div>` : `<div class="bracket-player" style="opacity:0.5;">（輪空晉級）</div>`}
+                    </div>`;
+                });
+                html += `</div>`;
+            });
+        }
+        contentEl.innerHTML = html;
 
         let titleEl = document.getElementById('b-title');
         let btnEl = document.getElementById('btn-start-tourney');
         if(t.champion) {
             titleEl.innerHTML = `🏆 ${t.label || '大賽'}冠軍：${t.champion.name}${t.champion.facId === 0 ? '（我方）' : ''}！`;
             btnEl.innerText = `🎉 領取冠軍獎金 $${(t.prize||150000).toLocaleString()}萬並結束`;
+        } else if(t.phase === 'swiss') {
+            titleEl.innerText = `📋 ${t.label || '大賽'}（瑞士制 第${t.currentSwissRound+1}/${t.totalSwissRounds}輪）`;
+            btnEl.innerText = '⚔️ 進入下一場比賽！';
         } else {
-            titleEl.innerText = `📋 ${t.label || '大賽樹狀圖'}`;
+            titleEl.innerText = `📋 ${t.label || '大賽'}（晉級賽）`;
             btnEl.innerText = '⚔️ 進入下一場比賽！';
         }
     };
@@ -8454,6 +8768,89 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             t.rounds[ri + 1] = nextRound;
         }
+    };
+
+    // 瑞士制某一輪是否已全部打完：若還沒打完固定輪數，配對下一輪；若已打完，取戰績前N名建立單淘汰晉級賽
+    window.checkSwissRoundComplete = function(t) {
+        let currentRoundMatches = t.swissRounds[t.currentSwissRound];
+        if(!currentRoundMatches.every(m => m.winner !== null)) return; // 本輪還沒打完
+
+        if(t.currentSwissRound + 1 < t.totalSwissRounds) {
+            t.currentSwissRound++;
+            let standings = t.teams.map((_,i) => i);
+            t.swissRounds.push(window.pairSwissRoundByIndex(t.teams, standings));
+        } else {
+            // 瑞士制結束，依總勝場數排名，取前playoffSize名進入單淘汰晉級賽決定最終冠軍
+            let ranked = t.teams.map((_,i)=>i).sort((a,b) => (t.teams[b].wins||0) - (t.teams[a].wins||0));
+            t.playoffTeams = ranked.slice(0, t.playoffSize);
+            t.phase = 'playoff';
+            let round1 = [];
+            for(let i=0; i<t.playoffTeams.length; i+=2) {
+                round1.push({ a: t.playoffTeams[i], b: t.playoffTeams[i+1], winner: null });
+            }
+            t.playoffRounds = [round1];
+            window.addNewsLog(`📊 「${t.label}」瑞士制${t.totalSwissRounds}輪結束！前${t.playoffSize}強晉級單淘汰賽，準備爭奪最終冠軍！`);
+        }
+    };
+
+    window.checkPlayoffRoundComplete = function(t, ri) {
+        let round = t.playoffRounds[ri];
+        if(!round.every(m => m.winner !== null)) return;
+        if(round.length === 1) {
+            t.champion = t.teams[round[0].winner];
+        } else {
+            let nextRound = [];
+            for(let i = 0; i < round.length; i += 2) {
+                nextRound.push({ a: round[i].winner, b: round[i + 1].winner, winner: null });
+            }
+            t.playoffRounds[ri + 1] = nextRound;
+        }
+    };
+
+    // 執行一場對戰的共用邏輯：我方參戰時走真實對戰引擎，AI對AI則依綜合戰力加權隨機判定
+    function runBracketMatch(match, teamA, teamB, onWin, onRenderNeeded) {
+        if(teamA.facId === 0 || teamB.facId === 0) {
+            let playerIsA = (teamA.facId === 0);
+            let myTeam = playerIsA ? teamA.wrestlers : teamB.wrestlers;
+            let oppTeam = playerIsA ? teamB.wrestlers : teamA.wrestlers;
+            if(myTeam[0].stamina < 30) return window.showSysMsg("警告", `我方先發選手 ${myTeam[0].name} 體力過低（未滿30），請先安排休息後再挑戰！`, true);
+            if((myTeam[0].injuryWeeks||0) > 0) return window.showSysMsg("警告", `我方先發選手 ${myTeam[0].name} 傷病中（剩${myTeam[0].injuryWeeks}週），暫時無法出賽！`, true);
+            window.MatchEngine.startCustom(myTeam, oppTeam, (winnerSide) => {
+                let winningIsA = playerIsA ? (winnerSide === 1) : (winnerSide === 2);
+                onWin(winningIsA);
+                onRenderNeeded();
+            });
+        } else {
+            let scoreA = teamA.wrestlers.reduce((s,w)=>s+w.str+w.spd+w.tech, 0) + RB(30);
+            let scoreB = teamB.wrestlers.reduce((s,w)=>s+w.str+w.spd+w.tech, 0) + RB(30);
+            onWin(scoreA >= scoreB);
+            onRenderNeeded();
+        }
+    }
+
+    window.advanceSwissPhase = function(t) {
+        let currentRoundMatches = t.swissRounds[t.currentSwissRound];
+        let match = currentRoundMatches.find(m => m.winner === null);
+        if(!match) return; // 理論上不會發生(checkSwissRoundComplete會在打完時推進)，保險判斷
+        let teamA = t.teams[match.a], teamB = t.teams[match.b];
+        runBracketMatch(match, teamA, teamB, (winningIsA) => {
+            match.winner = winningIsA ? match.a : match.b;
+            t.teams[match.a].opponentIndices.push(match.b);
+            t.teams[match.b].opponentIndices.push(match.a);
+            t.teams[match.winner].wins = (t.teams[match.winner].wins||0) + 1;
+            window.checkSwissRoundComplete(t);
+        }, () => { window.renderBracket(); document.getElementById('bracket-overlay').style.display = 'flex'; });
+    };
+
+    window.advancePlayoffPhase = function(t) {
+        let ri = t.playoffRounds.findIndex(r => r.length > 0 && r.some(m => m.winner === null));
+        if(ri === -1) return;
+        let match = t.playoffRounds[ri].find(m => m.winner === null);
+        let teamA = t.teams[match.a], teamB = t.teams[match.b];
+        runBracketMatch(match, teamA, teamB, (winningIsA) => {
+            match.winner = winningIsA ? match.a : match.b;
+            window.checkPlayoffRoundComplete(t, ri);
+        }, () => { window.renderBracket(); document.getElementById('bracket-overlay').style.display = 'flex'; });
     };
 
     window.advanceTournament = function() {
@@ -8482,46 +8879,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let ri = t.rounds.findIndex(r => r.length > 0 && r.some(m => m.winner === null));
-        if(ri === -1) return;
-        let match = t.rounds[ri].find(m => m.winner === null);
-
-        // 輪空的場次（b 為 null）直接晉級
-        if(match.b === null) {
-            match.winner = match.a;
-            window.checkRoundComplete(ri);
-            window.renderBracket();
-            return;
-        }
-
-        let teamA = t.teams[match.a], teamB = t.teams[match.b];
-
-        if(teamA.facId === 0 || teamB.facId === 0) {
-            let playerIsA = (teamA.facId === 0);
-            let myTeam = playerIsA ? teamA.wrestlers : teamB.wrestlers;
-            let oppTeam = playerIsA ? teamB.wrestlers : teamA.wrestlers;
-            if(myTeam[0].stamina < 30) {
-                return window.showSysMsg("警告", `我方先發選手 ${myTeam[0].name} 體力過低（未滿30），請先安排休息後再挑戰！`, true);
-            }
-            if((myTeam[0].injuryWeeks||0) > 0) {
-                return window.showSysMsg("警告", `我方先發選手 ${myTeam[0].name} 傷病中（剩${myTeam[0].injuryWeeks}週），暫時無法出賽！`, true);
-            }
-            window.MatchEngine.startCustom(myTeam, oppTeam, (winnerSide) => {
-                // winnerSide: 1 => t1 (我方) 勝, 2 => t2 勝
-                let winningTeam = (winnerSide === 1) ? (playerIsA ? teamA : teamB) : (playerIsA ? teamB : teamA);
-                match.winner = (winningTeam === teamA) ? match.a : match.b;
-                window.checkRoundComplete(ri);
-                window.renderBracket();
-                document.getElementById('bracket-overlay').style.display = 'flex';
-            });
-        } else {
-            // AI 對 AI：依全隊綜合戰力加權隨機判定
-            let scoreA = teamA.wrestlers.reduce((s,w)=>s+w.str+w.spd+w.tech, 0) + RB(30);
-            let scoreB = teamB.wrestlers.reduce((s,w)=>s+w.str+w.spd+w.tech, 0) + RB(30);
-            match.winner = (scoreA >= scoreB) ? match.a : match.b;
-            window.checkRoundComplete(ri);
-            window.renderBracket();
-        }
+        if(t.phase === 'swiss') window.advanceSwissPhase(t);
+        else window.advancePlayoffPhase(t);
     };
 
     let btnOpenBracket = document.getElementById('btn-open-bracket');
@@ -9606,7 +9965,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('all-wrestlers-grid').innerHTML = all.map(({w, team}) => `
             <div class="card" style="cursor:pointer;" onclick="window.showWrestlerProfile('${w.id}')">
-                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'">
+                <img src="${window.escAttr(w.img)}" class="wrestler-img" style="object-position:${window.getImgPos(w).x}% ${window.getImgPos(w).y}%; transform:scale(${window.getImgScale(w)});" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'" onload="this.style.background='transparent'">
                 <h4 style="font-size:1.4rem; color:var(--gold); margin-bottom:2px;">${w.name} <span style="font-size:1.2rem; color:var(--neon-blue); font-weight:900;">${window.wrestlerLevel(w)}</span></h4>
                 <p style="font-size:1.1rem; color:var(--muted);">${team}（${w.age}歲）</p>
                 <p style="font-size:1.1rem;">🏅 ${w.w||0}勝${w.l||0}敗</p>
@@ -9888,7 +10247,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let coach = {
             id: Math.random().toString(36).substr(2, 6),
             name: `名教練・${w.name}`,
-            specialty, boost, cost: 0, hired: true, hiredBy: 0,
+            specialty, boost, tier: rateCoachTier(specCount, boost), cost: 0, hired: true, hiredBy: 0,
             isFormerWrestler: true, formerWrestlerName: w.name, formerWrestlerData: w,
             coachTermEndYear: GS.year + 3
         };
@@ -10756,7 +11115,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(imported.u18Tournament === undefined) imported.u18Tournament = null;
                     if(imported.schedule === undefined) imported.schedule = [];
                     if(imported.grandFinale === undefined) imported.grandFinale = null;
-                    if(imported.coachRefreshCounter === undefined) imported.coachRefreshCounter = 4;
+                    if(imported.coachRefreshCounter === undefined) imported.coachRefreshCounter = 8;
                     if(imported._equipmentTempFixWeeks === undefined) imported._equipmentTempFixWeeks = 0;
                     if(imported.battleRoyal === undefined) imported.battleRoyal = null;
                     if(imported.worldChampionship === undefined) imported.worldChampionship = null;
