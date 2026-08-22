@@ -6718,10 +6718,34 @@ document.addEventListener('DOMContentLoaded', () => {
         batchCreateBtn.addEventListener('click', () => {
             let count = parseInt(document.getElementById('c-batch-count').value) || 10;
             let created = [];
+
+            // 圖片來源準備：優先從自建圖庫裡「完全沒被任何選手(旗下陣容/全部AI團隊)使用過」的圖片隨機分配，
+            // 避免新秀選手跟既有選手撞臉；圖庫張數不夠這批新秀分配時，才允許在圖庫內重複(但仍避免這批次內部自己先重複)；
+            // 圖庫完全是空的才退回DiceBear隨機頭像
+            let gallery = (window.GS.gallery || []).slice();
+            let allExistingWrestlers = [].concat(window.GS.roster||[]);
+            (window.GS.factions||[]).filter(f => f.id !== 0).forEach(f => { allExistingWrestlers = allExistingWrestlers.concat(f.roster||[]); });
+            let usedImages = new Set(allExistingWrestlers.map(w => w.img));
+            let shuffledUnused = gallery.filter(url => !usedImages.has(url)).sort(() => 0.5 - Math.random());
+            let shuffledAll = gallery.slice().sort(() => 0.5 - Math.random());
+            let usedInThisBatch = new Set();
+
             for(let k=0; k<count; k++) {
                 let name = window.getUniqueWrestlerName ? window.getUniqueWrestlerName() : `新秀選手${Date.now()}${k}`;
                 let stats = window.randomReasonableStats();
                 let pop = window.calcPopFromStats ? window.calcPopFromStats(stats) : 10;
+
+                let img;
+                if(k < shuffledUnused.length) {
+                    img = shuffledUnused[k]; // 優先分配「完全沒被使用過」的圖，依序取用不重複
+                } else if(shuffledAll.length > 0) {
+                    let remaining = shuffledAll.filter(url => !usedInThisBatch.has(url));
+                    img = remaining.length > 0 ? remaining[0] : shuffledAll[k % shuffledAll.length];
+                } else {
+                    img = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}${Math.random()}`;
+                }
+                usedInThisBatch.add(img);
+
                 let w = {
                     id: Date.now() + Math.floor(Math.random() * 1000000) + k, // 加上k避免同一批次時間戳過於接近導致id碰撞
                     name: "[FA] " + name,
@@ -6730,7 +6754,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     str: stats.str, spd: stats.spd, tech: stats.tech,
                     mnt: stats.mnt, end: stats.end, pop: pop,
                     loyalty: 80, salary: Math.floor(40 + (stats.str + stats.spd + stats.tech) * 0.1),
-                    img: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}${Math.random()}`,
+                    img,
                     w: 0, l: 0, coachId: null, boost: 0, injuryWeeks: 0, retirementCountdown: null, readyForRetirementMatch: false, condition: '普通', vacationWeeks: 0,
                     potential: window.rollPotential ? window.rollPotential() : 'B', scouted: true, traits: window.rollTraits ? window.rollTraits() : [],
                     signatureMove: window.randomSignatureMove ? window.randomSignatureMove() : null
