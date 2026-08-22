@@ -5510,6 +5510,10 @@ function draftCompetitorCount(w) {
         let pool1 = buildPool(document.getElementById('t1-p0'), 't1');
         let pool2 = buildPool(document.getElementById('t2-p0'), 't2');
 
+        // 隊內大亂鬥模式下，t1、t2的選手來源都是GS.roster(select選項的產生邏輯與篩選條件完全一致，位置index可互通)，
+        // 讓兩邊共用同一份池子，抽取時自然互相排除，避免同一位選手同時出現在雙方陣營、變成自己打自己的荒謬情況
+        if(bmNow === 'faction_intra') pool2 = pool1;
+
         for(let i=0; i<count; i++) {
             let s1 = document.getElementById('t1-p'+i), s2 = document.getElementById('t2-p'+i);
             if(s1 && pool1.length > 0) {
