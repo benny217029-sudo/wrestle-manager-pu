@@ -909,6 +909,20 @@ body { overflow-x: hidden; }
         </div>
     </div>
 
+    <!-- 大賽代表選手選擇彈窗：讓玩家自己勾選出賽選手，或按「隨機選擇」讓遊戲自動挑選，供全部大賽系統共用 -->
+    <div id="tourney-reps-picker-overlay" class="overlay" style="z-index:100001;">
+        <div class="modal-box" style="max-width:480px;">
+            <h2 id="tourney-reps-picker-title" style="text-align:center; color:var(--gold); font-size:2.2rem; margin-bottom:8px;">選擇出賽代表</h2>
+            <p id="tourney-reps-picker-desc" style="text-align:center; color:var(--muted); font-size:1.3rem; margin-bottom:15px;"></p>
+            <div id="tourney-reps-picker-list" style="display:flex; flex-direction:column; gap:8px; max-height:50vh; overflow-y:auto; margin-bottom:15px;"></div>
+            <div style="display:flex; gap:12px;">
+                <button type="button" class="btn btn-sec" style="flex:1; font-size:1.4rem; padding:14px;" id="btn-tourney-reps-random">🎲 隨機選擇</button>
+                <button type="button" class="btn" style="flex:1; font-size:1.4rem; padding:14px;" id="btn-tourney-reps-confirm">✅ 確認出賽</button>
+            </div>
+            <button type="button" class="btn btn-danger" style="width:100%; margin-top:10px; font-size:1.3rem; padding:10px;" id="btn-tourney-reps-cancel">取消</button>
+        </div>
+    </div>
+
     <!-- 教練新增指導選手選擇彈窗(含頭像)，取代原本無法顯示圖片的原生select -->
     <div id="coach-student-picker-overlay" class="overlay" style="z-index:100001;">
         <div class="modal-box" style="max-width:420px;">
@@ -2979,7 +2993,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let isMatchPhase = GS.weekPhase === 'match';
 
         let dashHTML = GS.roster.map((w, i) => {
-            if(w.pendingAction !== 'train' && w.pendingAction !== 'rest') w.pendingAction = 'train'; // A. 預設值/資料修復
+            if(w.pendingAction !== 'train' && w.pendingAction !== 'rest') w.pendingAction = (w.stamina < 40 ? 'rest' : 'train'); // A. 預設值/資料修復：依當下體力判斷合理的初始建議值
             let lowHp = w.stamina < 30;
             let injured = (w.injuryWeeks || 0) > 0;
             return `
@@ -4026,6 +4040,9 @@ function draftCompetitorCount(w) {
             w.condition = window.rollCondition(w); // 每週重新判定狀態(好調/普通/不好調)
             if(w.boost > 0) w.boost--;
             salarySum += w.salary;
+            // 依照本週結算後的最新體力，自動判斷下週的建議排班(訓練/休息)：體力偏低預設安排休息避免見底，體力充足預設訓練，
+            // 玩家仍可在下週的營運總覽畫面用下拉選單手動覆蓋這個建議值，這裡只是提供合理的自動預設
+            w.pendingAction = w.stamina < 40 ? 'rest' : 'train';
         });
         GS.money -= salarySum;
         GS.yearExpense = (GS.yearExpense||0) + salarySum;
@@ -7632,14 +7649,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const GRAND_FINALE_PRIZE = 8000; // 全遊戲最高規格獎金，明顯超越秋季32強(1120)與極限連戰(4000)
 
     // 五年一度世界冠軍賽：國內選拔階段。東西聯盟各自蒐集符合資格的選手(等級90+，每團體最多派2位，取戰力最強的)，重用既有樹狀圖基礎設施(把單一選手包裝成"只有1人的隊伍")
-    window.startWorldChampionshipQualifier = function() {
+    window.startWorldChampionshipQualifier = function(playerReps, onDone) {
+        // 尚未選定玩家代表選手：若玩家有至少2位等級90以上的健康選手，先跳出選擇彈窗讓玩家自選或隨機，選完後重新呼叫本函式繼續完成開賽；
+        // 若玩家沒有符合資格的選手，維持原本行為(玩家團隊不派代表，但不影響其他團隊照常舉辦選拔賽)
+        if(playerReps === undefined) {
+            let myEligible = (GS.roster||[]).filter(w => !((w.injuryWeeks||0)>0) && window.wrestlerLevel(w) >= 90);
+            if(myEligible.length >= 2) {
+                myEligible.sort((a,b) => (b.str+b.spd+b.tech+b.end+b.mnt) - (a.str+a.spd+a.tech+a.end+a.mnt));
+                window.pickTournamentReps({
+                    count: 2,
+                    pool: myEligible,
+                    title: `🌍 世界冠軍賽・國內選拔`,
+                    desc: `請選擇 2 位等級90以上的選手代表出賽，或按「隨機選擇」自動挑選`,
+                    onConfirm: (selected) => window.startWorldChampionshipQualifier(selected, onDone)
+                });
+                return true; // 選人流程已啟動，回傳true讓呼叫端不要誤判成「開賽失敗」
+            }
+            playerReps = [];
+        }
+
         let entries = [];
         GS.factions.forEach(f => {
+            if(f.id === 0) {
+                playerReps.forEach(w => entries.push({ facId: 0, facName: f.name, name: `${w.name}（${f.name}）`, wrestlers: [w] }));
+                return;
+            }
             let eligible = (f.roster||[]).filter(w => !((w.injuryWeeks||0)>0) && window.wrestlerLevel(w) >= 90);
             eligible.sort((a,b) => (b.str+b.spd+b.tech+b.end+b.mnt) - (a.str+a.spd+a.tech+a.end+a.mnt));
             eligible.slice(0, 2).forEach(w => entries.push({ facId: f.id, facName: f.name, name: `${w.name}（${f.name}）`, wrestlers: [w] }));
         });
-        if(entries.length < 4) return false; // 參賽人數不足(邊界保護，改成單一聯盟後至少要4人才能打一輪合理的瑞士制)
+        if(entries.length < 4) { if(onDone) onDone(false); return false; } // 參賽人數不足(邊界保護，改成單一聯盟後至少要4人才能打一輪合理的瑞士制)
 
         GS.worldChampionship = {
             active: true, year: GS.year, phase: 'domestic',
@@ -7647,6 +7686,7 @@ document.addEventListener('DOMContentLoaded', () => {
             japanReps: [], worldStage: null,
         };
         window.addHallOfFame(`🌍 <strong style="color:var(--gold);">世界冠軍賽</strong>國內選拔開幕！全聯盟${entries.length}位好手齊聚一堂，以瑞士制車輪戰爭奪日本代表資格！`);
+        if(onDone) onDone(true);
         return true;
     };
 
@@ -8189,25 +8229,37 @@ document.addEventListener('DOMContentLoaded', () => {
         if(advBtn) advBtn.innerText = br.champion ? '🏆 領取生還者獎勵' : '☠️ 進行下一波淘汰';
     };
 
-    window.startGrandFinale = function() {
+    window.startGrandFinale = function(playerWrestler, onDone) {
         if(window.GS.roster.length === 0) {
             window.showSysMsg("無法開賽", "請先至自由市場招募至少 1 名選手！", true);
+            if(onDone) onDone(false);
             return false;
         }
         let healthyRoster = window.GS.roster.filter(w => !((w.injuryWeeks||0) > 0));
         if(healthyRoster.length === 0) {
             window.showSysMsg("無法開賽", "我方健康選手需至少1人才能參賽（傷病中選手無法出賽）！", true);
+            if(onDone) onDone(false);
             return false;
         }
+
+        if(!playerWrestler) {
+            window.pickTournamentReps({
+                count: 1, pool: healthyRoster, title: '⚡ 四年一度大決戰',
+                onConfirm: (selected) => window.startGrandFinale(selected[0], onDone)
+            });
+            return true;
+        }
+
         let bestOf = arr => arr.slice().sort((a,b) => (b.str+b.spd+b.tech+b.end+b.mnt) - (a.str+a.spd+a.tech+a.end+a.mnt));
         let myFaction = window.GS.factions.find(f => f.id === 0);
-        let myTeamEntry = { facId: 0, name: myFaction ? myFaction.name : '玩家團隊', wrestlers: bestOf(healthyRoster).slice(0,1) };
+        let myTeamEntry = { facId: 0, name: myFaction ? myFaction.name : '玩家團隊', wrestlers: [playerWrestler] };
 
         let aiPool = window.GS.factions.slice(1).filter(f => f.roster.length > 0).sort((a,b) => (b.points||0) - (a.points||0));
         let entries = [myTeamEntry].concat(aiPool.slice(0, 15).map(f => ({ facId: f.id, name: f.name, wrestlers: bestOf(f.roster).slice(0,1) })));
 
         if(entries.length < 8) {
             window.showSysMsg("無法開賽", "全聯盟可參賽的團隊數量不足，暫時無法組成完整大決戰賽程！", true);
+            if(onDone) onDone(false);
             return false;
         }
 
@@ -8217,6 +8269,7 @@ document.addEventListener('DOMContentLoaded', () => {
             finalFour: null,
         };
         window.addHallOfFame(`⚡ <strong style="color:var(--gold);">四年一度大決戰</strong>開幕！全聯盟${entries.length}隊精銳齊聚一堂，先以瑞士制車輪戰決出前4強，再交叉爭奪究極王者之座！`);
+        if(onDone) onDone(true);
         return true;
     };
 
@@ -8566,9 +8619,10 @@ document.addEventListener('DOMContentLoaded', () => {
         winter: { label: '冬季年度總決賽瑞士制（菁英8強）', teamSize: 8, wrestlersPerTeam: 1, prize: 1400, roundNames: ['八強戰','準決賽','冠軍戰'], eliteOnly: true }
     };
 
-    window.generateTournament = function() {
+    window.generateTournament = function(playerWrestlers, onDone) {
         if(window.GS.roster.length === 0) {
             window.showSysMsg("無法開賽", "請先至自由市場招募至少 1 名選手！", true);
+            if(onDone) onDone(false);
             return false;
         }
         let season = SEASON_BY_MONTH[GS.month] || 'spring';
@@ -8577,12 +8631,24 @@ document.addEventListener('DOMContentLoaded', () => {
         let healthyRoster = window.GS.roster.filter(w => !((w.injuryWeeks||0) > 0));
         if(healthyRoster.length < fmt.wrestlersPerTeam) {
             window.showSysMsg("無法開賽", `本次為「${fmt.label}」，採 ${fmt.wrestlersPerTeam}v${fmt.wrestlersPerTeam} 對戰，我方健康選手需至少 ${fmt.wrestlersPerTeam} 人才能參賽（傷病中選手無法出賽）！`, true);
+            if(onDone) onDone(false);
             return false;
+        }
+
+        // 尚未選定我方代表選手：先跳出選擇彈窗，讓玩家自己勾選或按「隨機選擇」，選完後重新呼叫本函式繼續完成開賽
+        if(!playerWrestlers) {
+            window.pickTournamentReps({
+                count: fmt.wrestlersPerTeam,
+                pool: healthyRoster,
+                title: `⚔️ ${fmt.label}`,
+                onConfirm: (selected) => window.generateTournament(selected, onDone)
+            });
+            return true; // 選人流程已啟動，回傳true讓呼叫端不要誤判成「開賽失敗」
         }
 
         let bestOf = arr => arr.slice().sort((a, b) => (b.str + b.spd + b.tech + b.end + b.mnt) - (a.str + a.spd + a.tech + a.end + a.mnt));
 
-        let myTeam = bestOf(healthyRoster).slice(0, fmt.wrestlersPerTeam);
+        let myTeam = playerWrestlers;
         let myFactionName = (window.GS.factions.find(f => f.id === 0) || {}).name || "玩家團隊";
         let teams = [{ facId: 0, name: myFactionName, wrestlers: myTeam }];
 
@@ -8604,6 +8670,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 隊伍數過少（理論邊界情況）：直接擋下，避免出現「沒打比賽就奪冠」的畸形賽程
         if(teams.length < 4) {
             window.showSysMsg("無法開賽", "可參賽的團隊數量不足，暫時無法組成完整賽程，請稍後再試！", true);
+            if(onDone) onDone(false);
             return false;
         }
 
@@ -8625,11 +8692,78 @@ document.addEventListener('DOMContentLoaded', () => {
             playoffRoundNames: ['準決賽', '冠軍戰'],
             champion: null,
         };
+        if(onDone) onDone(true);
         return true;
     };
 
     // 通用瑞士制配對函式：依目前累積勝場數排序、優先配對戰績相近且尚未對戰過的對手，找不到全新對手時才退回配對任何可用對手，
     // 人數為奇數時最後一位輪空直接記一勝。可被四季例行大賽/四年一度大決戰/世界冠軍賽等大賽共用
+    // 大賽代表選手選擇：共用彈窗機制，讓玩家可以自己勾選出賽選手，或按「隨機選擇」讓遊戲自動挑選
+    // options: { count(需要選幾人), pool(候選池，已篩選過健康/資格條件的選手陣列), title, desc, onConfirm(selectedWrestlers) }
+    window.pickTournamentReps = function(options) {
+        let { count, minCount, step, pool, title, desc, onConfirm } = options;
+        let minRequired = minCount || count;
+        if(pool.length < minRequired) {
+            window.showSysMsg("人數不足", `符合資格的健康選手不足 ${minRequired} 人，暫時無法出賽！`, true);
+            return;
+        }
+        window._tourneyRepsState = { count, minCount: minCount || null, step: step || 1, pool, selected: new Set(), onConfirm };
+        document.getElementById('tourney-reps-picker-title').innerText = title || '選擇出賽代表';
+        document.getElementById('tourney-reps-picker-desc').innerText = desc || (minCount
+            ? `請選擇 ${minCount}~${count} 位選手出賽（每 ${step} 位一組），或按「隨機選擇」自動挑選`
+            : `請選擇 ${count} 位選手出賽，或按「隨機選擇」自動挑選`);
+        window.renderTourneyRepsPicker();
+        document.getElementById('tourney-reps-picker-overlay').style.display = 'flex';
+    };
+
+    // 判斷目前已選人數是否符合可以確認出賽的條件：固定模式要求剛好選滿count人；彈性模式要求在minCount~count之間且是step的倍數
+    window.isTourneyRepsSelectionReady = function(state) {
+        if(!state.minCount) return state.selected.size === state.count;
+        return state.selected.size >= state.minCount && state.selected.size <= state.count && state.selected.size % state.step === 0;
+    };
+
+    window.renderTourneyRepsPicker = function() {
+        let state = window._tourneyRepsState;
+        if(!state) return;
+        let listEl = document.getElementById('tourney-reps-picker-list');
+        listEl.innerHTML = state.pool.map(w => {
+            let checked = state.selected.has(w.id);
+            return `<label style="display:flex; align-items:center; gap:10px; padding:8px; background:${checked?'rgba(212,175,55,0.15)':'rgba(0,0,0,0.3)'}; border-radius:8px; cursor:pointer; border:1px solid ${checked?'var(--gold)':'transparent'};">
+                <input type="checkbox" ${checked?'checked':''} onchange="window.toggleTourneyRepSelection('${w.id}')" style="width:20px; height:20px; flex-shrink:0;">
+                <img src="${window.escAttr(w.img)}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(w.name)}'" style="width:44px; height:44px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+                <div style="flex:1; min-width:0;">
+                    <p style="font-size:1.4rem; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${w.name}</p>
+                    <p style="font-size:1.1rem; color:var(--muted); margin:0;">OVR ${window.wrestlerLevel(w)}　體力:${w.stamina}</p>
+                </div>
+            </label>`;
+        }).join('') || '<p style="text-align:center; color:var(--muted); font-size:1.4rem;">目前沒有符合資格的選手</p>';
+
+        let confirmBtn = document.getElementById('btn-tourney-reps-confirm');
+        let ready = window.isTourneyRepsSelectionReady(state);
+        confirmBtn.disabled = !ready;
+        confirmBtn.style.opacity = ready ? '1' : '0.4';
+        confirmBtn.innerText = state.minCount
+            ? `✅ 確認出賽 (${state.selected.size}/${state.minCount}~${state.count}，需為${state.step}的倍數)`
+            : `✅ 確認出賽 (${state.selected.size}/${state.count})`;
+    };
+
+    window.toggleTourneyRepSelection = function(id) {
+        let state = window._tourneyRepsState;
+        if(!state) return;
+        let w = state.pool.find(x => String(x.id) === String(id));
+        if(!w) return;
+        if(state.selected.has(w.id)) {
+            state.selected.delete(w.id);
+        } else {
+            if(state.selected.size >= state.count) {
+                window.showSysMsg("已達上限", `最多只能選擇 ${state.count} 位選手！`, true);
+                return;
+            }
+            state.selected.add(w.id);
+        }
+        window.renderTourneyRepsPicker();
+    };
+
     window.pairSwissRoundByIndex = function(entrants, standingsIndices) {
         let sorted = standingsIndices.slice().sort((a,b) => (entrants[b].wins||0) - (entrants[a].wins||0));
         let paired = [];
@@ -8691,7 +8825,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return window.showSysMsg("尚未到世界冠軍賽週", `五年一度世界冠軍賽只在冬季第12週開放，目前是第${GS.week}週，請等到那時候再來！`, true);
             }
             if(!wc || !wc.active) {
-                if(!window.startWorldChampionshipQualifier()) return window.showSysMsg("條件不足", "本屆東西聯盟等級90以上的選手數量不足，世界冠軍賽國內選拔無法成團，本屆從缺！", true);
+                window.startWorldChampionshipQualifier(undefined, (success) => {
+                    if(!success) return window.showSysMsg("條件不足", "本屆東西聯盟等級90以上的選手數量不足，世界冠軍賽國內選拔無法成團，本屆從缺！", true);
+                    window.renderWorldChampionship();
+                    document.getElementById('world-championship-overlay').style.display = 'flex';
+                });
+                return;
             }
             window.renderWorldChampionship();
             document.getElementById('world-championship-overlay').style.display = 'flex';
@@ -8707,7 +8846,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return window.showSysMsg("尚未到大決戰週", `四年一度大決戰只在冬季第12週開放，目前是第${GS.week}週，請等到那時候再來！`, true);
             }
             if(!gf || !gf.active) {
-                if(!window.startGrandFinale()) return;
+                window.startGrandFinale(null, (success) => {
+                    if(!success) return;
+                    window.renderGrandFinale();
+                    document.getElementById('grand-finale-overlay').style.display = 'flex';
+                });
+                return;
             }
             window.renderGrandFinale();
             document.getElementById('grand-finale-overlay').style.display = 'flex';
@@ -8719,7 +8863,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return window.showSysMsg("尚未到大賽週", `大賽樹狀圖只在每季第12週開放，目前是第${GS.week}週，請等到那時候再來！`, true);
         }
         if(!t || !t.active) {
-            if(!window.generateTournament()) return;
+            window.generateTournament(null, (success) => {
+                if(!success) return;
+                window.renderBracket();
+                document.getElementById('bracket-overlay').style.display = 'flex';
+            });
+            return;
         }
         window.renderBracket();
         document.getElementById('bracket-overlay').style.display = 'flex';
@@ -9020,6 +9169,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let btnAdvanceGrandFinale = document.getElementById('btn-advance-grand-finale');
     if(btnAdvanceGrandFinale) btnAdvanceGrandFinale.addEventListener('click', () => window.advanceGrandFinale());
+
+    let btnTourneyRepsRandom = document.getElementById('btn-tourney-reps-random');
+    if(btnTourneyRepsRandom) btnTourneyRepsRandom.addEventListener('click', () => {
+        let state = window._tourneyRepsState;
+        if(!state) return;
+        let shuffled = state.pool.slice().sort(() => 0.5 - Math.random());
+        let pickCount = state.count;
+        if(state.minCount) {
+            // 彈性模式：先隨機決定要選幾人(minCount~count之間、符合step倍數的其中一個選項)
+            let options = [];
+            for(let n = state.minCount; n <= state.count; n += state.step) options.push(n);
+            pickCount = options[Math.floor(Math.random() * options.length)];
+        }
+        state.selected = new Set(shuffled.slice(0, pickCount).map(w => w.id));
+        window.renderTourneyRepsPicker();
+    });
+    let btnTourneyRepsConfirm = document.getElementById('btn-tourney-reps-confirm');
+    if(btnTourneyRepsConfirm) btnTourneyRepsConfirm.addEventListener('click', () => {
+        let state = window._tourneyRepsState;
+        if(!state || !window.isTourneyRepsSelectionReady(state)) return;
+        let selectedWrestlers = state.pool.filter(w => state.selected.has(w.id));
+        let onConfirm = state.onConfirm;
+        window._tourneyRepsState = null;
+        window.closeModal('tourney-reps-picker-overlay');
+        onConfirm(selectedWrestlers);
+    });
+    let btnTourneyRepsCancel = document.getElementById('btn-tourney-reps-cancel');
+    if(btnTourneyRepsCancel) btnTourneyRepsCancel.addEventListener('click', () => {
+        window._tourneyRepsState = null;
+        window.closeModal('tourney-reps-picker-overlay');
+    });
 
     let btnAdvanceBattleRoyal = document.getElementById('btn-advance-battle-royal');
     if(btnAdvanceBattleRoyal) btnAdvanceBattleRoyal.addEventListener('click', () => window.advanceBattleRoyal());
@@ -10796,13 +10976,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        window.startIronmanTournament = function() {
+        window.startIronmanTournament = function(myFighter) {
             if(GS.roster.length === 0) { window.addNewsLog('⚠️ 極限連戰因我方無選手而取消。'); return; }
             let healthyRoster = GS.roster.filter(w => !((w.injuryWeeks||0) > 0));
             if(healthyRoster.length === 0) { window.addNewsLog('⚠️ 極限連戰因我方無健康選手而取消。'); return; }
 
+            // 尚未選定玩家代表選手：先跳出選擇彈窗讓玩家自選或隨機，選完後重新呼叫本函式繼續完成開賽
+            if(myFighter === undefined) {
+                window.pickTournamentReps({
+                    count: 1,
+                    pool: healthyRoster,
+                    title: `🔥 極限連戰`,
+                    desc: `本賽制陣容鎖定不可換人，請慎選 1 位選手出賽，或按「隨機選擇」自動挑選`,
+                    onConfirm: (selected) => window.startIronmanTournament(selected[0])
+                });
+                return;
+            }
+
             let bestOf = arr => arr.slice().sort((a,b) => (b.str+b.spd+b.tech+b.end+b.mnt)-(a.str+a.spd+a.tech+a.end+a.mnt));
-            let myFighter = bestOf(healthyRoster)[0];
             let teams = [{ facId: 0, name: (GS.factions.find(f=>f.id===0)||{}).name || '我方團隊', wrestler: myFighter }];
 
             let candidateFactions = GS.factions.slice(1).filter(f => f.roster.some(w => !((w.injuryWeeks||0)>0)));
@@ -11001,9 +11192,37 @@ document.addEventListener('DOMContentLoaded', () => {
             return teams;
         }
 
-        window.startU18Tournament = function() {
+        window.startU18Tournament = function(playerReps) {
+            // 尚未選定玩家代表選手：先跳出彈性數量選擇彈窗(2~6人、2的倍數)讓玩家自選或隨機，選完後重新呼叫本函式繼續完成開賽；
+            // 若玩家沒有符合資格的選手，維持原本行為(玩家團隊不派隊參賽，不影響其他團隊照常舉辦)
+            if(playerReps === undefined) {
+                let myEligible = (GS.roster||[]).filter(w => w.age < U18_AGE_LIMIT && !((w.injuryWeeks||0) > 0));
+                if(myEligible.length >= 2) {
+                    let maxPlayers = Math.min(myEligible.length - (myEligible.length % 2), U18_MAX_TEAMS_PER_FACTION * 2);
+                    window.pickTournamentReps({
+                        count: maxPlayers, minCount: 2, step: 2,
+                        pool: myEligible,
+                        title: `🌟 U18新星盃`,
+                        desc: `請選擇 2~${maxPlayers} 位20歲以下選手出賽（每2位一組），或按「隨機選擇」自動挑選`,
+                        onConfirm: (selected) => window.startU18Tournament(selected)
+                    });
+                    return;
+                }
+                playerReps = [];
+            }
+
             let entries = [];
-            GS.factions.forEach(f => {
+            // 玩家團隊：用玩家選定的選手，依戰力排序後兩兩配對成隊
+            if(playerReps.length >= 2) {
+                let sorted = playerReps.slice().sort((a,b) => (b.str+b.spd+b.tech+b.end+b.mnt)-(a.str+a.spd+a.tech+a.end+a.mnt));
+                let myFaction = GS.factions.find(f => f.id === 0);
+                let myTeams = [];
+                for(let i=0; i+1<sorted.length; i+=2) myTeams.push([sorted[i], sorted[i+1]]);
+                myTeams.forEach((team, idx) => {
+                    entries.push({ facId: 0, name: (myFaction?myFaction.name:'我方團隊') + (myTeams.length > 1 ? `（第${idx+1}隊）` : ''), wrestlers: team });
+                });
+            }
+            GS.factions.slice(1).forEach(f => {
                 let teams = formU18Teams(f);
                 teams.forEach((team, idx) => {
                     entries.push({
