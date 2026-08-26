@@ -1450,7 +1450,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             usedInThisBatch.add(candidate);
             w.img = candidate;
-            w.imgPosX = 50; w.imgPosY = 50; w.imgScale = 1; // 換了新圖片，舊的位置/縮放調整不再適用，重置為預設置中
+            w.imgPosX = 50; w.imgPosY = 0; w.imgScale = 1; // 換了新圖片，舊的位置/縮放調整不再適用，重置為預設(水平置中、垂直對齊頂部)
         });
 
         window.addNewsLog(`🖼️ 已將圖庫頭像一鍵套用給「${poolLabel}」的 ${pool.length} 位選手。`);
@@ -5640,7 +5640,7 @@ function draftCompetitorCount(w) {
             if(w && w.onIR === undefined) w.onIR = false; // 舊存檔選手補上傷兵名單欄位
             if(w && w.levelHistory === undefined) w.levelHistory = []; // 舊存檔選手補上成長曲線歷史(空陣列，之後會自然開始累積)
             if(w && w.declineStartAge === undefined) w.declineStartAge = 25 + R(8); // 舊存檔選手補上隨機衰退起始年齡(25~32歲)
-            if(w && w.imgPosX === undefined) { w.imgPosX = 50; w.imgPosY = 50; } // 舊存檔選手補上頭像位置欄位(預設置中)
+            if(w && w.imgPosX === undefined) { w.imgPosX = 50; w.imgPosY = 0; } // 舊存檔選手補上頭像位置欄位(預設水平置中、垂直對齊頂部)
             if(w && (w.imgScale === undefined || w.imgScale === null)) w.imgScale = 1; // 舊存檔選手補上頭像縮放欄位(預設不縮放)
         };
         (GS.roster||[]).forEach(fillIfMissing);
